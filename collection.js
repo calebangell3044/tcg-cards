@@ -125,7 +125,7 @@ function createCardTile(card, count){
 
   const countPill = document.createElement("div");
   countPill.className = "countPill";
-  countPill.textContent = `×${count}`;
+  countPill.textContent = `Ã—${count}`;
 
   const imgWrap = document.createElement("div");
   imgWrap.className = "card__imgWrap";
