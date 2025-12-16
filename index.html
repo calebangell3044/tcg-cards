@@ -521,12 +521,171 @@
       const [packCount, setPackCount] = useState(0);
       const [isLoaded, setIsLoaded] = useState(false);
       const [enlargedCard, setEnlargedCard] = useState(null);
+      const [rations, setRations] = useState(0);
+      const [marketValues, setMarketValues] = useState({});
+      const [priceHistory, setPriceHistory] = useState({});
+      const [sellConfirm, setSellConfirm] = useState(null);
+
+      // Generate weighted random value within range (bell curve distribution)
+      const generateWeightedValue = (min, max, peak) => {
+        // Use 3 random numbers averaged for bell curve effect
+        const r1 = Math.random();
+        const r2 = Math.random();
+        const r3 = Math.random();
+        const avg = (r1 + r2 + r3) / 3;
+        
+        // Weight towards peak
+        const range = max - min;
+        const peakOffset = peak - min;
+        const peakRatio = peakOffset / range;
+        
+        // Adjust distribution to favor peak
+        let value;
+        if (avg < 0.5) {
+          value = min + (avg * 2 * peakOffset);
+        } else {
+          value = peak + ((avg - 0.5) * 2 * (max - peak));
+        }
+        
+        return parseFloat(value.toFixed(2));
+      };
+
+      // Generate initial market values for all cards
+      const generateMarketValues = () => {
+        const values = {};
+        ALL_CARDS.forEach(card => {
+          let value;
+          switch(card.rarity) {
+            case 'common':
+              value = generateWeightedValue(0.5, 5.5, 1.0);
+              break;
+            case 'uncommon':
+              value = generateWeightedValue(1.5, 8.0, 3.0);
+              break;
+            case 'rare':
+              value = generateWeightedValue(3.5, 25.0, 5.0);
+              break;
+            case 'legendary':
+              value = generateWeightedValue(9.25, 87.0, 20.0);
+              break;
+            case 'ultra x rare':
+              value = generateWeightedValue(23.0, 820.0, 100.0);
+              break;
+            default:
+              value = 1.0;
+          }
+          values[card.id] = value;
+        });
+        return values;
+      };
+
+      // Apply daily market fluctuation
+      const fluctuateMarket = (baseValues, currentValues, breakoutCards) => {
+        const newValues = {};
+        ALL_CARDS.forEach(card => {
+          const baseValue = baseValues[card.id];
+          const currentValue = currentValues[card.id] || baseValue;
+          const isBreakout = breakoutCards.includes(card.id);
+          
+          // Random fluctuation between -15% and +15%
+          const fluctuation = (Math.random() * 0.30) - 0.15; // -0.15 to +0.15
+          let newValue = currentValue * (1 + fluctuation);
+          
+          // 90% of cards stay within 50-150% of base value
+          if (!isBreakout) {
+            const minBound = baseValue * 0.5;
+            const maxBound = baseValue * 1.5;
+            newValue = Math.max(minBound, Math.min(maxBound, newValue));
+          } else {
+            // 10% can break out to 25-200% of base value
+            const minBound = baseValue * 0.25;
+            const maxBound = baseValue * 2.0;
+            newValue = Math.max(minBound, Math.min(maxBound, newValue));
+          }
+          
+          newValues[card.id] = parseFloat(newValue.toFixed(2));
+        });
+        return newValues;
+      };
+
+      // Select 10% of cards from each rarity to be "breakout" cards
+      const selectBreakoutCards = () => {
+        const breakouts = [];
+        Object.keys(CARDS_BY_RARITY).forEach(rarity => {
+          const cards = CARDS_BY_RARITY[rarity];
+          const count = Math.ceil(cards.length * 0.1);
+          const shuffled = [...cards].sort(() => Math.random() - 0.5);
+          breakouts.push(...shuffled.slice(0, count).map(c => c.id));
+        });
+        return breakouts;
+      };
 
       useEffect(() => {
+        // Load saved data
         const saved = localStorage.getItem('tcg-collection-v3');
         if (saved) setCollection(JSON.parse(saved));
+        
         const savedCount = localStorage.getItem('tcg-pack-count-v3');
         if (savedCount) setPackCount(parseInt(savedCount, 10));
+        
+        const savedRations = localStorage.getItem('tcg-rations');
+        if (savedRations) setRations(parseFloat(savedRations));
+        
+        // Initialize or load market values
+        let baseValues = localStorage.getItem('tcg-market-base');
+        let currentValues = localStorage.getItem('tcg-market-current');
+        let breakoutCards = localStorage.getItem('tcg-market-breakouts');
+        let lastUpdate = localStorage.getItem('tcg-market-last-update');
+        let history = localStorage.getItem('tcg-price-history');
+        
+        const today = new Date().toDateString();
+        
+        // First time setup
+        if (!baseValues) {
+          baseValues = generateMarketValues();
+          currentValues = { ...baseValues };
+          breakoutCards = selectBreakoutCards();
+          
+          localStorage.setItem('tcg-market-base', JSON.stringify(baseValues));
+          localStorage.setItem('tcg-market-current', JSON.stringify(currentValues));
+          localStorage.setItem('tcg-market-breakouts', JSON.stringify(breakoutCards));
+          localStorage.setItem('tcg-market-last-update', today);
+          
+          // Initialize price history with today's prices
+          const initialHistory = {};
+          Object.keys(currentValues).forEach(cardId => {
+            initialHistory[cardId] = [{ date: today, value: currentValues[cardId] }];
+          });
+          localStorage.setItem('tcg-price-history', JSON.stringify(initialHistory));
+          history = initialHistory;
+        } else {
+          baseValues = JSON.parse(baseValues);
+          currentValues = JSON.parse(currentValues);
+          breakoutCards = JSON.parse(breakoutCards);
+          history = history ? JSON.parse(history) : {};
+          
+          // Check if we need to update prices (new day)
+          if (lastUpdate !== today) {
+            currentValues = fluctuateMarket(baseValues, currentValues, breakoutCards);
+            localStorage.setItem('tcg-market-current', JSON.stringify(currentValues));
+            localStorage.setItem('tcg-market-last-update', today);
+            
+            // Update price history (keep last 30 days)
+            Object.keys(currentValues).forEach(cardId => {
+              if (!history[cardId]) history[cardId] = [];
+              history[cardId].push({ date: today, value: currentValues[cardId] });
+              
+              // Keep only last 30 days
+              if (history[cardId].length > 30) {
+                history[cardId] = history[cardId].slice(-30);
+              }
+            });
+            localStorage.setItem('tcg-price-history', JSON.stringify(history));
+          }
+        }
+        
+        setMarketValues(currentValues);
+        setPriceHistory(history);
         setIsLoaded(true);
       }, []);
 
@@ -536,6 +695,10 @@
 
       const savePackCount = useCallback((count) => {
         localStorage.setItem('tcg-pack-count-v3', String(count));
+      }, []);
+
+      const saveRations = useCallback((amount) => {
+        localStorage.setItem('tcg-rations', String(amount));
       }, []);
 
       const getRandomCard = (rarity) => {
@@ -622,6 +785,23 @@
         return { uniqueOwned, totalCards, totalOwned, byRarity };
       };
 
+      const sellCard = (card) => {
+        if (!collection[card.id] || collection[card.id] === 0) return;
+        
+        const marketValue = marketValues[card.id] || 1;
+        const newCollection = { ...collection };
+        newCollection[card.id] = newCollection[card.id] - 1;
+        if (newCollection[card.id] === 0) delete newCollection[card.id];
+        
+        const newRations = rations + marketValue;
+        
+        setCollection(newCollection);
+        setRations(newRations);
+        saveCollection(newCollection);
+        saveRations(newRations);
+        setSellConfirm(null);
+      };
+
       const getCollectionCards = () => {
         let cards = [...ALL_CARDS];
         if (collectionFilter !== 'all') cards = cards.filter(c => c.rarity === collectionFilter);
@@ -656,7 +836,13 @@
               <h1 style={{ fontSize: 24, fontWeight: 'bold', background: 'linear-gradient(90deg, #a855f7, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
                 Through The Ages
               </h1>
-              <nav style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(168,85,247,0.2)', borderRadius: 8, border: '1px solid rgba(168,85,247,0.4)' }}>
+                  <img src="./rations.png" alt="Rations" style={{ width: 24, height: 24 }} />
+                  <span style={{ color: '#fbbf24', fontSize: 18, fontWeight: 'bold' }}>{rations.toFixed(2)}</span>
+                  <span style={{ color: '#9ca3af', fontSize: 14 }}>R</span>
+                </div>
+                <nav style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => setView('home')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'home' || view === 'opening' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
                   Open Packs
                 </button>
@@ -664,6 +850,7 @@
                   Collection ({stats.uniqueOwned}/{stats.totalCards})
                 </button>
               </nav>
+              </div>
             </div>
           </header>
 
@@ -818,6 +1005,15 @@
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 16 }}>
                   {getCollectionCards().map(card => {
                     const colors = RARITY_COLORS[card.rarity];
+                    const marketValue = marketValues[card.id] || 1;
+                    const history = priceHistory[card.id] || [];
+                    let priceChange = 0;
+                    if (history.length >= 2) {
+                      const prev = history[history.length - 2].value;
+                      const curr = marketValue;
+                      priceChange = ((curr - prev) / prev) * 100;
+                    }
+                    
                     return (
                       <div 
                         key={card.id} 
@@ -825,33 +1021,81 @@
                           aspectRatio: '2.5/3.5', 
                           borderRadius: 12, 
                           border: `3px solid ${colors.border}`, 
-                          overflow: 'hidden', 
+                          overflow: 'visible', 
                           background: '#1f2937', 
                           position: 'relative', 
                           opacity: card.owned === 0 ? 0.4 : 1,
-                          cursor: card.owned > 0 ? 'zoom-in' : 'default'
                         }}
-                        title={card.owned > 0 ? card.name : '???'}
-                        onClick={() => {
-                          if (card.owned > 0) setEnlargedCard(card);
-                        }}
+                        title={card.owned > 0 ? `${card.name} - ${marketValue.toFixed(2)}R` : '???'}
                       >
-                        {card.owned > 0 ? (
-                          <img 
-                            src={card.image} 
-                            alt={card.name} 
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111827' }}>
-                            <span style={{ fontSize: 48 }}>❓</span>
-                          </div>
-                        )}
+                        <div 
+                          style={{ width: '100%', height: '100%', borderRadius: 12, overflow: 'hidden', cursor: card.owned > 0 ? 'zoom-in' : 'default' }}
+                          onClick={() => {
+                            if (card.owned > 0) setEnlargedCard({ ...card, marketValue, priceChange });
+                          }}
+                        >
+                          {card.owned > 0 ? (
+                            <img 
+                              src={card.image} 
+                              alt={card.name} 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111827' }}>
+                              <span style={{ fontSize: 48 }}>❓</span>
+                            </div>
+                          )}
+                        </div>
+                        
                         {card.owned > 0 && (
-                          <div style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.8)', color: 'white', fontSize: 12, fontWeight: 'bold', padding: '4px 8px', borderRadius: 12, border: `2px solid ${colors.border}` }}>
-                            x{card.owned}
-                          </div>
+                          <>
+                            {/* Count badge */}
+                            <div style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.8)', color: 'white', fontSize: 12, fontWeight: 'bold', padding: '4px 8px', borderRadius: 12, border: `2px solid ${colors.border}` }}>
+                              x{card.owned}
+                            </div>
+                            
+                            {/* Market value + change */}
+                            <div style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.8)', padding: '4px 8px', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <img src="./rations.png" alt="R" style={{ width: 14, height: 14 }} />
+                                <span style={{ color: '#fbbf24', fontSize: 12, fontWeight: 'bold' }}>{marketValue.toFixed(2)}</span>
+                              </div>
+                              {priceChange !== 0 && (
+                                <span style={{ fontSize: 10, fontWeight: 'bold', color: priceChange > 0 ? '#10b981' : '#ef4444' }}>
+                                  {priceChange > 0 ? '↑' : '↓'} {Math.abs(priceChange).toFixed(1)}%
+                                </span>
+                              )}
+                            </div>
+                            
+                            {/* Sell button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSellConfirm({ ...card, marketValue });
+                              }}
+                              style={{
+                                position: 'absolute',
+                                bottom: 8,
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                padding: '6px 16px',
+                                background: 'linear-gradient(90deg, #dc2626, #b91c1c)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: 8,
+                                cursor: 'pointer',
+                                fontSize: 12,
+                                fontWeight: 'bold',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                                transition: 'transform 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateX(-50%) scale(1.05)'}
+                              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(-50%) scale(1)'}
+                            >
+                              Sell
+                            </button>
+                          </>
                         )}
                       </div>
                     );
@@ -880,32 +1124,229 @@
                 padding: 32
               }}
             >
-              <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
-                <img 
-                  src={enlargedCard.image} 
-                  alt={enlargedCard.name}
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: '90vh',
-                    objectFit: 'contain',
-                    borderRadius: 16,
-                    border: `4px solid ${RARITY_COLORS[enlargedCard.rarity].border}`,
-                    boxShadow: `0 0 40px ${RARITY_COLORS[enlargedCard.rarity].border}`
-                  }}
-                />
+              <div style={{ display: 'flex', gap: 24, alignItems: 'center', maxWidth: '95vw' }} onClick={(e) => e.stopPropagation()}>
+                {/* Card Image */}
+                <div style={{ position: 'relative' }}>
+                  <img 
+                    src={enlargedCard.image} 
+                    alt={enlargedCard.name}
+                    style={{
+                      maxWidth: '500px',
+                      maxHeight: '80vh',
+                      objectFit: 'contain',
+                      borderRadius: 16,
+                      border: `4px solid ${RARITY_COLORS[enlargedCard.rarity].border}`,
+                      boxShadow: `0 0 40px ${RARITY_COLORS[enlargedCard.rarity].border}`,
+                      cursor: 'default'
+                    }}
+                  />
+                </div>
+                
+                {/* Price Info Panel */}
                 <div style={{
-                  position: 'absolute',
-                  bottom: -60,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
                   background: 'rgba(0,0,0,0.8)',
-                  padding: '12px 24px',
-                  borderRadius: 8,
-                  whiteSpace: 'nowrap',
-                  border: `2px solid ${RARITY_COLORS[enlargedCard.rarity].border}`
+                  padding: 24,
+                  borderRadius: 16,
+                  border: `2px solid ${RARITY_COLORS[enlargedCard.rarity].border}`,
+                  minWidth: 300,
+                  maxWidth: 400
                 }}>
-                  <p style={{ color: 'white', fontSize: 18, fontWeight: 'bold', margin: 0 }}>{enlargedCard.name}</p>
-                  <p style={{ color: RARITY_COLORS[enlargedCard.rarity].text, fontSize: 14, textTransform: 'capitalize', margin: '4px 0 0', textAlign: 'center' }}>{enlargedCard.rarity}</p>
+                  <h2 style={{ color: 'white', fontSize: 24, fontWeight: 'bold', margin: '0 0 8px' }}>{enlargedCard.name}</h2>
+                  <p style={{ color: RARITY_COLORS[enlargedCard.rarity].text, fontSize: 16, textTransform: 'capitalize', margin: '0 0 24px' }}>
+                    {enlargedCard.rarity}
+                  </p>
+                  
+                  {/* Current Market Value */}
+                  <div style={{ marginBottom: 24 }}>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 8px' }}>Current Market Value</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <img src="./rations.png" alt="R" style={{ width: 32, height: 32 }} />
+                      <span style={{ color: '#fbbf24', fontSize: 32, fontWeight: 'bold' }}>
+                        {(enlargedCard.marketValue || marketValues[enlargedCard.id] || 1).toFixed(2)}
+                      </span>
+                      <span style={{ color: '#9ca3af', fontSize: 20 }}>R</span>
+                    </div>
+                    {enlargedCard.priceChange !== 0 && enlargedCard.priceChange !== undefined && (
+                      <p style={{ 
+                        color: enlargedCard.priceChange > 0 ? '#10b981' : '#ef4444', 
+                        fontSize: 14, 
+                        fontWeight: 'bold',
+                        margin: '8px 0 0' 
+                      }}>
+                        {enlargedCard.priceChange > 0 ? '↑' : '↓'} {Math.abs(enlargedCard.priceChange).toFixed(2)}% vs yesterday
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Price History Graph */}
+                  {priceHistory[enlargedCard.id] && priceHistory[enlargedCard.id].length > 1 && (
+                    <div>
+                      <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 12px' }}>
+                        Price History (Last {Math.min(priceHistory[enlargedCard.id].length, 30)} Days)
+                      </p>
+                      <div style={{ background: '#1f2937', borderRadius: 8, padding: 16, height: 150, position: 'relative' }}>
+                        <svg width="100%" height="100%" viewBox="0 0 300 120" preserveAspectRatio="none">
+                          {(() => {
+                            const history = priceHistory[enlargedCard.id].slice(-30);
+                            const values = history.map(h => h.value);
+                            const min = Math.min(...values) * 0.95;
+                            const max = Math.max(...values) * 1.05;
+                            const range = max - min;
+                            
+                            const points = history.map((h, i) => {
+                              const x = (i / (history.length - 1)) * 300;
+                              const y = 120 - ((h.value - min) / range) * 120;
+                              return `${x},${y}`;
+                            }).join(' ');
+                            
+                            return (
+                              <>
+                                <polyline
+                                  points={points}
+                                  fill="none"
+                                  stroke="#10b981"
+                                  strokeWidth="2"
+                                />
+                                {history.map((h, i) => {
+                                  const x = (i / (history.length - 1)) * 300;
+                                  const y = 120 - ((h.value - min) / range) * 120;
+                                  return (
+                                    <circle
+                                      key={i}
+                                      cx={x}
+                                      cy={y}
+                                      r="3"
+                                      fill="#10b981"
+                                    />
+                                  );
+                                })}
+                              </>
+                            );
+                          })()}
+                        </svg>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+                        <span style={{ color: '#6b7280', fontSize: 12 }}>
+                          {priceHistory[enlargedCard.id][0]?.value.toFixed(2)}R
+                        </span>
+                        <span style={{ color: '#6b7280', fontSize: 12 }}>
+                          {priceHistory[enlargedCard.id][priceHistory[enlargedCard.id].length - 1]?.value.toFixed(2)}R
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <button
+                    onClick={() => setEnlargedCard(null)}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      marginTop: 24,
+                      background: '#374151',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Sell Confirmation Modal */}
+          {sellConfirm && (
+            <div
+              onClick={() => setSellConfirm(null)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.85)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1100,
+                padding: 32
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  background: '#1f2937',
+                  borderRadius: 16,
+                  padding: 32,
+                  maxWidth: 400,
+                  border: `3px solid ${RARITY_COLORS[sellConfirm.rarity].border}`,
+                  boxShadow: `0 0 30px ${RARITY_COLORS[sellConfirm.rarity].border}`
+                }}
+              >
+                <h2 style={{ color: 'white', fontSize: 24, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
+                  Sell Card?
+                </h2>
+                
+                <div style={{ background: '#111827', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+                  <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 8px' }}>Card</p>
+                  <p style={{ color: 'white', fontSize: 18, fontWeight: 'bold', margin: 0 }}>{sellConfirm.name}</p>
+                  <p style={{ color: RARITY_COLORS[sellConfirm.rarity].text, fontSize: 14, textTransform: 'capitalize', margin: '4px 0 0' }}>
+                    {sellConfirm.rarity}
+                  </p>
+                </div>
+                
+                <div style={{ background: '#111827', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+                  <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 8px' }}>You will receive</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <img src="./rations.png" alt="R" style={{ width: 28, height: 28 }} />
+                    <span style={{ color: '#10b981', fontSize: 28, fontWeight: 'bold' }}>
+                      +{sellConfirm.marketValue.toFixed(2)}
+                    </span>
+                    <span style={{ color: '#9ca3af', fontSize: 18 }}>R</span>
+                  </div>
+                </div>
+                
+                <p style={{ color: '#9ca3af', fontSize: 12, textAlign: 'center', margin: '0 0 24px' }}>
+                  You have {collection[sellConfirm.id] || 0} of this card
+                </p>
+                
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button
+                    onClick={() => setSellConfirm(null)}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      background: '#374151',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => sellCard(sellConfirm)}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      background: 'linear-gradient(90deg, #10b981, #059669)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Confirm Sell
+                  </button>
                 </div>
               </div>
             </div>
