@@ -35,6 +35,52 @@
     .card-back {
       transform: rotateY(180deg);
     }
+    .card-tooltip {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      margin-bottom: 8px;
+      z-index: 100;
+    }
+    .card-wrapper:hover .card-tooltip {
+      opacity: 1;
+    }
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      cursor: pointer;
+      animation: fadeIn 0.2s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .modal-image {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 12px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      animation: zoomIn 0.2s;
+    }
+    @keyframes zoomIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
   </style>
 </head>
 <body>
@@ -474,6 +520,7 @@
       const [collectionFilter, setCollectionFilter] = useState('all');
       const [packCount, setPackCount] = useState(0);
       const [isLoaded, setIsLoaded] = useState(false);
+      const [enlargedCard, setEnlargedCard] = useState(null);
 
       useEffect(() => {
         const saved = localStorage.getItem('tcg-collection-v3');
@@ -519,6 +566,13 @@
           const card = getRareSlotCard();
           if (card) newPack.push({ ...card, slot: 13 + i });
         }
+        
+        // Preload all images in the pack for instant display
+        newPack.forEach(card => {
+          const img = new Image();
+          img.src = card.image;
+        });
+        
         setPackCards(newPack);
         setRevealedCards([]);
         setAllRevealed(false);
@@ -672,23 +726,32 @@
                     const colors = RARITY_COLORS[card.rarity];
                     
                     return (
-                      <div key={`${card.id}-${index}`} onClick={() => revealCard(index)} style={{ aspectRatio: '2.5/3.5', cursor: 'pointer', perspective: 1000 }}>
+                      <div 
+                        key={`${card.id}-${index}`} 
+                        onClick={() => revealCard(index)} 
+                        style={{ aspectRatio: '2.5/3.5', cursor: 'pointer', perspective: 1000 }}
+                        title={isRevealed ? card.name : ''}
+                      >
                         <div className={`card-flip ${isRevealed ? 'flipped' : ''}`} style={{ width: '100%', height: '100%', position: 'relative' }}>
                           <div className="card-face" style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #6b21a8 0%, #4c1d95 100%)', borderRadius: 12, border: '2px solid #a855f7', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                             <div style={{ fontSize: 48 }}>🎴</div>
                             <p style={{ color: '#c4b5fd', fontSize: 12, marginTop: 8 }}>Click to reveal</p>
                           </div>
                           
-                          <div className="card-face card-back" style={{ width: '100%', height: '100%', borderRadius: 12, border: `2px solid ${colors.border}`, overflow: 'hidden', background: '#1f2937' }}>
+                          <div 
+                            className="card-face card-back" 
+                            style={{ width: '100%', height: '100%', borderRadius: 12, border: `3px solid ${colors.border}`, overflow: 'hidden', background: '#1f2937', cursor: 'zoom-in' }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isRevealed) setEnlargedCard(card);
+                            }}
+                          >
                             <img 
                               src={card.image} 
                               alt={card.name} 
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              loading="lazy"
                             />
-                            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: colors.bg, padding: 8 }}>
-                              <p style={{ color: 'white', fontSize: 11, fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.name}</p>
-                              <p style={{ color: colors.text, fontSize: 10, textTransform: 'capitalize', margin: '2px 0 0' }}>{card.rarity}</p>
-                            </div>
                           </div>
                         </div>
                       </div>
@@ -732,22 +795,37 @@
                   {getCollectionCards().map(card => {
                     const colors = RARITY_COLORS[card.rarity];
                     return (
-                      <div key={card.id} style={{ aspectRatio: '2.5/3.5', borderRadius: 12, border: `2px solid ${colors.border}`, overflow: 'hidden', background: '#1f2937', position: 'relative', opacity: card.owned === 0 ? 0.4 : 1 }}>
+                      <div 
+                        key={card.id} 
+                        style={{ 
+                          aspectRatio: '2.5/3.5', 
+                          borderRadius: 12, 
+                          border: `3px solid ${colors.border}`, 
+                          overflow: 'hidden', 
+                          background: '#1f2937', 
+                          position: 'relative', 
+                          opacity: card.owned === 0 ? 0.4 : 1,
+                          cursor: card.owned > 0 ? 'zoom-in' : 'default'
+                        }}
+                        title={card.owned > 0 ? card.name : '???'}
+                        onClick={() => {
+                          if (card.owned > 0) setEnlargedCard(card);
+                        }}
+                      >
                         {card.owned > 0 ? (
-                          <img src={card.image} alt={card.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img 
+                            src={card.image} 
+                            alt={card.name} 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            loading="lazy"
+                          />
                         ) : (
                           <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111827' }}>
                             <span style={{ fontSize: 48 }}>❓</span>
                           </div>
                         )}
-                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: colors.bg, padding: 8 }}>
-                          <p style={{ color: 'white', fontSize: 11, fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {card.owned > 0 ? card.name : '???'}
-                          </p>
-                          <p style={{ color: colors.text, fontSize: 10, textTransform: 'capitalize', margin: '2px 0 0' }}>{card.rarity}</p>
-                        </div>
                         {card.owned > 0 && (
-                          <div style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: 12, fontWeight: 'bold', padding: '4px 8px', borderRadius: 12 }}>
+                          <div style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.8)', color: 'white', fontSize: 12, fontWeight: 'bold', padding: '4px 8px', borderRadius: 12, border: `2px solid ${colors.border}` }}>
                             x{card.owned}
                           </div>
                         )}
@@ -758,6 +836,56 @@
               </div>
             )}
           </main>
+
+          {/* Enlarged Card Modal */}
+          {enlargedCard && (
+            <div 
+              onClick={() => setEnlargedCard(null)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.9)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000,
+                cursor: 'zoom-out',
+                padding: 32
+              }}
+            >
+              <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
+                <img 
+                  src={enlargedCard.image} 
+                  alt={enlargedCard.name}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '90vh',
+                    objectFit: 'contain',
+                    borderRadius: 16,
+                    border: `4px solid ${RARITY_COLORS[enlargedCard.rarity].border}`,
+                    boxShadow: `0 0 40px ${RARITY_COLORS[enlargedCard.rarity].border}`
+                  }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  bottom: -60,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  background: 'rgba(0,0,0,0.8)',
+                  padding: '12px 24px',
+                  borderRadius: 8,
+                  whiteSpace: 'nowrap',
+                  border: `2px solid ${RARITY_COLORS[enlargedCard.rarity].border}`
+                }}>
+                  <p style={{ color: 'white', fontSize: 18, fontWeight: 'bold', margin: 0 }}>{enlargedCard.name}</p>
+                  <p style={{ color: RARITY_COLORS[enlargedCard.rarity].text, fontSize: 14, textTransform: 'capitalize', margin: '4px 0 0', textAlign: 'center' }}>{enlargedCard.rarity}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
