@@ -525,6 +525,7 @@
       const [marketValues, setMarketValues] = useState({});
       const [priceHistory, setPriceHistory] = useState({});
       const [sellConfirm, setSellConfirm] = useState(null);
+      const [packInventory, setPackInventory] = useState([]);
 
       // Generate weighted random value within range (bell curve distribution)
       const generateWeightedValue = (min, max, peak) => {
@@ -631,6 +632,9 @@
         const savedRations = localStorage.getItem('tcg-rations');
         if (savedRations) setRations(parseFloat(savedRations));
         
+        const savedPacks = localStorage.getItem('tcg-pack-inventory');
+        if (savedPacks) setPackInventory(JSON.parse(savedPacks));
+        
         // Initialize or load market values
         let baseValues = localStorage.getItem('tcg-market-base');
         let currentValues = localStorage.getItem('tcg-market-current');
@@ -701,6 +705,126 @@
         localStorage.setItem('tcg-rations', String(amount));
       }, []);
 
+      const savePackInventory = useCallback((packs) => {
+        localStorage.setItem('tcg-pack-inventory', JSON.stringify(packs));
+      }, []);
+
+      // Generate unique pack ID
+      const generatePackId = () => {
+        return `pack_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      };
+
+      // Buy single pack
+      const buySinglePack = () => {
+        if (rations < 10) return;
+        
+        const newPack = {
+          id: generatePackId(),
+          type: 'single'
+        };
+        
+        const newInventory = [...packInventory, newPack];
+        const newRations = rations - 10;
+        
+        setPackInventory(newInventory);
+        setRations(newRations);
+        savePackInventory(newInventory);
+        saveRations(newRations);
+      };
+
+      // Buy bundle box (8 packs, 1 guaranteed legendary)
+      const buyBundleBox = () => {
+        if (rations < 75) return;
+        
+        const boxId = `bundle_${Date.now()}`;
+        const newPacks = [];
+        
+        // Create 8 packs
+        for (let i = 0; i < 8; i++) {
+          newPacks.push({
+            id: generatePackId(),
+            type: 'bundle',
+            boxId: boxId
+          });
+        }
+        
+        // Randomly assign 1 pack to guarantee legendary
+        const luckyIndex = Math.floor(Math.random() * 8);
+        newPacks[luckyIndex].forceRarity = 'legendary';
+        
+        const newInventory = [...packInventory, ...newPacks];
+        const newRations = rations - 75;
+        
+        setPackInventory(newInventory);
+        setRations(newRations);
+        savePackInventory(newInventory);
+        saveRations(newRations);
+      };
+
+      // Buy booster box (24 packs, 4 guaranteed legendary)
+      const buyBoosterBox = () => {
+        if (rations < 200) return;
+        
+        const boxId = `booster_${Date.now()}`;
+        const newPacks = [];
+        
+        // Create 24 packs
+        for (let i = 0; i < 24; i++) {
+          newPacks.push({
+            id: generatePackId(),
+            type: 'booster',
+            boxId: boxId
+          });
+        }
+        
+        // Randomly assign 4 packs to guarantee legendary
+        const indices = Array.from({length: 24}, (_, i) => i);
+        const shuffled = indices.sort(() => Math.random() - 0.5);
+        for (let i = 0; i < 4; i++) {
+          newPacks[shuffled[i]].forceRarity = 'legendary';
+        }
+        
+        const newInventory = [...packInventory, ...newPacks];
+        const newRations = rations - 200;
+        
+        setPackInventory(newInventory);
+        setRations(newRations);
+        savePackInventory(newInventory);
+        saveRations(newRations);
+      };
+
+      // Buy booster box case (144 packs, 2 guaranteed ultra x rare)
+      const buyBoosterCase = () => {
+        if (rations < 1000) return;
+        
+        const caseId = `case_${Date.now()}`;
+        const newPacks = [];
+        
+        // Create 144 packs (6 boxes × 24 packs)
+        for (let i = 0; i < 144; i++) {
+          newPacks.push({
+            id: generatePackId(),
+            type: 'case',
+            caseId: caseId
+          });
+        }
+        
+        // Randomly assign 2 packs to guarantee ultra x rare
+        const indices = Array.from({length: 144}, (_, i) => i);
+        const shuffled = indices.sort(() => Math.random() - 0.5);
+        for (let i = 0; i < 2; i++) {
+          newPacks[shuffled[i]].forceRarity = 'ultra x rare';
+        }
+        
+        const newInventory = [...packInventory, ...newPacks];
+        const newRations = rations - 1000;
+        
+        setPackInventory(newInventory);
+        setRations(newRations);
+        savePackInventory(newInventory);
+        saveRations(newRations);
+      };
+
       const getRandomCard = (rarity) => {
         const cards = CARDS_BY_RARITY[rarity];
         if (!cards || cards.length === 0) return null;
@@ -716,18 +840,42 @@
       };
 
       const openPack = () => {
+        // Check if we have packs
+        if (packInventory.length === 0) return;
+        
+        // Take the first pack from inventory
+        const packToOpen = packInventory[0];
+        const newInventory = packInventory.slice(1);
+        
         const newPack = [];
+        
+        // Generate 8 commons
         for (let i = 0; i < 8; i++) {
           const card = getRandomCard('common');
           if (card) newPack.push({ ...card, slot: i });
         }
+        
+        // Generate 5 uncommons
         for (let i = 0; i < 5; i++) {
           const card = getRandomCard('uncommon');
           if (card) newPack.push({ ...card, slot: 8 + i });
         }
-        for (let i = 0; i < 2; i++) {
+        
+        // Generate 2 rare+ slots
+        if (packToOpen.forceRarity) {
+          // First slot is guaranteed rarity
+          const guaranteedCard = getRandomCard(packToOpen.forceRarity);
+          if (guaranteedCard) newPack.push({ ...guaranteedCard, slot: 13 });
+          
+          // Second slot is normal rare+
           const card = getRareSlotCard();
-          if (card) newPack.push({ ...card, slot: 13 + i });
+          if (card) newPack.push({ ...card, slot: 14 });
+        } else {
+          // Both slots are normal rare+
+          for (let i = 0; i < 2; i++) {
+            const card = getRareSlotCard();
+            if (card) newPack.push({ ...card, slot: 13 + i });
+          }
         }
         
         // Preload all images in the pack for instant display
@@ -736,6 +884,9 @@
           img.src = card.image;
         });
         
+        // Update state
+        setPackInventory(newInventory);
+        savePackInventory(newInventory);
         setPackCards(newPack);
         setRevealedCards([]);
         setAllRevealed(false);
@@ -840,11 +991,13 @@
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(168,85,247,0.2)', borderRadius: 8, border: '1px solid rgba(168,85,247,0.4)' }}>
                   <img src="./rations.png" alt="Rations" style={{ width: 24, height: 24 }} />
                   <span style={{ color: '#fbbf24', fontSize: 18, fontWeight: 'bold' }}>{rations.toFixed(2)}</span>
-                  <span style={{ color: '#9ca3af', fontSize: 14 }}>R</span>
                 </div>
                 <nav style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => setView('home')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'home' || view === 'opening' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
                   Open Packs
+                </button>
+                <button onClick={() => setView('shop')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'shop' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
+                  Shop
                 </button>
                 <button onClick={() => setView('collection')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'collection' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
                   Collection ({stats.uniqueOwned}/{stats.totalCards})
@@ -858,48 +1011,248 @@
             {view === 'home' && (
               <div style={{ textAlign: 'center' }}>
                 <p style={{ color: '#9ca3af', marginBottom: 8 }}>Packs Opened: {packCount}</p>
-                <p style={{ color: '#9ca3af', marginBottom: 32 }}>Total Cards: {stats.totalOwned}</p>
+                <p style={{ color: '#9ca3af', marginBottom: 8 }}>Total Cards: {stats.totalOwned}</p>
+                <p style={{ color: '#fbbf24', fontSize: 20, fontWeight: 'bold', marginBottom: 32 }}>
+                  Packs Available: {packInventory.length}
+                </p>
                 
-                <div onClick={openPack} style={{ width: 256, height: 384, margin: '0 auto', cursor: 'pointer', position: 'relative' }}>
-                  <img 
-                    src="./cardback.png" 
-                    alt="Booster Pack" 
-                    style={{ 
-                      width: '100%', 
-                      height: '100%', 
-                      objectFit: 'cover', 
-                      borderRadius: 16, 
-                      border: '3px solid rgba(168,85,247,0.5)',
-                      boxShadow: '0 25px 50px -12px rgba(168,85,247,0.5)',
-                      transition: 'transform 0.2s, box-shadow 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                      e.currentTarget.style.boxShadow = '0 30px 60px -12px rgba(168,85,247,0.7)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'scale(1)';
-                      e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(168,85,247,0.5)';
-                    }}
-                  />
-                  <div style={{ position: 'absolute', bottom: 16, left: 0, right: 0, textAlign: 'center', pointerEvents: 'none' }}>
-                    <p style={{ color: 'white', fontSize: 14, margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>Click to Open</p>
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, maxWidth: 700, margin: '48px auto 0' }}>
-                  {[
-                    { rarity: 'common', count: '8 cards' },
-                    { rarity: 'uncommon', count: '5 cards' },
-                    { rarity: 'rare', count: '89%' },
-                    { rarity: 'legendary', count: '10%' },
-                    { rarity: 'ultra x rare', count: '1%' }
-                  ].map(({ rarity, count }) => (
-                    <div key={rarity} style={{ padding: 12, borderRadius: 8, background: RARITY_COLORS[rarity].bg, border: `2px solid ${RARITY_COLORS[rarity].border}` }}>
-                      <p style={{ color: RARITY_COLORS[rarity].text, fontSize: 12, fontWeight: 600, textTransform: 'capitalize', margin: 0 }}>{rarity}</p>
-                      <p style={{ color: 'white', fontSize: 18, fontWeight: 'bold', margin: '4px 0 0' }}>{count}</p>
+                {packInventory.length > 0 ? (
+                  <div onClick={openPack} style={{ width: 256, height: 384, margin: '0 auto', cursor: 'pointer', position: 'relative' }}>
+                    <img 
+                      src="./cardback.png" 
+                      alt="Booster Pack" 
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover', 
+                        borderRadius: 16, 
+                        border: '3px solid rgba(168,85,247,0.5)',
+                        boxShadow: '0 25px 50px -12px rgba(168,85,247,0.5)',
+                        transition: 'transform 0.2s, box-shadow 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.boxShadow = '0 30px 60px -12px rgba(168,85,247,0.7)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(168,85,247,0.5)';
+                      }}
+                    />
+                    <div style={{ position: 'absolute', bottom: 16, left: 0, right: 0, textAlign: 'center', pointerEvents: 'none' }}>
+                      <p style={{ color: 'white', fontSize: 14, margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>Click to Open</p>
                     </div>
-                  ))}
+                  </div>
+                ) : (
+                  <div style={{ width: 256, height: 384, margin: '0 auto', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(107,114,128,0.2)', borderRadius: 16, border: '3px dashed rgba(168,85,247,0.5)' }}>
+                    <p style={{ color: '#9ca3af', fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>No Packs Available</p>
+                    <button 
+                      onClick={() => setView('shop')}
+                      style={{
+                        padding: '12px 24px',
+                        background: 'linear-gradient(90deg, #9333ea, #ec4899)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        fontSize: 16,
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Visit Shop
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {view === 'shop' && (
+              <div>
+                <h2 style={{ color: 'white', fontSize: 28, fontWeight: 'bold', marginBottom: 32, textAlign: 'center' }}>
+                  Shop
+                </h2>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, maxWidth: 1200 }}>
+                  {/* Single Pack */}
+                  <div style={{
+                    background: 'rgba(31,41,55,0.8)',
+                    borderRadius: 16,
+                    padding: 24,
+                    border: '2px solid rgba(168,85,247,0.3)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                  }}>
+                    <img 
+                      src="./cardback.png" 
+                      alt="Single Pack"
+                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
+                    />
+                    <h3 style={{ color: 'white', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Single Pack</h3>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 16px', textAlign: 'center' }}>15 cards</p>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                      <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>10</span>
+                    </div>
+                    
+                    <button
+                      onClick={buySinglePack}
+                      disabled={rations < 10}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: rations >= 10 ? 'linear-gradient(90deg, #9333ea, #ec4899)' : '#374151',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: rations >= 10 ? 'pointer' : 'not-allowed',
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        opacity: rations >= 10 ? 1 : 0.5
+                      }}
+                    >
+                      {rations >= 10 ? 'Buy Pack' : 'Not Enough Rations'}
+                    </button>
+                  </div>
+
+                  {/* Bundle Box */}
+                  <div style={{
+                    background: 'rgba(31,41,55,0.8)',
+                    borderRadius: 16,
+                    padding: 24,
+                    border: '2px solid rgba(16,185,129,0.5)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                  }}>
+                    <img 
+                      src="./cardback.png" 
+                      alt="Bundle Box"
+                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
+                    />
+                    <h3 style={{ color: '#10b981', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Bundle Box</h3>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>8 packs (120 cards)</p>
+                    <p style={{ color: '#10b981', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
+                      ⭐ 1 Legendary Guaranteed
+                    </p>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                      <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>75</span>
+                    </div>
+                    
+                    <button
+                      onClick={buyBundleBox}
+                      disabled={rations < 75}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: rations >= 75 ? 'linear-gradient(90deg, #10b981, #059669)' : '#374151',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: rations >= 75 ? 'pointer' : 'not-allowed',
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        opacity: rations >= 75 ? 1 : 0.5
+                      }}
+                    >
+                      {rations >= 75 ? 'Buy Bundle' : 'Not Enough Rations'}
+                    </button>
+                  </div>
+
+                  {/* Booster Box */}
+                  <div style={{
+                    background: 'rgba(31,41,55,0.8)',
+                    borderRadius: 16,
+                    padding: 24,
+                    border: '2px solid rgba(59,130,246,0.5)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                  }}>
+                    <img 
+                      src="./cardback.png" 
+                      alt="Booster Box"
+                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
+                    />
+                    <h3 style={{ color: '#3b82f6', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Booster Box</h3>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>24 packs (360 cards)</p>
+                    <p style={{ color: '#3b82f6', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
+                      ⭐ 4 Legendaries Guaranteed
+                    </p>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                      <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>200</span>
+                    </div>
+                    
+                    <button
+                      onClick={buyBoosterBox}
+                      disabled={rations < 200}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: rations >= 200 ? 'linear-gradient(90deg, #3b82f6, #2563eb)' : '#374151',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: rations >= 200 ? 'pointer' : 'not-allowed',
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        opacity: rations >= 200 ? 1 : 0.5
+                      }}
+                    >
+                      {rations >= 200 ? 'Buy Box' : 'Not Enough Rations'}
+                    </button>
+                  </div>
+
+                  {/* Booster Box Case */}
+                  <div style={{
+                    background: 'rgba(31,41,55,0.8)',
+                    borderRadius: 16,
+                    padding: 24,
+                    border: '2px solid rgba(251,191,36,0.5)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                  }}>
+                    <img 
+                      src="./cardback.png" 
+                      alt="Booster Box Case"
+                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
+                    />
+                    <h3 style={{ color: '#fbbf24', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Booster Case</h3>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>144 packs (2160 cards)</p>
+                    <p style={{ color: '#fbbf24', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
+                      🌟 2 Ultra X Rares Guaranteed
+                    </p>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                      <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>1000</span>
+                    </div>
+                    
+                    <button
+                      onClick={buyBoosterCase}
+                      disabled={rations < 1000}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: rations >= 1000 ? 'linear-gradient(90deg, #fbbf24, #f59e0b)' : '#374151',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: rations >= 1000 ? 'pointer' : 'not-allowed',
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        opacity: rations >= 1000 ? 1 : 0.5
+                      }}
+                    >
+                      {rations >= 1000 ? 'Buy Case' : 'Not Enough Rations'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
