@@ -81,7 +81,74 @@
       from { transform: scale(0.8); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
     }
-  </style>
+  
+
+/* ---- Holo / Foil visuals ---- */
+@keyframes holoSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes holoShimmer {
+  0% { opacity: 0.10; transform: translateX(-20%) skewX(-10deg); }
+  50% { opacity: 0.25; transform: translateX(20%) skewX(-10deg); }
+  100% { opacity: 0.10; transform: translateX(-20%) skewX(-10deg); }
+}
+
+.foil-glow {
+  position: relative;
+}
+
+.foil-glow::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: 18px;
+  background: conic-gradient(from 180deg, rgba(255,0,128,0.55), rgba(0,255,255,0.55), rgba(255,255,0,0.55), rgba(255,0,128,0.55));
+  filter: blur(10px);
+  opacity: 0.85;
+  z-index: 0;
+  animation: holoSpin 3.5s linear infinite;
+  pointer-events: none;
+}
+
+.foil-glow::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  background: linear-gradient(120deg, rgba(255,255,255,0.00), rgba(255,255,255,0.16), rgba(255,255,255,0.00));
+  opacity: 0.18;
+  z-index: 1;
+  animation: holoShimmer 2.3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.foil-glow > * {
+  position: relative;
+  z-index: 2;
+}
+
+.holo-badge {
+  background: linear-gradient(90deg, rgba(255,0,128,0.35), rgba(0,255,255,0.35), rgba(255,255,0,0.35));
+  border: 1px solid rgba(255,255,255,0.16);
+  box-shadow: 0 0 18px rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.95);
+}
+
+.rainbow-text {
+  background: linear-gradient(90deg, #ff3ea5, #2ee9ff, #ffe155, #ff3ea5);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 10px rgba(255,255,255,0.20));
+}
+
+.holo-button {
+  background: linear-gradient(90deg, #ff3ea5, #2ee9ff, #ffe155, #ff3ea5);
+  box-shadow: 0 0 18px rgba(255,255,255,0.18);
+}
+</style>
 </head>
 <body>
   <div id="root"></div>
@@ -527,6 +594,9 @@
       const [sellConfirm, setSellConfirm] = useState(null);
       const [packInventory, setPackInventory] = useState([]);
 
+      const [purchaseConfirm, setPurchaseConfirm] = useState(null);
+      const [holoMultipliers, setHoloMultipliers] = useState({});
+
       // Generate weighted random value within range (bell curve distribution)
       const generateWeightedValue = (min, max, peak) => {
         // Use 3 random numbers averaged for bell curve effect
@@ -578,7 +648,46 @@
           values[card.id] = value;
         });
         return values;
+      }
+
+      // Generate per-card holo multipliers (range 1.10x - 2.50x, bell-curved around 1.50x)
+      const generateHoloMultipliers = () => {
+        const multipliers = {};
+        ALL_CARDS.forEach(card => {
+          multipliers[card.id] = generateWeightedValue(1.10, 2.50, 1.50);
+        });
+        return multipliers;
       };
+
+      const getBaseMarketValue = (cardId) => {
+        return marketValues[cardId] || 1;
+      };
+
+      const getHoloMultiplier = (cardId) => {
+        return holoMultipliers[cardId] || 1.50;
+      };
+
+      const getHoloMarketValue = (cardId) => {
+        return getBaseMarketValue(cardId) * getHoloMultiplier(cardId);
+      };
+
+      const normalizeCollection = (raw) => {
+        const out = {};
+        if (!raw || typeof raw !== 'object') return out;
+        Object.entries(raw).forEach(([id, val]) => {
+          if (typeof val === 'number') {
+            if (val > 0) out[id] = { normal: val, holo: 0 };
+            return;
+          }
+          if (val && typeof val === 'object') {
+            const normal = Math.max(0, Number(val.normal ?? 0));
+            const holo = Math.max(0, Number(val.holo ?? 0));
+            if (normal > 0 || holo > 0) out[id] = { normal, holo };
+          }
+        });
+        return out;
+      };
+;
 
       // Apply daily market fluctuation
       const fluctuateMarket = (baseValues, currentValues, breakoutCards) => {
@@ -624,7 +733,13 @@
       useEffect(() => {
         // Load saved data
         const saved = localStorage.getItem('tcg-collection-v3');
-        if (saved) setCollection(JSON.parse(saved));
+        if (saved) {
+          try {
+            setCollection(normalizeCollection(JSON.parse(saved)));
+          } catch (e) {
+            setCollection({});
+          }
+        }
         
         const savedCount = localStorage.getItem('tcg-pack-count-v3');
         if (savedCount) setPackCount(parseInt(savedCount, 10));
@@ -643,6 +758,29 @@
         let history = localStorage.getItem('tcg-price-history');
         
         const today = new Date().toDateString();
+
+        // Initialize or load holo multipliers (foil premiums)
+        let holoMap = {};
+        const savedHolo = localStorage.getItem('tcg-holo-multipliers');
+        if (!savedHolo) {
+          holoMap = generateHoloMultipliers();
+          localStorage.setItem('tcg-holo-multipliers', JSON.stringify(holoMap));
+        } else {
+          try {
+            holoMap = JSON.parse(savedHolo) || {};
+          } catch (e) {
+            holoMap = {};
+          }
+          // Fill any missing card IDs (in case new cards were added)
+          let didPatch = false;
+          ALL_CARDS.forEach(card => {
+            if (!holoMap[card.id]) {
+              holoMap[card.id] = generateWeightedValue(1.10, 2.50, 1.50);
+              didPatch = true;
+            }
+          });
+          if (didPatch) localStorage.setItem('tcg-holo-multipliers', JSON.stringify(holoMap));
+        }
         
         // First time setup
         if (!baseValues) {
@@ -690,6 +828,7 @@
         
         setMarketValues(currentValues);
         setPriceHistory(history);
+        setHoloMultipliers(holoMap);
         setIsLoaded(true);
       }, []);
 
@@ -823,7 +962,29 @@
         setRations(newRations);
         savePackInventory(newInventory);
         saveRations(newRations);
+      }
+
+      const confirmPurchase = () => {
+        if (!purchaseConfirm) return;
+        switch (purchaseConfirm.type) {
+          case 'single':
+            buySinglePack();
+            break;
+          case 'bundle':
+            buyBundleBox();
+            break;
+          case 'booster':
+            buyBoosterBox();
+            break;
+          case 'case':
+            buyBoosterCase();
+            break;
+          default:
+            break;
+        }
+        setPurchaseConfirm(null);
       };
+;
 
       const getRandomCard = (rarity) => {
         const cards = CARDS_BY_RARITY[rarity];
@@ -837,53 +998,69 @@
         if (roll < 1) return getRandomCard('ultra x rare');
         if (roll < 11) return getRandomCard('legendary');
         return getRandomCard('rare');
-      };
+      }
+
+      // Foil slot distribution:
+      // 47% common, 34% uncommon, 13% rare, 5% legendary, 1% ultra x rare
+      const getFoilSlotCard = () => {
+        const roll = Math.random() * 100;
+        if (roll < 47) return getRandomCard('common');
+        if (roll < 81) return getRandomCard('uncommon');
+        if (roll < 94) return getRandomCard('rare');
+        if (roll < 99) return getRandomCard('legendary');
+        return getRandomCard('ultra x rare');
+      }
+;
 
       const openPack = () => {
         // Check if we have packs
         if (packInventory.length === 0) return;
-        
+
         // Take the first pack from inventory
         const packToOpen = packInventory[0];
         const newInventory = packInventory.slice(1);
-        
+
         const newPack = [];
-        
-        // Generate 8 commons
-        for (let i = 0; i < 8; i++) {
+
+        // Generate 7 commons
+        for (let i = 0; i < 7; i++) {
           const card = getRandomCard('common');
           if (card) newPack.push({ ...card, slot: i });
         }
-        
+
         // Generate 5 uncommons
         for (let i = 0; i < 5; i++) {
           const card = getRandomCard('uncommon');
-          if (card) newPack.push({ ...card, slot: 8 + i });
+          if (card) newPack.push({ ...card, slot: 7 + i });
         }
-        
+
         // Generate 2 rare+ slots
         if (packToOpen.forceRarity) {
           // First slot is guaranteed rarity
           const guaranteedCard = getRandomCard(packToOpen.forceRarity);
-          if (guaranteedCard) newPack.push({ ...guaranteedCard, slot: 13 });
-          
+          if (guaranteedCard) newPack.push({ ...guaranteedCard, slot: 12 });
+
           // Second slot is normal rare+
           const card = getRareSlotCard();
-          if (card) newPack.push({ ...card, slot: 14 });
+          if (card) newPack.push({ ...card, slot: 13 });
         } else {
           // Both slots are normal rare+
           for (let i = 0; i < 2; i++) {
             const card = getRareSlotCard();
-            if (card) newPack.push({ ...card, slot: 13 + i });
+            if (card) newPack.push({ ...card, slot: 12 + i });
           }
         }
-        
+
+        // Foil (holo) slot
+        const foilCard = getFoilSlotCard();
+        if (foilCard) newPack.push({ ...foilCard, slot: 14, isHolo: true, isFoilSlot: true });
+
         // Preload all images in the pack for instant display
         newPack.forEach(card => {
           const img = new Image();
           img.src = card.image;
         });
-        
+
         // Update state
         setPackInventory(newInventory);
         savePackInventory(newInventory);
@@ -903,7 +1080,10 @@
         const card = packCards[index];
         if (card) {
           const newCollection = { ...collection };
-          newCollection[card.id] = (newCollection[card.id] || 0) + 1;
+          const entry = newCollection[card.id] || { normal: 0, holo: 0 };
+          if (card.isHolo) entry.holo += 1;
+          else entry.normal += 1;
+          newCollection[card.id] = entry;
           setCollection(newCollection);
           saveCollection(newCollection);
         }
@@ -914,7 +1094,10 @@
         const newCollection = { ...collection };
         packCards.forEach((card, index) => {
           if (!revealedCards.includes(index)) {
-            newCollection[card.id] = (newCollection[card.id] || 0) + 1;
+            const entry = newCollection[card.id] || { normal: 0, holo: 0 };
+            if (card.isHolo) entry.holo += 1;
+            else entry.normal += 1;
+            newCollection[card.id] = entry;
           }
         });
         setRevealedCards(packCards.map((_, i) => i));
@@ -925,27 +1108,33 @@
 
       const getCollectionStats = () => {
         const totalCards = ALL_CARDS.length;
-        const uniqueOwned = Object.keys(collection).length;
-        const totalOwned = Object.values(collection).reduce((a, b) => a + b, 0);
+        const uniqueOwned = Object.entries(collection).filter(([_, e]) => ((e?.normal || 0) + (e?.holo || 0)) > 0).length;
+        const totalOwned = Object.values(collection).reduce((sum, e) => sum + (e?.normal || 0) + (e?.holo || 0), 0);
         const byRarity = {};
         for (const rarity of RARITY_ORDER) {
           const rarityCards = CARDS_BY_RARITY[rarity] || [];
-          const owned = rarityCards.filter(c => collection[c.id]).length;
+          const owned = rarityCards.filter(c => {
+            const e = collection[c.id];
+            return e && ((e.normal || 0) + (e.holo || 0)) > 0;
+          }).length;
           byRarity[rarity] = { owned, total: rarityCards.length };
         }
         return { uniqueOwned, totalCards, totalOwned, byRarity };
       };
 
-      const sellCard = (card) => {
-        if (!collection[card.id] || collection[card.id] === 0) return;
-        
-        const marketValue = marketValues[card.id] || 1;
+      const sellNormalCard = (cardId) => {
+        const entry = collection[cardId];
+        if (!entry || (entry.normal || 0) === 0) return;
+
+        const marketValue = getBaseMarketValue(cardId);
         const newCollection = { ...collection };
-        newCollection[card.id] = newCollection[card.id] - 1;
-        if (newCollection[card.id] === 0) delete newCollection[card.id];
-        
+        const nextEntry = { ...(newCollection[cardId] || { normal: 0, holo: 0 }) };
+        nextEntry.normal = Math.max(0, (nextEntry.normal || 0) - 1);
+        if ((nextEntry.normal || 0) + (nextEntry.holo || 0) === 0) delete newCollection[cardId];
+        else newCollection[cardId] = nextEntry;
+
         const newRations = rations + marketValue;
-        
+
         setCollection(newCollection);
         setRations(newRations);
         saveCollection(newCollection);
@@ -953,14 +1142,42 @@
         setSellConfirm(null);
       };
 
+      const sellHoloCard = (cardId) => {
+        const entry = collection[cardId];
+        if (!entry || (entry.holo || 0) === 0) return;
+
+        const marketValue = getHoloMarketValue(cardId);
+        const newCollection = { ...collection };
+        const nextEntry = { ...(newCollection[cardId] || { normal: 0, holo: 0 }) };
+        nextEntry.holo = Math.max(0, (nextEntry.holo || 0) - 1);
+        if ((nextEntry.normal || 0) + (nextEntry.holo || 0) === 0) delete newCollection[cardId];
+        else newCollection[cardId] = nextEntry;
+
+        const newRations = rations + marketValue;
+
+        setCollection(newCollection);
+        setRations(newRations);
+        saveCollection(newCollection);
+        saveRations(newRations);
+        setSellConfirm(null);
+      };;
+
       const getCollectionCards = () => {
         let cards = [...ALL_CARDS];
         if (collectionFilter !== 'all') cards = cards.filter(c => c.rarity === collectionFilter);
-        return cards.map(card => ({
-          ...card,
-          image: getImageUrl(card),
-          owned: collection[card.id] || 0
-        })).sort((a, b) => {
+        return cards.map(card => {
+          const entry = collection[card.id] || { normal: 0, holo: 0 };
+          const ownedNormal = entry.normal || 0;
+          const ownedHolo = entry.holo || 0;
+          const owned = ownedNormal + ownedHolo;
+          return {
+            ...card,
+            image: getImageUrl(card),
+            owned,
+            ownedNormal,
+            ownedHolo
+          };
+        }).sort((a, b) => {
           if (a.owned > 0 && b.owned === 0) return -1;
           if (b.owned > 0 && a.owned === 0) return 1;
           return 0;
@@ -1097,7 +1314,7 @@
                     </div>
                     
                     <button
-                      onClick={buySinglePack}
+                      onClick={() => setPurchaseConfirm({ type: 'single', title: 'Single Pack', cost: 10, details: '15 cards: 7 Common, 5 Uncommon, 2 Rare+ (89% Rare / 10% Legendary / 1% Ultra X Rare), 1 Holo slot (47%C / 34%U / 13%R / 5%L / 1% UXR).' })}
                       disabled={rations < 10}
                       style={{
                         width: '100%',
@@ -1143,7 +1360,7 @@
                     </div>
                     
                     <button
-                      onClick={buyBundleBox}
+                      onClick={() => setPurchaseConfirm({ type: 'bundle', title: 'Bundle Box (8 Packs)', cost: 75, details: '8 packs. One pack is guaranteed a Legendary in a rare slot.' })}
                       disabled={rations < 75}
                       style={{
                         width: '100%',
@@ -1189,7 +1406,7 @@
                     </div>
                     
                     <button
-                      onClick={buyBoosterBox}
+                      onClick={() => setPurchaseConfirm({ type: 'booster', title: 'Booster Box (24 Packs)', cost: 200, details: '24 packs. One pack is guaranteed an Ultra X Rare in a rare slot.' })}
                       disabled={rations < 200}
                       style={{
                         width: '100%',
@@ -1235,7 +1452,7 @@
                     </div>
                     
                     <button
-                      onClick={buyBoosterCase}
+                      onClick={() => setPurchaseConfirm({ type: 'case', title: 'Booster Case (144 Packs)', cost: 1000, details: '144 packs (6 boxes). Two packs are guaranteed an Ultra X Rare in a rare slot.' })}
                       disabled={rations < 1000}
                       style={{
                         width: '100%',
@@ -1287,7 +1504,7 @@
                       <div 
                         key={`${card.id}-${index}`} 
                         onClick={() => revealCard(index)} 
-                        style={{ aspectRatio: '2.5/3.5', cursor: 'pointer', perspective: 1000 }}
+                        className={card.isHolo ? 'foil-glow' : ''} style={{ aspectRatio: '2.5/3.5', cursor: 'pointer', perspective: 1000, position: 'relative', overflow: 'visible' }}
                         title={isRevealed ? card.name : ''}
                       >
                         <div className={`card-flip ${isRevealed ? 'flipped' : ''}`} style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -1363,7 +1580,7 @@
                     let priceChange = 0;
                     if (history.length >= 2) {
                       const prev = history[history.length - 2].value;
-                      const curr = marketValue;
+                      const curr = baseValue;
                       priceChange = ((curr - prev) / prev) * 100;
                     }
                     
@@ -1403,9 +1620,18 @@
                         
                         {card.owned > 0 && (
                           <>
-                            {/* Count badge */}
-                            <div style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.8)', color: 'white', fontSize: 12, fontWeight: 'bold', padding: '4px 8px', borderRadius: 12, border: `2px solid ${colors.border}` }}>
-                              x{card.owned}
+                            {/* Count badges */}
+                            <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 6, zIndex: 5 }}>
+                              {card.ownedNormal > 0 && (
+                                <div style={{ background: 'rgba(0,0,0,0.8)', padding: '4px 8px', borderRadius: 12, border: `2px solid ${colors.border}` }}>
+                                  x{card.ownedNormal}
+                                </div>
+                              )}
+                              {card.ownedHolo > 0 && (
+                                <div className="holo-badge" style={{ padding: '4px 8px', borderRadius: 12 }}>
+                                  x{card.ownedHolo}
+                                </div>
+                              )}
                             </div>
                             
                             {/* Market value + change */}
@@ -1425,7 +1651,7 @@
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSellConfirm({ ...card, marketValue });
+                                setSellConfirm({ id: card.id, name: card.name, rarity: card.rarity });
                               }}
                               style={{
                                 position: 'absolute',
@@ -1509,29 +1735,62 @@
                     {enlargedCard.rarity}
                   </p>
                   
-                  {/* Current Market Value */}
-                  <div style={{ marginBottom: 24 }}>
-                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 8px' }}>Current Market Value</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <img src="./rations.png" alt="R" style={{ width: 32, height: 32 }} />
-                      <span style={{ color: '#fbbf24', fontSize: 32, fontWeight: 'bold' }}>
-                        {(enlargedCard.marketValue || marketValues[enlargedCard.id] || 1).toFixed(2)}
-                      </span>
-                      <span style={{ color: '#9ca3af', fontSize: 20 }}>R</span>
-                    </div>
-                    {enlargedCard.priceChange !== 0 && enlargedCard.priceChange !== undefined && (
-                      <p style={{ 
-                        color: enlargedCard.priceChange > 0 ? '#10b981' : '#ef4444', 
-                        fontSize: 14, 
-                        fontWeight: 'bold',
-                        margin: '8px 0 0' 
-                      }}>
-                        {enlargedCard.priceChange > 0 ? '↑' : '↓'} {Math.abs(enlargedCard.priceChange).toFixed(2)}% vs yesterday
-                      </p>
-                    )}
-                  </div>
-                  
-                  {/* Price History Graph */}
+                  {/* Market Values */}
+                  {(() => {
+                    const baseValue = (enlargedCard.marketValue || marketValues[enlargedCard.id] || 1);
+                    const holoMult = getHoloMultiplier(enlargedCard.id);
+                    const holoValue = baseValue * holoMult;
+                    const isHolo = !!enlargedCard.isHolo;
+
+                    return (
+                      <div style={{ marginBottom: 24 }}>
+                        <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 10px' }}>Market Value</p>
+
+                        <div style={{ display: 'grid', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 12 }}>
+                            <div style={{ color: '#e5e7eb', fontSize: 13 }}>Non-Holo</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <img src="./rations.png" alt="R" style={{ width: 22, height: 22 }} />
+                              <span style={{ color: '#fbbf24', fontSize: 22, fontWeight: 'bold' }}>{baseValue.toFixed(2)}</span>
+                              <span style={{ color: '#9ca3af', fontSize: 16 }}>R</span>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 12 }}>
+                            <div style={{ color: '#e5e7eb', fontSize: 13 }}>
+                              Holo <span style={{ color: '#9ca3af', fontSize: 12 }}>({holoMult.toFixed(2)}×)</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <img src="./rations.png" alt="R" style={{ width: 22, height: 22 }} />
+                              <span className="rainbow-text" style={{ fontSize: 22, fontWeight: 'bold' }}>{holoValue.toFixed(2)}</span>
+                              <span style={{ color: '#9ca3af', fontSize: 16 }}>R</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {isHolo && (
+                          <div style={{ marginTop: 10, fontSize: 12, color: '#d1d5db' }}>
+                            <span className="holo-badge" style={{ padding: '3px 8px', borderRadius: 999, marginRight: 8 }}>HOLO</span>
+                            This copy sells at the holo price.
+                          </div>
+                        )}
+
+                        {enlargedCard.priceChange !== 0 && enlargedCard.priceChange !== undefined && (
+                          <p style={{ 
+                            color: enlargedCard.priceChange > 0 ? '#10b981' : '#ef4444', 
+                            fontSize: 14, 
+                            fontWeight: 'bold',
+                            margin: '10px 0 0' 
+                          }}>
+                            {enlargedCard.priceChange > 0 ? '↑' : '↓'} {Math.abs(enlargedCard.priceChange).toFixed(2)}% vs yesterday
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+
+{/* Price History Graph */}
                   {priceHistory[enlargedCard.id] && priceHistory[enlargedCard.id].length > 1 && (
                     <div>
                       <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 12px' }}>
@@ -1611,10 +1870,14 @@
             </div>
           )}
           
-          {/* Sell Confirmation Modal */}
-          {sellConfirm && (
+          
+          
+          
+
+          {/* Purchase Confirmation Modal */}
+          {purchaseConfirm && (
             <div
-              onClick={() => setSellConfirm(null)}
+              onClick={() => setPurchaseConfirm(null)}
               style={{
                 position: 'fixed',
                 top: 0,
@@ -1632,44 +1895,58 @@
               <div
                 onClick={(e) => e.stopPropagation()}
                 style={{
-                  background: '#1f2937',
+                  background: '#111827',
+                  border: '1px solid #374151',
                   borderRadius: 16,
-                  padding: 32,
-                  maxWidth: 400,
-                  border: `3px solid ${RARITY_COLORS[sellConfirm.rarity].border}`,
-                  boxShadow: `0 0 30px ${RARITY_COLORS[sellConfirm.rarity].border}`
+                  padding: 24,
+                  maxWidth: 420,
+                  width: '100%'
                 }}
               >
-                <h2 style={{ color: 'white', fontSize: 24, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
-                  Sell Card?
+                <h2 style={{ fontSize: 18, margin: '0 0 10px', textAlign: 'center' }}>
+                  Confirm Purchase
                 </h2>
-                
-                <div style={{ background: '#111827', borderRadius: 12, padding: 16, marginBottom: 24 }}>
-                  <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 8px' }}>Card</p>
-                  <p style={{ color: 'white', fontSize: 18, fontWeight: 'bold', margin: 0 }}>{sellConfirm.name}</p>
-                  <p style={{ color: RARITY_COLORS[sellConfirm.rarity].text, fontSize: 14, textTransform: 'capitalize', margin: '4px 0 0' }}>
-                    {sellConfirm.rarity}
-                  </p>
-                </div>
-                
-                <div style={{ background: '#111827', borderRadius: 12, padding: 16, marginBottom: 24 }}>
-                  <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 8px' }}>You will receive</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <img src="./rations.png" alt="R" style={{ width: 28, height: 28 }} />
-                    <span style={{ color: '#10b981', fontSize: 28, fontWeight: 'bold' }}>
-                      +{sellConfirm.marketValue.toFixed(2)}
-                    </span>
-                    <span style={{ color: '#9ca3af', fontSize: 18 }}>R</span>
+
+                <div style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 12,
+                  padding: 14,
+                  marginBottom: 14
+                }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: 6 }}>
+                    {purchaseConfirm.title}
                   </div>
+                  {purchaseConfirm.details && (
+                    <div style={{ color: '#9ca3af', fontSize: 12, lineHeight: 1.4 }}>
+                      {purchaseConfirm.details}
+                    </div>
+                  )}
                 </div>
-                
-                <p style={{ color: '#9ca3af', fontSize: 12, textAlign: 'center', margin: '0 0 24px' }}>
-                  You have {collection[sellConfirm.id] || 0} of this card
-                </p>
-                
+
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 8
+                }}>
+                  <div style={{ color: '#9ca3af', fontSize: 12 }}>Cost</div>
+                  <div style={{ fontWeight: 'bold' }}>{purchaseConfirm.cost.toFixed(2)} R</div>
+                </div>
+
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 18
+                }}>
+                  <div style={{ color: '#9ca3af', fontSize: 12 }}>Your balance</div>
+                  <div style={{ fontWeight: 'bold' }}>{rations.toFixed(2)} R</div>
+                </div>
+
                 <div style={{ display: 'flex', gap: 12 }}>
                   <button
-                    onClick={() => setSellConfirm(null)}
+                    onClick={() => setPurchaseConfirm(null)}
                     style={{
                       flex: 1,
                       padding: '12px',
@@ -1684,27 +1961,205 @@
                   >
                     Cancel
                   </button>
+
                   <button
-                    onClick={() => sellCard(sellConfirm)}
+                    onClick={confirmPurchase}
+                    disabled={rations < purchaseConfirm.cost}
                     style={{
                       flex: 1,
                       padding: '12px',
-                      background: 'linear-gradient(90deg, #10b981, #059669)',
-                      color: 'white',
-                      border: 'none',
+                      background: rations < purchaseConfirm.cost ? '#1f2937' : 'linear-gradient(90deg, #3b82f6, #6366f1)',
+                      color: rations < purchaseConfirm.cost ? '#6b7280' : 'white',
+                      border: rations < purchaseConfirm.cost ? '1px solid rgba(255,255,255,0.10)' : 'none',
                       borderRadius: 8,
-                      cursor: 'pointer',
+                      cursor: rations < purchaseConfirm.cost ? 'not-allowed' : 'pointer',
                       fontSize: 14,
                       fontWeight: 'bold'
                     }}
                   >
-                    Confirm Sell
+                    Confirm Purchase
                   </button>
                 </div>
               </div>
             </div>
           )}
-        </div>
+{/* Sell Confirmation Modal */}
+          {sellConfirm && (() => {
+            const entry = collection[sellConfirm.id] || { normal: 0, holo: 0 };
+            const baseValue = getBaseMarketValue(sellConfirm.id);
+            const holoMult = getHoloMultiplier(sellConfirm.id);
+            const holoValue = baseValue * holoMult;
+            const hasNormal = (entry.normal || 0) > 0;
+            const hasHolo = (entry.holo || 0) > 0;
+
+            return (
+              <div
+                onClick={() => setSellConfirm(null)}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(0, 0, 0, 0.85)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1100,
+                  padding: 32
+                }}
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: '#111827',
+                    border: '1px solid #374151',
+                    borderRadius: 16,
+                    padding: 24,
+                    maxWidth: 420,
+                    width: '100%'
+                  }}
+                >
+                  <h2 style={{ fontSize: 18, margin: '0 0 8px', textAlign: 'center' }}>
+                    Sell Card
+                  </h2>
+
+                  <div style={{ margin: '0 0 14px', textAlign: 'center' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: 4 }}>{sellConfirm.name}</div>
+                    <div
+                      style={{
+                        display: 'inline-block',
+                        padding: '4px 10px',
+                        borderRadius: 999,
+                        background: 'rgba(255, 255, 255, 0.07)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        color: RARITY_COLORS[sellConfirm.rarity] || '#9ca3af',
+                        fontSize: 12,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em'
+                      }}
+                    >
+                      {sellConfirm.rarity}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+                    {(entry.normal || 0) > 0 && (
+                      <span style={{
+                        padding: '6px 10px',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        borderRadius: 10,
+                        fontSize: 12,
+                        color: '#e5e7eb'
+                      }}>
+                        Normal: x{entry.normal || 0}
+                      </span>
+                    )}
+                    {(entry.holo || 0) > 0 && (
+                      <span className="holo-badge" style={{
+                        padding: '6px 10px',
+                        borderRadius: 10,
+                        fontSize: 12,
+                        fontWeight: 'bold'
+                      }}>
+                        Holo: x{entry.holo || 0}
+                      </span>
+                    )}
+                    {(entry.normal || 0) === 0 && (entry.holo || 0) === 0 && (
+                      <span style={{ color: '#9ca3af', fontSize: 12 }}>You don’t own this card</span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'grid', gap: 10, marginBottom: 18 }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: 12,
+                      padding: 12
+                    }}>
+                      <div style={{ color: '#9ca3af', fontSize: 12 }}>Normal market value</div>
+                      <div style={{ fontWeight: 'bold' }}>{baseValue.toFixed(2)} R</div>
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: 12,
+                      padding: 12
+                    }}>
+                      <div style={{ color: '#9ca3af', fontSize: 12 }}>Holo market value <span style={{ opacity: 0.8 }}>({holoMult.toFixed(2)}×)</span></div>
+                      <div className="rainbow-text" style={{ fontWeight: 'bold' }}>{holoValue.toFixed(2)} R</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => setSellConfirm(null)}
+                      style={{
+                        flex: 1,
+                        minWidth: 110,
+                        padding: '12px',
+                        background: '#374151',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        fontSize: 14,
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      onClick={() => sellNormalCard(sellConfirm.id)}
+                      disabled={!hasNormal}
+                      style={{
+                        flex: 1,
+                        minWidth: 140,
+                        padding: '12px',
+                        background: hasNormal ? 'linear-gradient(90deg, #10b981, #059669)' : '#1f2937',
+                        color: hasNormal ? 'white' : '#6b7280',
+                        border: hasNormal ? 'none' : '1px solid rgba(255,255,255,0.10)',
+                        borderRadius: 8,
+                        cursor: hasNormal ? 'pointer' : 'not-allowed',
+                        fontSize: 14,
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Sell Normal
+                    </button>
+
+                    {hasHolo && (
+                      <button
+                        onClick={() => sellHoloCard(sellConfirm.id)}
+                        className="holo-button"
+                        style={{
+                          flex: 1,
+                          minWidth: 140,
+                          padding: '12px',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          fontWeight: 'bold',
+                          color: 'white',
+                          border: 'none'
+                        }}
+                      >
+                        Sell Holo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}</div>
       );
     }
 
