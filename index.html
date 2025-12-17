@@ -1182,9 +1182,9 @@
         saveCollection(newCollection);
         saveRations(newRations);
         setSellConfirm(null);
-      };;
+      };
 
-            const getCollectionCards = () => {
+      const getCollectionCards = () => {
         let cards = [...ALL_CARDS];
 
         // Rarity filter (quick buttons)
@@ -1292,22 +1292,6 @@
         });
 
         return enriched;
-      };
-          const ownedNormal = entry.normal || 0;
-          const ownedHolo = entry.holo || 0;
-          const owned = ownedNormal + ownedHolo;
-          return {
-            ...card,
-            image: getImageUrl(card),
-            owned,
-            ownedNormal,
-            ownedHolo
-          };
-        }).sort((a, b) => {
-          if (a.owned > 0 && b.owned === 0) return -1;
-          if (b.owned > 0 && a.owned === 0) return 1;
-          return 0;
-        });
       };
 
       if (!isLoaded) {
@@ -2164,7 +2148,7 @@ return (
                   marginBottom: 8
                 }}>
                   <div style={{ color: '#9ca3af', fontSize: 12 }}>Cost</div>
-                  <div style={{ fontWeight: 'bold' }}>{purchaseConfirm.cost.toFixed(2)} R</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}><img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />{purchaseConfirm.cost.toFixed(2)}</div>
                 </div>
 
                 <div style={{
@@ -2174,7 +2158,7 @@ return (
                   marginBottom: 18
                 }}>
                   <div style={{ color: '#9ca3af', fontSize: 12 }}>Your balance</div>
-                  <div style={{ fontWeight: 'bold' }}>{rations.toFixed(2)} R</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}><img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />{rations.toFixed(2)}</div>
                 </div>
 
                 <div style={{ display: 'flex', gap: 12 }}>
@@ -2315,7 +2299,7 @@ return (
                       padding: 12
                     }}>
                       <div style={{ color: '#9ca3af', fontSize: 12 }}>Normal market value</div>
-                      <div style={{ fontWeight: 'bold' }}>{baseValue.toFixed(2)} R</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}><img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />{baseValue.toFixed(2)}</div>
                     </div>
                     <div style={{
                       display: 'flex',
@@ -2327,7 +2311,7 @@ return (
                       padding: 12
                     }}>
                       <div style={{ color: '#9ca3af', fontSize: 12 }}>Holo market value <span style={{ opacity: 0.8 }}>({holoMult.toFixed(2)}×)</span></div>
-                      <div className="rainbow-text" style={{ fontWeight: 'bold' }}>{holoValue.toFixed(2)} R</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}><img src="./rations.png" alt="" style={{ width: 16, height: 16 }} /><span className="rainbow-text">{holoValue.toFixed(2)}</span></div>
                     </div>
                   </div>
 
