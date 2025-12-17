@@ -110,7 +110,9 @@ html, body {
 
 /* Holo overlay applies to the revealed face that shows the card art */
 .foil-glow .card-face.card-back {
-  position: relative;
+  /* Keep absolute positioning so flipping doesn't shift layout */
+  position: absolute;
+  inset: 0;
   overflow: hidden;
   isolation: isolate;
 }
