@@ -618,6 +618,10 @@
 
       const [purchaseConfirm, setPurchaseConfirm] = useState(null);
       const [holoMultipliers, setHoloMultipliers] = useState({});
+      const [freeStarterClaimed, setFreeStarterClaimed] = useState(false);
+      const [dailyShopPicks, setDailyShopPicks] = useState({});
+      const [dailyShopDate, setDailyShopDate] = useState('');
+
 
       // Generate weighted random value within range (bell curve distribution)
       const generateWeightedValue = (min, max, peak) => {
@@ -692,6 +696,25 @@
       const getHoloMarketValue = (cardId) => {
         return getBaseMarketValue(cardId) * getHoloMultiplier(cardId);
       };
+
+      const DAILY_SHOP_RARITIES = ['common', 'uncommon', 'rare', 'legendary', 'ultra x rare'];
+
+      const generateDailyShopPicks = () => {
+        const picks = {};
+        DAILY_SHOP_RARITIES.forEach(rarity => {
+          const cards = CARDS_BY_RARITY[rarity] || [];
+          if (!cards.length) return;
+          const pick = cards[Math.floor(Math.random() * cards.length)];
+          if (pick && pick.id) picks[rarity] = pick.id;
+        });
+        return picks;
+      };
+
+      const getDailyShopPrice = (cardId) => {
+        const base = getBaseMarketValue(cardId) || 0;
+        return parseFloat((base * 1.25).toFixed(2));
+      };
+
 
       const normalizeCollection = (raw) => {
         const out = {};
@@ -769,9 +792,18 @@
         const savedRations = localStorage.getItem('tcg-rations');
         if (savedRations) setRations(parseFloat(savedRations));
         
-        const savedPacks = localStorage.getItem('tcg-pack-inventory');
-        if (savedPacks) setPackInventory(JSON.parse(savedPacks));
-        
+        const savedStarter = localStorage.getItem('tcg-free-starter-claimed');
+        if (savedStarter) setFreeStarterClaimed(savedStarter === '1' || savedStarter === 'true');
+
+        // Initialize or load daily shop rotation (5 singles, 1 per rarity)
+        let dsDate = localStorage.getItem('tcg-daily-shop-date');
+        let dsPicksRaw = localStorage.getItem('tcg-daily-shop-picks');
+        let dsPicks = null;
+        if (dsPicksRaw) {
+          try { dsPicks = JSON.parse(dsPicksRaw); } catch (e) { dsPicks = null; }
+        }
+
+
         // Initialize or load market values
         let baseValues = localStorage.getItem('tcg-market-base');
         let currentValues = localStorage.getItem('tcg-market-current');
@@ -780,6 +812,29 @@
         let history = localStorage.getItem('tcg-price-history');
         
         const today = new Date().toDateString();
+
+        // Validate / rotate daily shop picks
+        if (!dsDate || dsDate !== today || !dsPicks || typeof dsPicks !== 'object') {
+          dsPicks = generateDailyShopPicks();
+          dsDate = today;
+          localStorage.setItem('tcg-daily-shop-date', dsDate);
+          localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(dsPicks));
+        } else {
+          // Patch missing rarities (in case data changed)
+          let didPatch = false;
+          DAILY_SHOP_RARITIES.forEach(rarity => {
+            if (!dsPicks[rarity]) {
+              const cards = CARDS_BY_RARITY[rarity] || [];
+              if (cards.length) {
+                dsPicks[rarity] = cards[Math.floor(Math.random() * cards.length)].id;
+                didPatch = true
+              }
+            }
+          });
+          if (didPatch) localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(dsPicks));
+        }
+        setDailyShopDate(dsDate || today);
+        setDailyShopPicks(dsPicks || {});
 
         // Initialize or load holo multipliers (foil premiums)
         let holoMap = {};
@@ -870,6 +925,11 @@
         localStorage.setItem('tcg-pack-inventory', JSON.stringify(packs));
       }, []);
 
+      const saveFreeStarterClaimed = useCallback((claimed) => {
+        localStorage.setItem('tcg-free-starter-claimed', claimed ? '1' : '0');
+      }, []);
+
+
       // Generate unique pack ID
       const generatePackId = () => {
         return `pack_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -893,7 +953,42 @@
         saveRations(newRations);
       };
 
-      // Buy bundle box (8 packs, 1 guaranteed legendary)
+      
+      // Claim free starter box (5 packs, one-time)
+      const claimFreeStarterBox = () => {
+        if (freeStarterClaimed) return;
+
+        const newPacks = [];
+        for (let i = 0; i < 5; i++) {
+          newPacks.push({ id: generatePackId(), type: 'starter' });
+        }
+
+        const newInventory = [...packInventory, ...newPacks];
+        setPackInventory(newInventory);
+        savePackInventory(newInventory);
+
+        setFreeStarterClaimed(true);
+        saveFreeStarterClaimed(true);
+      };
+
+      // Buy a daily rotating single (non-holo), 25% markup
+      const buyDailyShopCard = (cardId, cost) => {
+        if (!cardId) return;
+        if (rations < cost) return;
+
+        const newCollection = { ...collection };
+        const entry = newCollection[cardId] || { normal: 0, holo: 0 };
+        entry.normal = (entry.normal || 0) + 1;
+        newCollection[cardId] = entry;
+
+        const newRations = parseFloat((rations - cost).toFixed(2));
+        setCollection(newCollection);
+        saveCollection(newCollection);
+        setRations(newRations);
+        saveRations(newRations);
+      };
+
+// Buy bundle box (8 packs, 1 guaranteed legendary)
       const buyBundleBox = () => {
         if (rations < 75) return;
         
@@ -1001,6 +1096,13 @@
           case 'case':
             buyBoosterCase();
             break;
+          case 'freeStarter':
+            claimFreeStarterBox();
+            break;
+          case 'dailyCard':
+            buyDailyShopCard(purchaseConfirm.cardId, purchaseConfirm.cost);
+            break;
+
           default:
             break;
         }
@@ -1015,7 +1117,15 @@
         return { ...card, image: getImageUrl(card) };
       };
 
-      const getRareSlotCard = () => {
+      
+      const getCardById = (cardId) => {
+        const idStr = String(cardId);
+        const card = ALL_CARDS.find(c => String(c.id) === idStr);
+        if (!card) return null;
+        return { ...card, image: getImageUrl(card) };
+      };
+
+const getRareSlotCard = () => {
         const roll = Math.random() * 100;
         if (roll < 1) return getRandomCard('ultra x rare');
         if (roll < 11) return getRandomCard('legendary');
@@ -1398,9 +1508,130 @@
                 <h2 style={{ color: 'white', fontSize: 28, fontWeight: 'bold', marginBottom: 32, textAlign: 'center' }}>
                   Shop
                 </h2>
+
+                {/* Daily Singles */}
+                <div style={{ maxWidth: 1200, margin: '0 auto 28px', padding: 16, borderRadius: 16, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 10 }}>
+                    <h3 style={{ color: 'white', fontSize: 20, fontWeight: 'bold', margin: 0 }}>Daily Singles</h3>
+                    <div style={{ color: '#9ca3af', fontSize: 12 }}>Rotates daily • 25% markup • {dailyShopDate || ''}</div>
+                  </div>
+                  <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 14px' }}>Need a specific missing card? Buy it directly — but it costs more than pulling it from packs.</p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                    {DAILY_SHOP_RARITIES.map(rarity => {
+                      const cardId = dailyShopPicks[rarity];
+                      const card = getCardById(cardId);
+                      if (!card) return null;
+                      const price = getDailyShopPrice(card.id);
+                      const colors = RARITY_COLORS[card.rarity] || RARITY_COLORS.common;
+                      return (
+                        <div key={rarity} style={{
+                          background: 'rgba(31,41,55,0.75)',
+                          borderRadius: 14,
+                          padding: 12,
+                          border: `2px solid ${colors.border}55`,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 10
+                        }}>
+                          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                            <img
+                              src={card.image}
+                              alt={card.name}
+                              style={{ width: 64, height: 96, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(255,255,255,0.10)', cursor: 'pointer' }}
+                              onClick={() => setEnlargedCard(card)}
+                            />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ color: 'white', fontWeight: 800, fontSize: 14, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.name}</div>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 8px', borderRadius: 999, background: colors.bg, border: `1px solid ${colors.border}` }}>
+                                <span style={{ color: colors.text, fontSize: 11, fontWeight: 800, textTransform: 'capitalize' }}>{rarity}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}>
+                              <img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />
+                              <span style={{ color: '#fbbf24' }}>{price.toFixed(2)}</span>
+                            </div>
+                            <button
+                              onClick={() => setPurchaseConfirm({
+                                type: 'dailyCard',
+                                title: `Buy ${card.name}`,
+                                cost: price,
+                                cardId: card.id,
+                                details: `Daily single • 25% markup. Adds 1 copy of ${card.name} to your collection.`
+                              })}
+                              disabled={rations < price}
+                              style={{
+                                padding: '8px 10px',
+                                borderRadius: 10,
+                                border: 'none',
+                                cursor: rations < price ? 'not-allowed' : 'pointer',
+                                background: rations < price ? '#374151' : 'linear-gradient(90deg, #3b82f6, #6366f1)',
+                                color: 'white',
+                                fontWeight: 800,
+                                opacity: rations < price ? 0.55 : 1
+                              }}
+                            >
+                              Buy
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, maxWidth: 1200 }}>
-                  {/* Single Pack */}
+                                    {/* Free Starter Box */}
+                  <div style={{
+                    background: 'rgba(31,41,55,0.8)',
+                    borderRadius: 16,
+                    padding: 24,
+                    border: '2px solid rgba(245,158,11,0.55)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                  }}>
+                    <img
+                      src="./cardback.png"
+                      alt="Free Starter Box"
+                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
+                    />
+                    <h3 style={{ color: '#fbbf24', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Free Starter Box</h3>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>5 packs (free)</p>
+                    <p style={{ color: '#fbbf24', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
+                      One-time claim
+                    </p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                      <img src="./rations.png" alt="" style={{ width: 24, height: 24, opacity: 0.8 }} />
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>0</span>
+                    </div>
+
+                    <button
+                      onClick={() => setPurchaseConfirm({ type: 'freeStarter', title: 'Free Starter Box (5 Packs)', cost: 0, details: 'A one-time free claim. Adds 5 packs to your inventory.' })}
+                      disabled={freeStarterClaimed}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: freeStarterClaimed ? '#374151' : 'linear-gradient(90deg, #f59e0b, #f97316)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: freeStarterClaimed ? 'not-allowed' : 'pointer',
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        opacity: freeStarterClaimed ? 0.5 : 1
+                      }}
+                    >
+                      {freeStarterClaimed ? 'Claimed' : 'Claim Free Starter'}
+                    </button>
+                  </div>
+
+{/* Single Pack */}
                   <div style={{
                     background: 'rgba(31,41,55,0.8)',
                     borderRadius: 16,
