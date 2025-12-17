@@ -99,41 +99,57 @@
   position: relative;
 }
 
-.foil-glow::before {
-  content: '';
-  position: absolute;
-  inset: -10px;
-  border-radius: 18px;
-  background: conic-gradient(from 180deg, rgba(255,0,128,0.55), rgba(0,255,255,0.55), rgba(255,255,0,0.55), rgba(255,0,128,0.55));
-  filter: blur(10px);
-  opacity: 0.85;
-  z-index: 0;
-  animation: holoSpin 3.5s linear infinite;
-  pointer-events: none;
-}
-
-.foil-glow::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: 14px;
-  background: linear-gradient(120deg, rgba(255,255,255,0.00), rgba(255,255,255,0.16), rgba(255,255,255,0.00));
-  opacity: 0.18;
-  z-index: 1;
-  animation: holoShimmer 2.3s ease-in-out infinite;
-  pointer-events: none;
-}
-
-.foil-glow > * {
+/* Holo overlay applies to the revealed face that shows the card art */
+.foil-glow .card-face.card-back {
   position: relative;
+  overflow: hidden;
+}
+
+.foil-glow .card-face.card-back img {
+  position: relative;
+  z-index: 1;
+}
+
+/* Static, slightly-opaque rainbow filter to make the card itself look holographic */
+.foil-glow .card-face.card-back::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg,
+    rgba(255, 0, 128, 0.20),
+    rgba(0, 255, 255, 0.20),
+    rgba(255, 255, 0, 0.18),
+    rgba(255, 0, 128, 0.20)
+  );
+  opacity: 0.30;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Subtle highlight to sell the holo effect without animation */
+.foil-glow .card-face.card-back::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.18), rgba(255,255,255,0.0) 50%);
+  opacity: 0.22;
+  mix-blend-mode: overlay;
+  pointer-events: none;
   z-index: 2;
 }
 
 .holo-badge {
-  background: linear-gradient(90deg, rgba(255,0,128,0.35), rgba(0,255,255,0.35), rgba(255,255,0,0.35));
-  border: 1px solid rgba(255,255,255,0.16);
+  background: linear-gradient(90deg,
+    rgba(255, 0, 128, 0.40),
+    rgba(0, 255, 255, 0.40),
+    rgba(255, 255, 0, 0.40)
+  );
   box-shadow: 0 0 18px rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.95);
+  color: rgba(255,255,255,0.98);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.85);
 }
 
 .rainbow-text {
@@ -585,6 +601,12 @@
       const [view, setView] = useState('home');
       const [allRevealed, setAllRevealed] = useState(false);
       const [collectionFilter, setCollectionFilter] = useState('all');
+      const [collectionSearch, setCollectionSearch] = useState('');
+      const [ownedFilter, setOwnedFilter] = useState('all'); // all | owned | unowned
+      const [holoFilter, setHoloFilter] = useState('all');   // all | hasHolo | noHolo
+      const [sortKey, setSortKey] = useState('owned');       // owned | name | rarity | value | holoValue | change | holoMult
+      const [sortDir, setSortDir] = useState('desc');        // asc | desc
+      const [hideUnknown, setHideUnknown] = useState(false);
       const [packCount, setPackCount] = useState(0);
       const [isLoaded, setIsLoaded] = useState(false);
       const [enlargedCard, setEnlargedCard] = useState(null);
@@ -1162,11 +1184,115 @@
         setSellConfirm(null);
       };;
 
-      const getCollectionCards = () => {
+            const getCollectionCards = () => {
         let cards = [...ALL_CARDS];
-        if (collectionFilter !== 'all') cards = cards.filter(c => c.rarity === collectionFilter);
-        return cards.map(card => {
+
+        // Rarity filter (quick buttons)
+        if (collectionFilter !== 'all') {
+          cards = cards.filter(c => c.rarity === collectionFilter);
+        }
+
+        // Search filter (name)
+        const q = (collectionSearch || '').trim().toLowerCase();
+        if (q) {
+          cards = cards.filter(c => (c.name || '').toLowerCase().includes(q));
+        }
+
+        // Enrich with ownership + market data
+        let enriched = cards.map(card => {
           const entry = collection[card.id] || { normal: 0, holo: 0 };
+          const ownedNormal = entry.normal || 0;
+          const ownedHolo = entry.holo || 0;
+          const owned = ownedNormal + ownedHolo;
+
+          const marketValue = marketValues[card.id] || 1;
+          const holoMult = getHoloMultiplier(card.id);
+          const holoValue = marketValue * holoMult;
+
+          const history = priceHistory[card.id] || [];
+          let priceChange = 0;
+          if (history.length >= 2) {
+            const prev = history[history.length - 2].value || 1;
+            const curr = history[history.length - 1].value || marketValue;
+            priceChange = prev ? ((curr - prev) / prev) * 100 : 0;
+          }
+
+          return {
+            ...card,
+            image: getImageUrl(card),
+            owned,
+            ownedNormal,
+            ownedHolo,
+            marketValue,
+            holoMult,
+            holoValue,
+            priceChange
+          };
+        });
+
+        // Owned / unowned / hide unknown filters
+        if (hideUnknown) {
+          enriched = enriched.filter(c => c.owned > 0);
+        }
+
+        if (ownedFilter === 'owned') {
+          enriched = enriched.filter(c => c.owned > 0);
+        } else if (ownedFilter === 'unowned') {
+          enriched = enriched.filter(c => c.owned === 0);
+        }
+
+        if (holoFilter === 'hasHolo') {
+          enriched = enriched.filter(c => c.ownedHolo > 0);
+        } else if (holoFilter === 'noHolo') {
+          enriched = enriched.filter(c => c.ownedHolo === 0);
+        }
+
+        const dir = sortDir === 'asc' ? 1 : -1;
+        const rarityIndex = (r) => {
+          const i = RARITY_ORDER.indexOf(r);
+          return i === -1 ? 999 : i;
+        };
+
+        enriched.sort((a, b) => {
+          // Always keep things stable by breaking ties on name
+          const tieByName = () => a.name.localeCompare(b.name);
+
+          switch (sortKey) {
+            case 'name':
+              return a.name.localeCompare(b.name) * dir;
+            case 'rarity': {
+              const d = (rarityIndex(a.rarity) - rarityIndex(b.rarity)) * dir;
+              return d !== 0 ? d : tieByName();
+            }
+            case 'value': {
+              const d = (a.marketValue - b.marketValue) * dir;
+              return d !== 0 ? d : tieByName();
+            }
+            case 'holoValue': {
+              const d = (a.holoValue - b.holoValue) * dir;
+              return d !== 0 ? d : tieByName();
+            }
+            case 'change': {
+              const d = (a.priceChange - b.priceChange) * dir;
+              return d !== 0 ? d : tieByName();
+            }
+            case 'holoMult': {
+              const d = (a.holoMult - b.holoMult) * dir;
+              return d !== 0 ? d : tieByName();
+            }
+            case 'owned':
+            default: {
+              const d = (a.owned - b.owned) * dir;
+              // If owned counts are tied, keep owned cards above unknown by default
+              if (d !== 0) return d;
+              const d2 = (a.owned > 0 ? -1 : 1) - (b.owned > 0 ? -1 : 1);
+              return d2 !== 0 ? d2 : tieByName();
+            }
+          }
+        });
+
+        return enriched;
+      };
           const ownedNormal = entry.normal || 0;
           const ownedHolo = entry.holo || 0;
           const owned = ownedNormal + ownedHolo;
@@ -1561,30 +1687,122 @@
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
-                  <button onClick={() => setCollectionFilter('all')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === 'all' ? '#9333ea' : '#374151', color: 'white' }}>
-                    All
-                  </button>
-                  {RARITY_ORDER.map(rarity => (
-                    <button key={rarity} onClick={() => setCollectionFilter(rarity)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === rarity ? RARITY_COLORS[rarity].bg : '#374151', color: 'white', textTransform: 'capitalize' }}>
-                      {rarity}
+                                <div style={{ background: 'rgba(0,0,0,0.28)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.9fr 0.9fr 1fr auto', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+                    <input
+                      value={collectionSearch}
+                      onChange={(e) => setCollectionSearch(e.target.value)}
+                      placeholder="Search cards…"
+                      style={{ 
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        outline: 'none'
+                      }}
+                    />
+
+                    <select
+                      value={ownedFilter}
+                      onChange={(e) => setOwnedFilter(e.target.value)}
+                      style={{ 
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="all">All cards</option>
+                      <option value="owned">Owned</option>
+                      <option value="unowned">Unowned</option>
+                    </select>
+
+                    <select
+                      value={holoFilter}
+                      onChange={(e) => setHoloFilter(e.target.value)}
+                      style={{ 
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="all">Holo: Any</option>
+                      <option value="hasHolo">Has holo</option>
+                      <option value="noHolo">No holo</option>
+                    </select>
+
+                    <select
+                      value={sortKey}
+                      onChange={(e) => setSortKey(e.target.value)}
+                      style={{ 
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="owned">Sort: Owned</option>
+                      <option value="name">Sort: Name</option>
+                      <option value="rarity">Sort: Rarity</option>
+                      <option value="value">Sort: Market Value</option>
+                      <option value="holoValue">Sort: Holo Value</option>
+                      <option value="change">Sort: 24h Change</option>
+                      <option value="holoMult">Sort: Holo Multiplier</option>
+                    </select>
+
+                    <button
+                      onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: 'rgba(55,65,81,0.85)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontWeight: 800,
+                        minWidth: 44
+                      }}
+                      title="Toggle sort direction"
+                    >
+                      {sortDir === 'asc' ? '↑' : '↓'}
                     </button>
-                  ))}
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button onClick={() => setCollectionFilter('all')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === 'all' ? '#9333ea' : '#374151', color: 'white' }}>
+                        All
+                      </button>
+                      {RARITY_ORDER.map(rarity => (
+                        <button key={rarity} onClick={() => setCollectionFilter(rarity)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === rarity ? RARITY_COLORS[rarity].bg : '#374151', color: 'white', textTransform: 'capitalize' }}>
+                          {rarity}
+                        </button>
+                      ))}
+                    </div>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#e5e7eb', fontSize: 13, userSelect: 'none' }}>
+                      <input type="checkbox" checked={hideUnknown} onChange={(e) => setHideUnknown(e.target.checked)} />
+                      Hide unknown
+                    </label>
+                  </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 16 }}>
                   {getCollectionCards().map(card => {
                     const colors = RARITY_COLORS[card.rarity];
-                    const marketValue = marketValues[card.id] || 1;
-                    const history = priceHistory[card.id] || [];
-                    let priceChange = 0;
-                    if (history.length >= 2) {
-                      const prev = history[history.length - 2].value;
-                      const curr = baseValue;
-                      priceChange = ((curr - prev) / prev) * 100;
-                    }
-                    
-                    return (
+                    const marketValue = (typeof card.marketValue === 'number') ? card.marketValue : (marketValues[card.id] || 1);
+                    const priceChange = (typeof card.priceChange === 'number') ? card.priceChange : 0;
+                    const holoMult = getHoloMultiplier(card.id);
+                    const holoValue = marketValue * holoMult;
+return (
                       <div 
                         key={card.id} 
                         style={{ 
@@ -1596,7 +1814,7 @@
                           position: 'relative', 
                           opacity: card.owned === 0 ? 0.4 : 1,
                         }}
-                        title={card.owned > 0 ? `${card.name} - ${marketValue.toFixed(2)}R` : '???'}
+                        title={card.owned > 0 ? `${card.name} - ${marketValue.toFixed(2)}` : '???'}
                       >
                         <div 
                           style={{ width: '100%', height: '100%', borderRadius: 12, overflow: 'hidden', cursor: card.owned > 0 ? 'zoom-in' : 'default' }}
@@ -1623,12 +1841,27 @@
                             {/* Count badges */}
                             <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 6, zIndex: 5 }}>
                               {card.ownedNormal > 0 && (
-                                <div style={{ background: 'rgba(0,0,0,0.8)', padding: '4px 8px', borderRadius: 12, border: `2px solid ${colors.border}` }}>
+                                <div style={{ 
+                                  background: 'rgba(0,0,0,0.55)', 
+                                  padding: '4px 8px', 
+                                  borderRadius: 12, 
+                                  border: `2px solid ${colors.border}`,
+                                  color: 'white',
+                                  fontWeight: 800,
+                                  fontSize: 12,
+                                  textShadow: '0 1px 2px rgba(0,0,0,0.85)'
+                                }}>
                                   x{card.ownedNormal}
                                 </div>
                               )}
                               {card.ownedHolo > 0 && (
-                                <div className="holo-badge" style={{ padding: '4px 8px', borderRadius: 12 }}>
+                                <div className="holo-badge" style={{ 
+                                  padding: '4px 8px', 
+                                  borderRadius: 12,
+                                  border: `2px solid ${colors.border}`,
+                                  fontWeight: 800,
+                                  fontSize: 12
+                                }}>
                                   x{card.ownedHolo}
                                 </div>
                               )}
@@ -1752,7 +1985,7 @@
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <img src="./rations.png" alt="R" style={{ width: 22, height: 22 }} />
                               <span style={{ color: '#fbbf24', fontSize: 22, fontWeight: 'bold' }}>{baseValue.toFixed(2)}</span>
-                              <span style={{ color: '#9ca3af', fontSize: 16 }}>R</span>
+                              
                             </div>
                           </div>
 
@@ -1763,7 +1996,7 @@
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <img src="./rations.png" alt="R" style={{ width: 22, height: 22 }} />
                               <span className="rainbow-text" style={{ fontSize: 22, fontWeight: 'bold' }}>{holoValue.toFixed(2)}</span>
-                              <span style={{ color: '#9ca3af', fontSize: 16 }}>R</span>
+                              
                             </div>
                           </div>
                         </div>
