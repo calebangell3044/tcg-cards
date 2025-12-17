@@ -8,6 +8,15 @@
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: linear-gradient(135deg, #111827 0%, #2e1065 50%, #111827 100%);
+}
+#root { min-height: 100%; }
+
+
     * {
       margin: 0;
       padding: 0;
@@ -103,12 +112,16 @@
 .foil-glow .card-face.card-back {
   position: relative;
   overflow: hidden;
+  isolation: isolate;
 }
+
 
 .foil-glow .card-face.card-back img {
   position: relative;
   z-index: 1;
+  filter: saturate(1.08) contrast(1.04);
 }
+
 
 /* Static, slightly-opaque rainbow filter to make the card itself look holographic */
 .foil-glow .card-face.card-back::before {
@@ -117,15 +130,15 @@
   inset: 0;
   border-radius: inherit;
   background: linear-gradient(120deg,
-    rgba(255, 0, 128, 0.20),
-    rgba(0, 255, 255, 0.20),
-    rgba(255, 255, 0, 0.18),
-    rgba(255, 0, 128, 0.20)
+    rgba(255, 0, 128, 0.32),
+    rgba(0, 255, 255, 0.30),
+    rgba(255, 255, 0, 0.28),
+    rgba(255, 0, 128, 0.30)
   );
-  opacity: 0.30;
-  mix-blend-mode: screen;
+  opacity: 0.42;
+  filter: saturate(1.5) contrast(1.08);
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
 }
 
 /* Subtle highlight to sell the holo effect without animation */
@@ -134,11 +147,10 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.18), rgba(255,255,255,0.0) 50%);
-  opacity: 0.22;
-  mix-blend-mode: overlay;
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.22), rgba(255,255,255,0.0) 55%);
+  opacity: 0.20;
   pointer-events: none;
-  z-index: 2;
+  z-index: 4;
 }
 
 .holo-badge {
@@ -1836,7 +1848,7 @@ const getRareSlotCard = () => {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, alignItems: 'start' }}>
                   {packCards.map((card, index) => {
                     const isRevealed = revealedCards.includes(index);
                     const colors = RARITY_COLORS[card.rarity];
