@@ -1376,7 +1376,7 @@ const getRareSlotCard = () => {
         savePackCount(newCount);
       };
 
-      const revealCardconst revealCard = (index) => {
+      const revealCard = (index) => {
         if (revealedCards.includes(index)) return;
         const newRevealed = [...revealedCards, index];
         setRevealedCards(newRevealed);
