@@ -178,13 +178,63 @@ html, body {
   background: linear-gradient(90deg, #ff3ea5, #2ee9ff, #ffe155, #ff3ea5);
   box-shadow: 0 0 18px rgba(255,255,255,0.18);
 }
+
+/* ===== God Pack effect ===== */
+@keyframes godGlowPulse {
+  0% { opacity: 0; transform: scale(0.95); }
+  20% { opacity: 1; transform: scale(1.0); }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+@keyframes confettiFall {
+  0% { transform: translateY(-20vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+.godpack-effect {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2500;
+  overflow: hidden;
+}
+.godpack-effect::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.28), rgba(168,85,247,0.12) 40%, rgba(0,0,0,0) 72%);
+  mix-blend-mode: screen;
+  animation: godGlowPulse 1.6s ease-out forwards;
+}
+.confetti-piece {
+  position: absolute;
+  top: -12vh;
+  width: var(--w);
+  height: var(--h);
+  left: var(--left);
+  background: var(--c);
+  border-radius: 2px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+  animation: confettiFall var(--dur) linear forwards;
+  animation-delay: var(--delay);
+  opacity: 0.95;
+}
+.godpack-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.20);
+  background: radial-gradient(circle at 30% 30%, rgba(236,72,153,0.25), rgba(168,85,247,0.15), rgba(0,0,0,0.25));
+  box-shadow: 0 0 40px rgba(236,72,153,0.20), 0 0 60px rgba(168,85,247,0.18);
+}
+
 </style>
 </head>
 <body>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useCallback } = React;
+    const { useState, useEffect, useCallback, useMemo } = React;
 
     // Since this is on GitHub Pages, use relative paths to images in the same repo
     const GITHUB_BASE = '.';
@@ -450,7 +500,7 @@ html, body {
       { id: "257", name: "Sacrificial Boars", rarity: "uncommon", file: "Sacrificial Boars.png" },
       { id: "258", name: "Sadistic Wretch", rarity: "common", file: "Sadistic Wretch.png" },
       { id: "259", name: "Salla Salvato, Disguise Master", rarity: "common", file: "Salla Salvato, Disguise Master.png" },
-      { id: "260", name: "Salutations", rarity: "common", file: "Salutations.png" },
+      { id: "260", name: "Salutations", rarity: "common", file: "Salutaions.png" },
       { id: "261", name: "Scars of a General's Past", rarity: "rare", file: "Scars of a General's Past.png" },
       { id: "262", name: "See it in the Bones", rarity: "common", file: "See it in the Bones.png" },
       { id: "263", name: "Send in the Ladies", rarity: "uncommon", file: "Send in the Ladies.png" },
@@ -636,6 +686,10 @@ html, body {
       const [dailyShopPicks, setDailyShopPicks] = useState({});
       const [dailyShopDate, setDailyShopDate] = useState('');
 
+      const [godPackActive, setGodPackActive] = useState(false);
+      const [godPackConfetti, setGodPackConfetti] = useState([]);
+      const [lastPackWasGod, setLastPackWasGod] = useState(false);
+
 
       // Generate weighted random value within range (bell curve distribution)
       const generateWeightedValue = (min, max, peak) => {
@@ -671,16 +725,16 @@ html, body {
               value = generateWeightedValue(0.5, 5.5, 1.0);
               break;
             case 'uncommon':
-              value = generateWeightedValue(0.5, 8.0, 3.0);
+              value = generateWeightedValue(1.5, 8.0, 3.0);
               break;
             case 'rare':
-              value = generateWeightedValue(2.25, 25.0, 5.0);
+              value = generateWeightedValue(3.5, 25.0, 5.0);
               break;
             case 'legendary':
-              value = generateWeightedValue(9.25, 175.0, 36.0);
+              value = generateWeightedValue(9.25, 87.0, 20.0);
               break;
             case 'ultra x rare':
-              value = generateWeightedValue(50.0, 1001.0, 250.0);
+              value = generateWeightedValue(23.0, 820.0, 100.0);
               break;
             default:
               value = 1.0;
@@ -727,6 +781,69 @@ html, body {
       const getDailyShopPrice = (cardId) => {
         const base = getBaseMarketValue(cardId) || 0;
         return parseFloat((base * 1.25).toFixed(2));
+      };
+
+
+      // ===== God Pack helpers =====
+      // NOTE: user spec says "0.01% (1/1000)" — we implement 1/1000 = 0.1% chance unless a pack is explicitly flagged.
+      const GOD_PACK_CHANCE = 1 / 1000;
+
+      const triggerGodPackEffect = useCallback(() => {
+        // Make a small burst of confetti + a quick glow overlay
+        const pieces = Array.from({ length: 42 }, () => {
+          const hue = Math.floor(Math.random() * 360);
+          const left = (Math.random() * 100).toFixed(2) + 'vw';
+          const dur = (1.2 + Math.random() * 1.0).toFixed(2) + 's';
+          const delay = (Math.random() * 0.25).toFixed(2) + 's';
+          const w = (6 + Math.random() * 10).toFixed(0) + 'px';
+          const h = (8 + Math.random() * 14).toFixed(0) + 'px';
+          const c = `hsl(${hue}, 90%, 60%)`;
+          return { left, dur, delay, w, h, c };
+        });
+
+        setGodPackConfetti(pieces);
+        setGodPackActive(true);
+
+        window.clearTimeout(window.__tcgGodPackTO);
+        window.__tcgGodPackTO = window.setTimeout(() => {
+          setGodPackActive(false);
+        }, 1700);
+      }, []);
+
+      const buyGodPack = () => {
+        const newPacks = [{
+          id: generatePackId(),
+          type: 'god',
+          isGodPack: true
+        }];
+        const newInventory = [...packInventory, ...newPacks];
+        setPackInventory(newInventory);
+        savePackInventory(newInventory);
+      };
+
+      // Discard (delete) a card from the collection without gaining rations.
+      const discardFromCollection = (cardId, variant = 'normal') => {
+        const idStr = String(cardId);
+        const entry = collection[idStr] || { normal: 0, holo: 0 };
+        const next = { ...entry };
+
+        if (variant === 'holo') next.holo = Math.max(0, (next.holo || 0) - 1);
+        else next.normal = Math.max(0, (next.normal || 0) - 1);
+
+        // If both are zero, remove the key
+        const newCollection = { ...collection };
+        if ((next.normal || 0) === 0 && (next.holo || 0) === 0) delete newCollection[idStr];
+        else newCollection[idStr] = next;
+
+        setCollection(newCollection);
+        saveCollection(newCollection);
+
+        // Keep enlargedCard counts in sync if we're currently inspecting the same card
+        if (enlargedCard && String(enlargedCard.id) === idStr) {
+          const ownedNormal = next.normal || 0;
+          const ownedHolo = next.holo || 0;
+          setEnlargedCard({ ...enlargedCard, ownedNormal, ownedHolo, owned: ownedNormal + ownedHolo });
+        }
       };
 
 
@@ -1116,6 +1233,9 @@ html, body {
           case 'dailyCard':
             buyDailyShopCard(purchaseConfirm.cardId, purchaseConfirm.cost);
             break;
+          case 'godpack':
+            buyGodPack();
+            break;
 
           default:
             break;
@@ -1166,40 +1286,77 @@ const getRareSlotCard = () => {
         const packToOpen = packInventory[0];
         const newInventory = packInventory.slice(1);
 
+        // Determine if this is a God Pack
+        const isGodPack = !!packToOpen.isGodPack || (Math.random() < GOD_PACK_CHANCE);
+        setLastPackWasGod(isGodPack);
+        if (isGodPack) triggerGodPackEffect();
+
         const newPack = [];
 
-        // Generate 7 commons
-        for (let i = 0; i < 7; i++) {
-          const card = getRandomCard('common');
-          if (card) newPack.push({ ...card, slot: i });
-        }
+        if (isGodPack) {
+          // God Pack: 15 total cards, ALL holo
+          // 4 Rare, 5 Legendary, 6 Ultra X Rare
+          let slot = 0;
 
-        // Generate 5 uncommons
-        for (let i = 0; i < 5; i++) {
-          const card = getRandomCard('uncommon');
-          if (card) newPack.push({ ...card, slot: 7 + i });
-        }
-
-        // Generate 2 rare+ slots
-        if (packToOpen.forceRarity) {
-          // First slot is guaranteed rarity
-          const guaranteedCard = getRandomCard(packToOpen.forceRarity);
-          if (guaranteedCard) newPack.push({ ...guaranteedCard, slot: 12 });
-
-          // Second slot is normal rare+
-          const card = getRareSlotCard();
-          if (card) newPack.push({ ...card, slot: 13 });
-        } else {
-          // Both slots are normal rare+
-          for (let i = 0; i < 2; i++) {
-            const card = getRareSlotCard();
-            if (card) newPack.push({ ...card, slot: 12 + i });
+          for (let i = 0; i < 4; i++) {
+            const card = getRandomCard('rare');
+            if (card) newPack.push({ ...card, slot: slot++, isHolo: true, isGodPack: true });
           }
-        }
+          for (let i = 0; i < 5; i++) {
+            const card = getRandomCard('legendary');
+            if (card) newPack.push({ ...card, slot: slot++, isHolo: true, isGodPack: true });
+          }
+          for (let i = 0; i < 6; i++) {
+            const card = getRandomCard('ultra x rare');
+            if (card) newPack.push({ ...card, slot: slot++, isHolo: true, isGodPack: true });
+          }
 
-        // Foil (holo) slot
-        const foilCard = getFoilSlotCard();
-        if (foilCard) newPack.push({ ...foilCard, slot: 14, isHolo: true, isFoilSlot: true });
+          // Safety: if anything failed to generate (missing rarity pools), fill remaining slots with legendary/rare
+          while (newPack.length < 15) {
+            const fallback = getRandomCard(newPack.length < 10 ? 'legendary' : 'rare');
+            if (!fallback) break;
+            newPack.push({ ...fallback, slot: slot++, isHolo: true, isGodPack: true });
+          }
+
+          // Shuffle slightly so the sequence isn't always identical (still respects counts)
+          newPack.sort(() => Math.random() - 0.5);
+          // Re-assign slots after shuffle
+          newPack.forEach((c, i) => c.slot = i);
+        } else {
+          // Normal pack: 15 cards (7 Common, 5 Uncommon, 2 Rare+, 1 Holo slot)
+          // Generate 7 commons
+          for (let i = 0; i < 7; i++) {
+            const card = getRandomCard('common');
+            if (card) newPack.push({ ...card, slot: i });
+          }
+
+          // Generate 5 uncommons
+          for (let i = 0; i < 5; i++) {
+            const card = getRandomCard('uncommon');
+            if (card) newPack.push({ ...card, slot: 7 + i });
+          }
+
+          // Generate 2 rare+ slots
+          if (packToOpen.forceRarity) {
+            // First slot is guaranteed rarity
+            const guaranteedCard = getRandomCard(packToOpen.forceRarity);
+            if (guaranteedCard) newPack.push({ ...guaranteedCard, slot: 12 });
+
+            // Second slot is normal rare+
+            const card = getRareSlotCard();
+            if (card) newPack.push({ ...card, slot: 13 });
+          } else {
+            // Both slots are normal rare+
+            for (let i = 0; i < 2; i++) {
+              const card = getRareSlotCard();
+              if (card) newPack.push({ ...card, slot: 12 + i });
+            }
+          }
+
+          // Foil (holo) slot
+          const foilCard = getFoilSlotCard();
+          if (foilCard) newPack.push({ ...foilCard, slot: 14, isHolo: true, isFoilSlot: true });
+        }
 
         // Preload all images in the pack for instant display
         newPack.forEach(card => {
@@ -1219,7 +1376,7 @@ const getRareSlotCard = () => {
         savePackCount(newCount);
       };
 
-      const revealCard = (index) => {
+      const revealCardconst revealCard = (index) => {
         if (revealedCards.includes(index)) return;
         const newRevealed = [...revealedCards, index];
         setRevealedCards(newRevealed);
@@ -1421,6 +1578,26 @@ const getRareSlotCard = () => {
       if (!isLoaded) {
         return (
           <div style={{ minHeight: '100vh', background: '#111827', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+
+            {/* God Pack screen effect */}
+            {godPackActive && (
+              <div className="godpack-effect">
+                {godPackConfetti.map((p, i) => (
+                  <div
+                    key={i}
+                    className="confetti-piece"
+                    style={{
+                      '--left': p.left,
+                      '--dur': p.dur,
+                      '--delay': p.delay,
+                      '--w': p.w,
+                      '--h': p.h,
+                      '--c': p.c
+                    }}
+                  />
+                ))}
+              </div>
+            )}
             <div style={{ textAlign: 'center', color: 'white' }}>
               <div style={{ width: 64, height: 64, border: '4px solid #a855f7', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }}></div>
               <p style={{ fontSize: 20 }}>Loading...</p>
@@ -1642,6 +1819,51 @@ const getRareSlotCard = () => {
                       }}
                     >
                       {freeStarterClaimed ? 'Claimed' : 'Claim Free Starter'}
+                    </button>
+                  </div>
+
+
+                  {/* God Pack (Testing) */}
+                  <div style={{
+                    background: 'rgba(31,41,55,0.8)',
+                    borderRadius: 16,
+                    padding: 24,
+                    border: '2px solid rgba(236,72,153,0.55)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                  }}>
+                    <img
+                      src="./cardback.png"
+                      alt="God Pack"
+                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16, boxShadow: '0 0 40px rgba(236,72,153,0.25)' }}
+                    />
+                    <h3 style={{ color: '#f472b6', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>God Pack (Test)</h3>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 6px', textAlign: 'center' }}>15 holo cards</p>
+                    <p style={{ color: '#f472b6', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
+                      4 Rare • 5 Legendary • 6 Ultra X Rare
+                    </p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                      <img src="./rations.png" alt="" style={{ width: 24, height: 24, opacity: 0.85 }} />
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>0</span>
+                    </div>
+
+                    <button
+                      onClick={() => setPurchaseConfirm({ type: 'godpack', title: 'God Pack (Test)', cost: 0, details: 'For testing. Adds 1 guaranteed God Pack to your inventory (all holo).' })}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: 'linear-gradient(90deg, #ec4899, #a855f7)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        fontSize: 16,
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Get God Pack
                     </button>
                   </div>
 
@@ -2102,6 +2324,12 @@ return (
                                 <img src="./rations.png" alt="R" style={{ width: 14, height: 14 }} />
                                 <span style={{ color: '#fbbf24', fontSize: 12, fontWeight: 'bold' }}>{marketValue.toFixed(2)}</span>
                               </div>
+                              {card.ownedHolo > 0 && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <img src="./rations.png" alt="" style={{ width: 14, height: 14, opacity: 0.9 }} />
+                                  <span className="rainbow-text" style={{ fontSize: 12, fontWeight: 'bold' }}>{holoValue.toFixed(2)}</span>
+                                </div>
+                              )}
                               {priceChange !== 0 && (
                                 <span style={{ fontSize: 10, fontWeight: 'bold', color: priceChange > 0 ? '#10b981' : '#ef4444' }}>
                                   {priceChange > 0 ? '↑' : '↓'} {Math.abs(priceChange).toFixed(1)}%
@@ -2196,13 +2424,16 @@ return (
                   <p style={{ color: RARITY_COLORS[enlargedCard.rarity].text, fontSize: 16, textTransform: 'capitalize', margin: '0 0 24px' }}>
                     {enlargedCard.rarity}
                   </p>
-                  
                   {/* Market Values */}
                   {(() => {
                     const baseValue = (enlargedCard.marketValue || marketValues[enlargedCard.id] || 1);
                     const holoMult = getHoloMultiplier(enlargedCard.id);
                     const holoValue = baseValue * holoMult;
                     const isHolo = !!enlargedCard.isHolo;
+
+                    const ownedEntry = collection[enlargedCard.id] || { normal: 0, holo: 0 };
+                    const ownedHolo = (typeof enlargedCard.ownedHolo === 'number') ? enlargedCard.ownedHolo : (ownedEntry.holo || 0);
+                    const showHoloRow = (view !== 'collection') || ownedHolo > 0 || isHolo;
 
                     return (
                       <div style={{ marginBottom: 24 }}>
@@ -2212,22 +2443,22 @@ return (
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 12 }}>
                             <div style={{ color: '#e5e7eb', fontSize: 13 }}>Non-Holo</div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <img src="./rations.png" alt="R" style={{ width: 22, height: 22 }} />
+                              <img src="./rations.png" alt="" style={{ width: 22, height: 22 }} />
                               <span style={{ color: '#fbbf24', fontSize: 22, fontWeight: 'bold' }}>{baseValue.toFixed(2)}</span>
-                              
                             </div>
                           </div>
 
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 12 }}>
-                            <div style={{ color: '#e5e7eb', fontSize: 13 }}>
-                              Holo <span style={{ color: '#9ca3af', fontSize: 12 }}>({holoMult.toFixed(2)}×)</span>
+                          {showHoloRow && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 12 }}>
+                              <div style={{ color: '#e5e7eb', fontSize: 13 }}>
+                                Holo <span style={{ color: '#9ca3af', fontSize: 12 }}>({holoMult.toFixed(2)}×)</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <img src="./rations.png" alt="" style={{ width: 22, height: 22 }} />
+                                <span className="rainbow-text" style={{ fontSize: 22, fontWeight: 'bold' }}>{holoValue.toFixed(2)}</span>
+                              </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <img src="./rations.png" alt="R" style={{ width: 22, height: 22 }} />
-                              <span className="rainbow-text" style={{ fontSize: 22, fontWeight: 'bold' }}>{holoValue.toFixed(2)}</span>
-                              
-                            </div>
-                          </div>
+                          )}
                         </div>
 
                         {isHolo && (
@@ -2250,7 +2481,6 @@ return (
                       </div>
                     );
                   })()}
-
 
 {/* Price History Graph */}
                   {priceHistory[enlargedCard.id] && priceHistory[enlargedCard.id].length > 1 && (
@@ -2310,7 +2540,63 @@ return (
                     </div>
                   )}
                   
-                  <button
+                  
+
+                  {/* Discard (delete) from collection */}
+                  {view === 'collection' && (() => {
+                    const ownedEntry = collection[enlargedCard.id] || { normal: 0, holo: 0 };
+                    const ownedNormal = (typeof enlargedCard.ownedNormal === 'number') ? enlargedCard.ownedNormal : (ownedEntry.normal || 0);
+                    const ownedHolo = (typeof enlargedCard.ownedHolo === 'number') ? enlargedCard.ownedHolo : (ownedEntry.holo || 0);
+
+                    if (ownedNormal === 0 && ownedHolo === 0) return null;
+
+                    return (
+                      <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
+                        {ownedNormal > 0 && (
+                          <button
+                            onClick={() => discardFromCollection(enlargedCard.id, 'normal')}
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              background: 'rgba(239,68,68,0.18)',
+                              color: 'white',
+                              border: '1px solid rgba(239,68,68,0.35)',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              fontSize: 14,
+                              fontWeight: 'bold'
+                            }}
+                            title="Discard a non-holo copy (no rations gained)"
+                          >
+                            Discard Non-Holo
+                          </button>
+                        )}
+                        {ownedHolo > 0 && (
+                          <button
+                            onClick={() => discardFromCollection(enlargedCard.id, 'holo')}
+                            className="holo-button"
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              fontSize: 14,
+                              fontWeight: 'bold',
+                              border: 'none'
+                            }}
+                            title="Discard a holo copy (no rations gained)"
+                          >
+                            Discard Holo
+                          </button>
+                        )}
+                        <div style={{ color: '#9ca3af', fontSize: 12, lineHeight: 1.3 }}>
+                          Discarding permanently removes the card from your collection and gives <b>no</b> rations.
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+<button
                     onClick={() => setEnlargedCard(null)}
                     style={{
                       width: '100%',
