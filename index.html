@@ -686,6 +686,12 @@ html, body {
       const [dailyShopPicks, setDailyShopPicks] = useState({});
       const [dailyShopDate, setDailyShopDate] = useState('');
 
+      const [gameDay, setGameDay] = useState(() => {
+        const v = parseInt(localStorage.getItem('tcg-game-day') || '1', 10);
+        return (Number.isFinite(v) && v > 0) ? v : 1;
+      });
+
+      
       const [godPackActive, setGodPackActive] = useState(false);
       const [godPackConfetti, setGodPackConfetti] = useState([]);
       const [lastPackWasGod, setLastPackWasGod] = useState(false);
@@ -907,6 +913,7 @@ html, body {
       };
 
       useEffect(() => {
+        if (!localStorage.getItem('tcg-game-day')) localStorage.setItem('tcg-game-day', String(gameDay));
         // Load saved data
         const saved = localStorage.getItem('tcg-collection-v3');
         if (saved) {
@@ -939,16 +946,17 @@ html, body {
         let baseValues = localStorage.getItem('tcg-market-base');
         let currentValues = localStorage.getItem('tcg-market-current');
         let breakoutCards = localStorage.getItem('tcg-market-breakouts');
-        let lastUpdate = localStorage.getItem('tcg-market-last-update');
+        let lastMarketDay = localStorage.getItem('tcg-market-last-day');
         let history = localStorage.getItem('tcg-price-history');
         
-        const today = new Date().toDateString();
+        const currentDay = gameDay;
 
-        // Validate / rotate daily shop picks
-        if (!dsDate || dsDate !== today || !dsPicks || typeof dsPicks !== 'object') {
+        // Validate / rotate daily shop picks (advances by in-game Day, not real time)
+        let dsDay = parseInt(localStorage.getItem('tcg-daily-shop-day') || '0', 10);
+        if (!dsDay || dsDay !== currentDay || !dsPicks || typeof dsPicks !== 'object') {
           dsPicks = generateDailyShopPicks();
-          dsDate = today;
-          localStorage.setItem('tcg-daily-shop-date', dsDate);
+          dsDay = currentDay;
+          localStorage.setItem('tcg-daily-shop-day', String(dsDay));
           localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(dsPicks));
         } else {
           // Patch missing rarities (in case data changed)
@@ -958,13 +966,13 @@ html, body {
               const cards = CARDS_BY_RARITY[rarity] || [];
               if (cards.length) {
                 dsPicks[rarity] = cards[Math.floor(Math.random() * cards.length)].id;
-                didPatch = true
+                didPatch = true;
               }
             }
           });
           if (didPatch) localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(dsPicks));
         }
-        setDailyShopDate(dsDate || today);
+        setDailyShopDate(`Day ${dsDay || currentDay}`);
         setDailyShopPicks(dsPicks || {});
 
         // Initialize or load holo multipliers (foil premiums)
@@ -999,12 +1007,12 @@ html, body {
           localStorage.setItem('tcg-market-base', JSON.stringify(baseValues));
           localStorage.setItem('tcg-market-current', JSON.stringify(currentValues));
           localStorage.setItem('tcg-market-breakouts', JSON.stringify(breakoutCards));
-          localStorage.setItem('tcg-market-last-update', today);
+          localStorage.setItem('tcg-market-last-day', String(currentDay));
           
           // Initialize price history with today's prices
           const initialHistory = {};
           Object.keys(currentValues).forEach(cardId => {
-            initialHistory[cardId] = [{ date: today, value: currentValues[cardId] }];
+            initialHistory[cardId] = [{ day: currentDay, value: currentValues[cardId] }];
           });
           localStorage.setItem('tcg-price-history', JSON.stringify(initialHistory));
           history = initialHistory;
@@ -1014,22 +1022,26 @@ html, body {
           breakoutCards = JSON.parse(breakoutCards);
           history = history ? JSON.parse(history) : {};
           
-          // Check if we need to update prices (new day)
-          if (lastUpdate !== today) {
-            currentValues = fluctuateMarket(baseValues, currentValues, breakoutCards);
-            localStorage.setItem('tcg-market-current', JSON.stringify(currentValues));
-            localStorage.setItem('tcg-market-last-update', today);
-            
-            // Update price history (keep last 30 days)
-            Object.keys(currentValues).forEach(cardId => {
-              if (!history[cardId]) history[cardId] = [];
-              history[cardId].push({ date: today, value: currentValues[cardId] });
-              
-              // Keep only last 30 days
-              if (history[cardId].length > 30) {
+          // Prices only change when in-game Day advances (via the Advance Day button)
+          let lastDayNum = parseInt(localStorage.getItem('tcg-market-last-day') || '0', 10);
+          if (!lastDayNum || !Number.isFinite(lastDayNum)) {
+            lastDayNum = currentDay;
+            localStorage.setItem('tcg-market-last-day', String(currentDay));
+          }
+
+          // If the saved day is behind (e.g., after a reload), catch up one day at a time
+          if (lastDayNum < currentDay) {
+            for (let d = lastDayNum + 1; d <= currentDay; d++) {
+              currentValues = fluctuateMarket(baseValues, currentValues, breakoutCards);
+              // Update price history (keep last 30 days)
+              Object.keys(currentValues).forEach(cardId => {
+                if (!history[cardId]) history[cardId] = [];
+                history[cardId].push({ day: d, value: currentValues[cardId] });
                 history[cardId] = history[cardId].slice(-30);
-              }
-            });
+              });
+            }
+            localStorage.setItem('tcg-market-current', JSON.stringify(currentValues));
+            localStorage.setItem('tcg-market-last-day', String(currentDay));
             localStorage.setItem('tcg-price-history', JSON.stringify(history));
           }
         }
@@ -1059,6 +1071,68 @@ html, body {
       const saveFreeStarterClaimed = useCallback((claimed) => {
         localStorage.setItem('tcg-free-starter-claimed', claimed ? '1' : '0');
       }, []);
+
+      const advanceDay = () => {
+        const nextDay = gameDay + 1;
+        localStorage.setItem('tcg-game-day', String(nextDay));
+        setGameDay(nextDay);
+
+        // Rotate market values for the new day
+        try {
+          let base = {};
+          let breakout = {};
+          let current = {};
+          let history = {};
+          const baseRaw = localStorage.getItem('tcg-market-base');
+          const breakoutRaw = localStorage.getItem('tcg-market-breakouts');
+          const currentRaw = localStorage.getItem('tcg-market-current');
+          const historyRaw = localStorage.getItem('tcg-price-history');
+
+          if (baseRaw) { try { base = JSON.parse(baseRaw) || {}; } catch (e) { base = {}; } }
+          if (breakoutRaw) { try { breakout = JSON.parse(breakoutRaw) || {}; } catch (e) { breakout = {}; } }
+          if (currentRaw) { try { current = JSON.parse(currentRaw) || {}; } catch (e) { current = {}; } }
+          if (historyRaw) { try { history = JSON.parse(historyRaw) || {}; } catch (e) { history = {}; } }
+
+          // Safety: if market not initialized yet, initialize it now
+          if (!base || Object.keys(base).length === 0) {
+            base = generateMarketValues();
+            current = { ...base };
+            breakout = selectBreakoutCards();
+            localStorage.setItem('tcg-market-base', JSON.stringify(base));
+            localStorage.setItem('tcg-market-breakouts', JSON.stringify(breakout));
+          }
+          if (!current || Object.keys(current).length === 0) current = { ...base };
+
+          const newValues = fluctuateMarket(base, current, breakout);
+          localStorage.setItem('tcg-market-current', JSON.stringify(newValues));
+          localStorage.setItem('tcg-market-last-day', String(nextDay));
+
+          Object.keys(newValues).forEach(cardId => {
+            const arr = Array.isArray(history[cardId]) ? history[cardId] : [];
+            arr.push({ day: nextDay, value: newValues[cardId] });
+            history[cardId] = arr.slice(-30);
+          });
+          localStorage.setItem('tcg-price-history', JSON.stringify(history));
+
+          setMarketValues(newValues);
+          setPriceHistory(history);
+        } catch (e) {
+          console.error(e);
+        }
+
+        // Rotate daily shop picks for the new day
+        try {
+          const picks = generateDailyShopPicks();
+          localStorage.setItem('tcg-daily-shop-day', String(nextDay));
+          localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(picks));
+          setDailyShopPicks(picks);
+          setDailyShopDate(`Day ${nextDay}`);
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+
 
 
       // Generate unique pack ID
@@ -1412,6 +1486,8 @@ const getRareSlotCard = () => {
       const getCollectionStats = () => {
         const totalCards = ALL_CARDS.length;
         const uniqueOwned = Object.entries(collection).filter(([_, e]) => ((e?.normal || 0) + (e?.holo || 0)) > 0).length;
+        const uniqueNormalOwned = Object.entries(collection).filter(([_, e]) => (e?.normal || 0) > 0).length;
+        const uniqueHoloOwned = Object.entries(collection).filter(([_, e]) => (e?.holo || 0) > 0).length;
         const totalOwned = Object.values(collection).reduce((sum, e) => sum + (e?.normal || 0) + (e?.holo || 0), 0);
         const byRarity = {};
         for (const rarity of RARITY_ORDER) {
@@ -1422,7 +1498,7 @@ const getRareSlotCard = () => {
           }).length;
           byRarity[rarity] = { owned, total: rarityCards.length };
         }
-        return { uniqueOwned, totalCards, totalOwned, byRarity };
+        return { uniqueOwned, uniqueNormalOwned, uniqueHoloOwned, totalCards, totalOwned, byRarity };
       };
 
       const sellNormalCard = (cardId) => {
@@ -1608,6 +1684,18 @@ const getRareSlotCard = () => {
 
       const stats = getCollectionStats();
 
+      const totalCollectionValue = React.useMemo(() => {
+        let sum = 0;
+        Object.entries(collection).forEach(([cardId, e]) => {
+          const normal = e?.normal || 0;
+          const holo = e?.holo || 0;
+          if (normal > 0) sum += normal * getBaseMarketValue(cardId);
+          if (holo > 0) sum += holo * getHoloMarketValue(cardId);
+        });
+        return parseFloat(sum.toFixed(2));
+      }, [collection, marketValues, holoMultipliers]);
+
+
       return (
         <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #111827 0%, #2e1065 50%, #111827 100%)' }}>
           <header style={{ background: 'rgba(0,0,0,0.4)', borderBottom: '1px solid rgba(168,85,247,0.3)', padding: '12px 16px', position: 'sticky', top: 0, zIndex: 50 }}>
@@ -1620,6 +1708,15 @@ const getRareSlotCard = () => {
                   <img src="./rations.png" alt="Rations" style={{ width: 24, height: 24 }} />
                   <span style={{ color: '#fbbf24', fontSize: 18, fontWeight: 'bold' }}>{rations.toFixed(2)}</span>
                 </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'rgba(0,0,0,0.25)', borderRadius: 8, border: '1px solid rgba(168,85,247,0.25)' }}>
+                    <span style={{ color: '#e5e7eb', fontSize: 14 }}>Day</span>
+                    <span style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>{gameDay}</span>
+                  </div>
+                  <button onClick={advanceDay} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(34,197,94,0.20)', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>
+                    Advance Day
+                  </button>
+                </div>
                 <nav style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => setView('home')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'home' || view === 'opening' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
                   Open Packs
@@ -1628,7 +1725,7 @@ const getRareSlotCard = () => {
                   Shop
                 </button>
                 <button onClick={() => setView('collection')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'collection' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
-                  Collection ({stats.uniqueOwned}/{stats.totalCards})
+                  Collection (N {stats.uniqueNormalOwned}/{stats.totalCards} • H {stats.uniqueHoloOwned}/{stats.totalCards})
                 </button>
               </nav>
               </div>
@@ -2122,10 +2219,22 @@ const getRareSlotCard = () => {
             {view === 'collection' && (
               <div>
                 <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 12, padding: 24, marginBottom: 24 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 16, textAlign: 'center' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 16, textAlign: 'center' }}>
                     <div>
-                      <p style={{ color: '#9ca3af', fontSize: 14, margin: 0 }}>Unique</p>
-                      <p style={{ color: 'white', fontSize: 24, fontWeight: 'bold', margin: '4px 0 0' }}>{stats.uniqueOwned}/{stats.totalCards}</p>
+                      <p style={{ color: '#9ca3af', fontSize: 14, margin: 0 }}>Total Value</p>
+                      <p style={{ color: 'white', fontSize: 22, fontWeight: 'bold', margin: '6px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                        <img src="./rations.png" alt="Rations" style={{ width: 18, height: 18 }} />
+                        <span>{totalCollectionValue.toFixed(2)}</span>
+                      </p>
+                    </div>
+                    <div>
+                      <p style={{ color: '#9ca3af', fontSize: 14, margin: 0 }}>Collected</p>
+                      <p style={{ color: 'white', fontSize: 18, fontWeight: 'bold', margin: '6px 0 0' }}>
+                        N {stats.uniqueNormalOwned}/{stats.totalCards}
+                      </p>
+                      <p style={{ color: 'white', fontSize: 18, fontWeight: 'bold', margin: '2px 0 0' }}>
+                        H {stats.uniqueHoloOwned}/{stats.totalCards}
+                      </p>
                     </div>
                     {RARITY_ORDER.map(rarity => (
                       <div key={rarity}>
