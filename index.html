@@ -4118,6 +4118,8 @@ return (
             const baseValue = getBaseMarketValue(sellConfirm.id);
             const holoMult = getHoloMultiplier(sellConfirm.id);
             const holoValue = baseValue * holoMult;
+            const normalPayout = baseValue * SELL_TO_SHOP_RATE;
+            const holoPayout = holoValue * SELL_TO_SHOP_RATE;
             const hasNormal = (entry.normal || 0) > 0;
             const hasHolo = (entry.holo || 0) > 0;
 
