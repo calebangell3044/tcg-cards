@@ -150,7 +150,7 @@
     {
       "id": "22",
       "name": "Azure’s Razor, Opus Dei",
-      "rarity": "rare",
+      "rarity": "legendary",
       "image_file": "Azure’s Razor, Opus Dei.png",
       "image": "tcg-cards/rare/Azure’s Razor, Opus Dei.png"
     },
@@ -1613,7 +1613,7 @@
     {
       "id": "231",
       "name": "Puratta’s Broadsword, Blessed Blade",
-      "rarity": "rare",
+      "rarity": "legendary",
       "image_file": "Puratta’s Broadsword, Blessed Blade.png",
       "image": "tcg-cards/rare/Puratta’s Broadsword, Blessed Blade.png"
     },
@@ -2327,7 +2327,7 @@
     {
       "id": "333",
       "name": "The Vallobranch Family Blade",
-      "rarity": "rare",
+      "rarity": "legendary",
       "image_file": "The Vallobranch Family Blade.png",
       "image": "tcg-cards/rare/The Vallobranch Family Blade.png"
     },
@@ -2544,7 +2544,7 @@
     {
       "id": "364",
       "name": "Violetta’s Straight Sword, Oathtaker",
-      "rarity": "rare",
+      "rarity": "legendary",
       "image_file": "Violetta’s Straight Sword, Oathtaker.png",
       "image": "tcg-cards/rare/Violetta’s Straight Sword, Oathtaker.png"
     },
@@ -2579,7 +2579,7 @@
     {
       "id": "369",
       "name": "Vodd’s Dual Swords, Tyrant and Tamer",
-      "rarity": "rare",
+      "rarity": "legendary",
       "image_file": "Vodd’s Dual Swords, Tyrant and Tamer.png",
       "image": "tcg-cards/rare/Vodd’s Dual Swords, Tyrant and Tamer.png"
     },
