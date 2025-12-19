@@ -867,6 +867,13 @@ body{
       const [dailyShopPicks, setDailyShopPicks] = useState({});
       const [dailyShopDate, setDailyShopDate] = useState('');
 
+      const [shopTab, setShopTab] = useState('buy'); // buy | sell
+      const [shopSellSearch, setShopSellSearch] = useState('');
+      const [shopSellFilter, setShopSellFilter] = useState('all'); // all | rarity
+      const [shopSellVariant, setShopSellVariant] = useState('any'); // any | normal | holo
+      const [shopSellSort, setShopSellSort] = useState('payout'); // payout | name | rarity | owned
+
+
       const [gameDay, setGameDay] = useState(() => {
         const v = parseInt(localStorage.getItem('tcg-game-day') || '1', 10);
         return (Number.isFinite(v) && v > 0) ? v : 1;
@@ -2173,6 +2180,8 @@ const getRareSlotCard = () => {
         return { uniqueOwned, uniqueNormalOwned, uniqueHoloOwned, totalCards, totalOwned, byRarity };
       };
 
+      const SELL_TO_SHOP_RATE = 0.60;
+
       const sellNormalCard = (cardId) => {
         const entry = collection[cardId];
         if (!entry || (entry.normal || 0) === 0) return;
@@ -2184,7 +2193,7 @@ const getRareSlotCard = () => {
         if ((nextEntry.normal || 0) + (nextEntry.holo || 0) === 0) delete newCollection[cardId];
         else newCollection[cardId] = nextEntry;
 
-        const newRations = rations + marketValue;
+        const newRations = rations + (marketValue * SELL_TO_SHOP_RATE);
 
         setCollection(newCollection);
         setRations(newRations);
@@ -2204,7 +2213,7 @@ const getRareSlotCard = () => {
         if ((nextEntry.normal || 0) + (nextEntry.holo || 0) === 0) delete newCollection[cardId];
         else newCollection[cardId] = nextEntry;
 
-        const newRations = rations + marketValue;
+        const newRations = rations + (marketValue * SELL_TO_SHOP_RATE);
 
         setCollection(newCollection);
         setRations(newRations);
@@ -2324,7 +2333,69 @@ const getRareSlotCard = () => {
       };
 
       
-      const totalCollectionValue = useMemo(() => {
+      
+      const getShopSellCards = () => {
+        // Build cards with ownership + values, then filter/sort for the Shop Sell tab.
+        let cards = ALL_CARDS.map((card) => {
+          const entry = collection[card.id] || { normal: 0, holo: 0 };
+          const ownedNormal = entry.normal || 0;
+          const ownedHolo = entry.holo || 0;
+          const owned = ownedNormal + ownedHolo;
+          const marketValue = getBaseMarketValue(card.id);
+          const holoValue = getHoloMarketValue(card.id);
+          const payout = marketValue * SELL_TO_SHOP_RATE;
+          const holoPayout = holoValue * SELL_TO_SHOP_RATE;
+          return {
+            ...card,
+            image: getImageUrl(card),
+            owned,
+            ownedNormal,
+            ownedHolo,
+            marketValue,
+            holoValue,
+            payout,
+            holoPayout
+          };
+        });
+
+        // Variant filter
+        if (shopSellVariant === 'normal') cards = cards.filter(c => c.ownedNormal > 0);
+        else if (shopSellVariant === 'holo') cards = cards.filter(c => c.ownedHolo > 0);
+        else cards = cards.filter(c => c.owned > 0);
+
+        // Rarity filter
+        if (shopSellFilter !== 'all') {
+          cards = cards.filter(c => c.rarity === shopSellFilter);
+        }
+
+        // Search filter
+        const q = (shopSellSearch || '').trim().toLowerCase();
+        if (q) {
+          cards = cards.filter(c => (c.name || '').toLowerCase().includes(q));
+        }
+
+        const rarityRank = (r) => {
+          const idx = RARITY_ORDER.indexOf(r);
+          return idx === -1 ? 999 : idx;
+        };
+
+        // Sort
+        cards.sort((a, b) => {
+          if (shopSellSort === 'name') return (a.name || '').localeCompare(b.name || '');
+          if (shopSellSort === 'rarity') return rarityRank(a.rarity) - rarityRank(b.rarity);
+          if (shopSellSort === 'owned') return b.owned - a.owned;
+
+          // payout (default): sort by best available payout given current variant filter
+          const ap = shopSellVariant === 'holo' ? a.holoPayout : shopSellVariant === 'normal' ? a.payout : Math.max(a.payout, a.holoPayout);
+          const bp = shopSellVariant === 'holo' ? b.holoPayout : shopSellVariant === 'normal' ? b.payout : Math.max(b.payout, b.holoPayout);
+          return bp - ap;
+        });
+
+        return cards;
+      };
+
+
+const totalCollectionValue = useMemo(() => {
         let sum = 0;
         const entries = Object.entries(collection || {});
         for (let i = 0; i < entries.length; i++) {
@@ -2640,6 +2711,41 @@ if (!isLoaded) {
                 <h2 style={{ color: 'white', fontSize: 28, fontWeight: 'bold', marginBottom: 32, textAlign: 'center' }}>
                   Shop
                 </h2>
+
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setShopTab('buy')}
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: 999,
+                      border: shopTab === 'buy' ? '2px solid rgba(168,85,247,0.75)' : '1px solid rgba(255,255,255,0.12)',
+                      background: shopTab === 'buy' ? 'rgba(168,85,247,0.18)' : 'rgba(107,114,128,0.22)',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontWeight: 800
+                    }}
+                  >
+                    Buy
+                  </button>
+                  <button
+                    onClick={() => setShopTab('sell')}
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: 999,
+                      border: shopTab === 'sell' ? '2px solid rgba(168,85,247,0.75)' : '1px solid rgba(255,255,255,0.12)',
+                      background: shopTab === 'sell' ? 'rgba(168,85,247,0.18)' : 'rgba(107,114,128,0.22)',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontWeight: 800
+                    }}
+                  >
+                    Sell
+                  </button>
+                </div>
+
+                {shopTab === 'buy' && (
+                  <>
+
 
                 {/* Daily Singles */}
                 <div style={{ maxWidth: 1200, margin: '0 auto 28px', padding: 16, borderRadius: 16, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
@@ -2989,6 +3095,185 @@ if (!isLoaded) {
                     </button>
                   </div>
                 </div>
+                  </>
+                )}
+
+
+                {shopTab === 'sell' && (
+                  <div style={{ maxWidth: 1200, margin: '0 auto', padding: 16, borderRadius: 16, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 10 }}>
+                      <h3 style={{ margin: 0, fontSize: 22, fontWeight: 900 }}>Sell to Shop</h3>
+                      <div style={{ color: '#9ca3af', fontSize: 12 }}>
+                        Shop buys at <b>{Math.round(SELL_TO_SHOP_RATE * 100)}%</b> market value (incl. holo)
+                      </div>
+                    </div>
+                    <div style={{ color: '#d1d5db', fontSize: 13, marginBottom: 14, lineHeight: 1.4 }}>
+                      Select a card below to sell. The shop pays <b>{Math.round(SELL_TO_SHOP_RATE * 100)}%</b> of the current market value (and <b>{Math.round(SELL_TO_SHOP_RATE * 100)}%</b> of holo value for foils).
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 14, alignItems: 'center' }}>
+                      <input
+                        value={shopSellSearch}
+                        onChange={(e) => setShopSellSearch(e.target.value)}
+                        placeholder="Search owned cards..."
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: 12,
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          background: 'rgba(0,0,0,0.25)',
+                          color: 'white',
+                          outline: 'none'
+                        }}
+                      />
+
+                      <select
+                        value={shopSellFilter}
+                        onChange={(e) => setShopSellFilter(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: 12,
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          background: 'rgba(0,0,0,0.25)',
+                          color: 'white',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="all">All rarities</option>
+                        <option value="common">Common</option>
+                        <option value="uncommon">Uncommon</option>
+                        <option value="rare">Rare</option>
+                        <option value="legendary">Legendary</option>
+                        <option value="ultra x rare">Ultra X Rare</option>
+                      </select>
+
+                      <select
+                        value={shopSellVariant}
+                        onChange={(e) => setShopSellVariant(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: 12,
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          background: 'rgba(0,0,0,0.25)',
+                          color: 'white',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="any">Any owned</option>
+                        <option value="normal">Normal only</option>
+                        <option value="holo">Holo only</option>
+                      </select>
+
+                      <select
+                        value={shopSellSort}
+                        onChange={(e) => setShopSellSort(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: 12,
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          background: 'rgba(0,0,0,0.25)',
+                          color: 'white',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="payout">Best payout</option>
+                        <option value="owned">Most owned</option>
+                        <option value="name">Name (A-Z)</option>
+                        <option value="rarity">Rarity</option>
+                      </select>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                      {getShopSellCards().map(card => {
+                        const colors = RARITY_COLORS[card.rarity] || RARITY_COLORS.common;
+                        const canSellNormal = card.ownedNormal > 0;
+                        const canSellHolo = card.ownedHolo > 0;
+                        return (
+                          <div key={card.id} style={{ borderRadius: 16, padding: 12, background: 'rgba(31,41,55,0.72)', border: `2px solid ${colors.border}55`, boxShadow: '0 10px 30px rgba(0,0,0,0.25)' }}>
+                            <div style={{ display: 'flex', gap: 10 }}>
+                              <div style={{ position: 'relative', width: 90, flex: '0 0 auto' }}>
+                                <div style={{ width: 90, aspectRatio: '2.5/3.5', borderRadius: 12, overflow: 'hidden', border: `2px solid ${colors.border}` }}>
+                                  <img
+                                    src={card.image}
+                                    alt={card.name}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }}
+                                    onClick={() => setEnlargedCard({ ...card, marketValue: card.marketValue, priceChange: 0 })}
+                                    loading="lazy"
+                                  />
+                                </div>
+                                <div style={{ position: 'absolute', top: 6, right: 6, display: 'flex', gap: 6 }}>
+                                  {canSellNormal && (
+                                    <div style={{ background: 'rgba(0,0,0,0.55)', padding: '3px 7px', borderRadius: 12, border: `2px solid ${colors.border}`, color: 'white', fontWeight: 800, fontSize: 11, textShadow: '0 1px 2px rgba(0,0,0,0.85)' }}>
+                                      x{card.ownedNormal}
+                                    </div>
+                                  )}
+                                  {canSellHolo && (
+                                    <div className="holo-badge" style={{ padding: '3px 7px', borderRadius: 12, border: `2px solid ${colors.border}`, fontWeight: 800, fontSize: 11 }}>
+                                      x{card.ownedHolo}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: 900, fontSize: 14, color: 'white', lineHeight: 1.2, marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {card.name}
+                                </div>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 999, background: `${colors.bg}55`, border: `1px solid ${colors.border}55`, color: colors.text, fontWeight: 800, fontSize: 11, marginBottom: 8 }}>
+                                  {card.rarity}
+                                </div>
+
+                                <div style={{ display: 'grid', gap: 6 }}>
+                                  {canSellNormal && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#d1d5db', fontSize: 12 }}>
+                                      <span style={{ opacity: 0.85 }}>Normal payout:</span>
+                                      <img src="./rations.png" alt="" style={{ width: 14, height: 14 }} />
+                                      <b style={{ color: '#fbbf24' }}>{card.payout.toFixed(2)}</b>
+                                    </div>
+                                  )}
+                                  {canSellHolo && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#d1d5db', fontSize: 12 }}>
+                                      <span style={{ opacity: 0.85 }}>Holo payout:</span>
+                                      <img src="./rations.png" alt="" style={{ width: 14, height: 14, opacity: 0.9 }} />
+                                      <b className="rainbow-text">{card.holoPayout.toFixed(2)}</b>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <button
+                                  onClick={() => setSellConfirm({ id: card.id, name: card.name, rarity: card.rarity })}
+                                  style={{
+                                    marginTop: 10,
+                                    width: '100%',
+                                    padding: '10px 12px',
+                                    borderRadius: 12,
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontWeight: 900,
+                                    color: 'white',
+                                    background: 'linear-gradient(90deg, #dc2626, #b91c1c)',
+                                    boxShadow: '0 10px 22px rgba(0,0,0,0.35)'
+                                  }}
+                                >
+                                  Sell
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {getShopSellCards().length === 0 && (
+                      <div style={{ marginTop: 14, color: '#9ca3af', textAlign: 'center' }}>No cards match your filters.</div>
+                    )}
+                  </div>
+                )}
+
+
               </div>
             )}
 
@@ -3289,35 +3574,7 @@ return (
                                 </span>
                               )}
                             </div>
-                            
-                            {/* Sell button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSellConfirm({ id: card.id, name: card.name, rarity: card.rarity });
-                              }}
-                              style={{
-                                position: 'absolute',
-                                bottom: 8,
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                padding: '6px 16px',
-                                background: 'linear-gradient(90deg, #dc2626, #b91c1c)',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: 8,
-                                cursor: 'pointer',
-                                fontSize: 12,
-                                fontWeight: 'bold',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-                                transition: 'transform 0.2s'
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateX(-50%) scale(1.05)'}
-                              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(-50%) scale(1)'}
-                            >
-                              Sell
-                            </button>
-                          </>
+</>
                         )}
                       </div>
                     );
@@ -3551,6 +3808,8 @@ return (
                     const baseValue = (enlargedCard.marketValue || marketValues[enlargedCard.id] || 1);
                     const holoMult = getHoloMultiplier(enlargedCard.id);
                     const holoValue = baseValue * holoMult;
+            const normalPayout = baseValue * SELL_TO_SHOP_RATE;
+            const holoPayout = holoValue * SELL_TO_SHOP_RATE;
                     const isHolo = !!enlargedCard.isHolo;
 
                     const ownedEntry = collection[enlargedCard.id] || { normal: 0, holo: 0 };
@@ -3951,8 +4210,8 @@ return (
                       borderRadius: 12,
                       padding: 12
                     }}>
-                      <div style={{ color: '#9ca3af', fontSize: 12 }}>Normal market value</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}><img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />{baseValue.toFixed(2)}</div>
+                      <div style={{ color: '#9ca3af', fontSize: 12 }}>Normal shop payout (60%)</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}><img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />{normalPayout.toFixed(2)}</div>
                     </div>
                     <div style={{
                       display: 'flex',
@@ -3963,8 +4222,8 @@ return (
                       borderRadius: 12,
                       padding: 12
                     }}>
-                      <div style={{ color: '#9ca3af', fontSize: 12 }}>Holo market value <span style={{ opacity: 0.8 }}>({holoMult.toFixed(2)}×)</span></div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}><img src="./rations.png" alt="" style={{ width: 16, height: 16 }} /><span className="rainbow-text">{holoValue.toFixed(2)}</span></div>
+                      <div style={{ color: '#9ca3af', fontSize: 12 }}>Holo shop payout (60%) <span style={{ opacity: 0.8 }}>({holoMult.toFixed(2)}×)</span></div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}><img src="./rations.png" alt="" style={{ width: 16, height: 16 }} /><span className="rainbow-text">{holoPayout.toFixed(2)}</span></div>
                     </div>
                   </div>
 
