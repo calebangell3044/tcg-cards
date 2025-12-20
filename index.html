@@ -2527,12 +2527,7 @@ const getRareSlotCard = () => {
       };
 
 
-const totalCollectionValue = useMemo(() => {
-        let sum = 0;
-        const entries = Object.entries(collection || {});
-        
-
-      const movers7d = useMemo(() => {
+const movers7d = useMemo(() => {
         const fromDay = Math.max(1, (gameDay || 1) - 7);
         const changes = [];
         if (!marketValues || !priceHistory) return { fromDay, gainers: [], losers: [] };
@@ -2563,13 +2558,16 @@ const totalCollectionValue = useMemo(() => {
           changes.push({ card, pct, curVal, oldVal });
         }
 
-        const sorted = changes.slice().sort((a, b) => b.pct - a.pct);
-        const gainers = sorted.slice(0, 10);
+        const gainers = changes.slice().sort((a, b) => b.pct - a.pct).slice(0, 10);
         const losers = changes.slice().sort((a, b) => a.pct - b.pct).slice(0, 10);
 
         return { fromDay, gainers, losers };
       }, [priceHistory, marketValues, gameDay]);
-for (let i = 0; i < entries.length; i++) {
+
+      const totalCollectionValue = useMemo(() => {
+        let sum = 0;
+        const entries = Object.entries(collection || {});
+        for (let i = 0; i < entries.length; i++) {
           const cardId = entries[i][0];
           const entry = entries[i][1] || {};
           const normal = (typeof entry.normal === 'number') ? entry.normal : 0;
