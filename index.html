@@ -3611,7 +3611,11 @@ if (!isLoaded) {
                         {movers7d.gainers.map((row, idx) => (
                           <button
                             key={'g7-' + row.card.id}
-                            onClick={() => setEnlargedCard(row.card)}
+                            onClick={() => setEnlargedCard({
+                              ...row.card,
+                              image: getImageUrl(row.card),
+                              marketValue: row.curVal
+                            })}
                             style={{
                               width: '100%',
                               textAlign: 'left',
@@ -3651,7 +3655,11 @@ if (!isLoaded) {
                         {movers7d.losers.map((row, idx) => (
                           <button
                             key={'l7-' + row.card.id}
-                            onClick={() => setEnlargedCard(row.card)}
+                            onClick={() => setEnlargedCard({
+                              ...row.card,
+                              image: getImageUrl(row.card),
+                              marketValue: row.curVal
+                            })}
                             style={{
                               width: '100%',
                               textAlign: 'left',
