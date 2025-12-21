@@ -1274,13 +1274,13 @@ body{
           let value;
           switch(card.rarity) {
             case 'common':
-              value = generateWeightedValue(0.05, 5.5, 0.75);
+              value = generateWeightedValue(0.5, 5.5, 1.0);
               break;
             case 'uncommon':
-              value = generateWeightedValue(1.0, 8.0, 2.5);
+              value = generateWeightedValue(1.5, 8.0, 3.0);
               break;
             case 'rare':
-              value = generateWeightedValue(2.0, 25.0, 5.0);
+              value = generateWeightedValue(3.5, 25.0, 5.0);
               break;
             case 'legendary':
               value = generateWeightedValue(9.25, 87.0, 20.0);
@@ -2035,7 +2035,7 @@ body{
         const appreciation = Math.pow(1 + SEALED_APPRECIATION_RATE_PER_DAY, age - 1);
 
         // Market pack price (anchored to SEALED_BASE_PACK_PRICE at Day 1 base EV)
-        const pack = round2(SEALED_BASE_PACK_PRICE * ratio * appreciation);
+        const pack = round2(SEALED_BASE_PACK_PRICE * appreciation * Math.max(1, ratio));
 
         // Your discount rules:
         // bundles = value of 8 packs - 0.5 pack (7.5 packs)
@@ -3475,22 +3475,22 @@ if (!isLoaded) {
                     </div>
                     
                     <button
-                      onClick={() => setPurchaseConfirm({ type: 'case', title: 'Booster Case (144 Packs)', cost: sealedMarket.prices.single00, details: '144 packs (6 boxes). Two packs are guaranteed an Ultra X Rare in a rare slot.' })}
-                      disabled={rations < sealedMarket.prices.single00 || ((shopStock && shopStock.case) ? shopStock.case.remaining <= 0 : false)}
+                      onClick={() => setPurchaseConfirm({ type: 'case', title: 'Booster Case (144 Packs)', cost: sealedMarket.prices.case, details: '144 packs (6 boxes). Two packs are guaranteed an Ultra X Rare in a rare slot.' })}
+                      disabled={rations < sealedMarket.prices.case || ((shopStock && shopStock.case) ? shopStock.case.remaining <= 0 : false)}
                       style={{
                         width: '100%',
                         padding: '12px',
-                        background: rations >= sealedMarket.prices.single00 ? 'linear-gradient(90deg, #fbbf24, #f59e0b)' : '#374151',
+                        background: rations >= sealedMarket.prices.case ? 'linear-gradient(90deg, #fbbf24, #f59e0b)' : '#374151',
                         color: 'white',
                         border: 'none',
                         borderRadius: 8,
-                        cursor: rations >= sealedMarket.prices.single00 ? 'pointer' : 'not-allowed',
+                        cursor: rations >= sealedMarket.prices.case ? 'pointer' : 'not-allowed',
                         fontSize: 16,
                         fontWeight: 'bold',
-                        opacity: rations >= sealedMarket.prices.single00 ? 1 : 0.5
+                        opacity: rations >= sealedMarket.prices.case ? 1 : 0.5
                       }}
                     >
-                      {((shopStock && shopStock.case) ? (shopStock.case.remaining <= 0 ? 'Sold Out Today' : (rations >= sealedMarket.prices.single00 ? `Buy Case (${shopStock.case.remaining}/${shopStock.case.limit})` : `Not Enough Rations (${shopStock.case.remaining}/${shopStock.case.limit})`)) : (rations >= sealedMarket.prices.single00 ? 'Buy Case' : 'Not Enough Rations'))}
+                      {((shopStock && shopStock.case) ? (shopStock.case.remaining <= 0 ? 'Sold Out Today' : (rations >= sealedMarket.prices.case ? `Buy Case (${shopStock.case.remaining}/${shopStock.case.limit})` : `Not Enough Rations (${shopStock.case.remaining}/${shopStock.case.limit})`)) : (rations >= sealedMarket.prices.case ? 'Buy Case' : 'Not Enough Rations'))}
                     </button>
                   </div>
                 </div>
@@ -4683,7 +4683,7 @@ return (
                   marginBottom: 8
                 }}>
                   <div style={{ color: '#9ca3af', fontSize: 12 }}>Cost</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}><img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />{purchaseConfirm.cost.toFixed(2)}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}><img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />{(Number.isFinite(purchaseConfirm.cost) ? purchaseConfirm.cost.toFixed(2) : '—')}</div>
                 </div>
 
                 <div style={{
@@ -4716,15 +4716,15 @@ return (
 
                   <button
                     onClick={confirmPurchase}
-                    disabled={rations < purchaseConfirm.cost}
+                    disabled={(!Number.isFinite(purchaseConfirm.cost) || rations < purchaseConfirm.cost)}
                     style={{
                       flex: 1,
                       padding: '12px',
-                      background: rations < purchaseConfirm.cost ? '#1f2937' : 'linear-gradient(90deg, #3b82f6, #6366f1)',
-                      color: rations < purchaseConfirm.cost ? '#6b7280' : 'white',
-                      border: rations < purchaseConfirm.cost ? '1px solid rgba(255,255,255,0.10)' : 'none',
+                      background: (!Number.isFinite(purchaseConfirm.cost) || rations < purchaseConfirm.cost) ? '#1f2937' : 'linear-gradient(90deg, #3b82f6, #6366f1)',
+                      color: (!Number.isFinite(purchaseConfirm.cost) || rations < purchaseConfirm.cost) ? '#6b7280' : 'white',
+                      border: (!Number.isFinite(purchaseConfirm.cost) || rations < purchaseConfirm.cost) ? '1px solid rgba(255,255,255,0.10)' : 'none',
                       borderRadius: 8,
-                      cursor: rations < purchaseConfirm.cost ? 'not-allowed' : 'pointer',
+                      cursor: (!Number.isFinite(purchaseConfirm.cost) || rations < purchaseConfirm.cost) ? 'not-allowed' : 'pointer',
                       fontSize: 14,
                       fontWeight: 'bold'
                     }}
