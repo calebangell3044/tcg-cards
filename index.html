@@ -1955,18 +1955,120 @@ body{
         return `pack_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       };
 
+
+      // ----------------------------
+      // Sealed market pricing (BaseSet1)
+      // - Pack price is anchored to 10 Rations on Day 1 and scales with expected pack value (EV)
+      // - Sealed appreciates slowly with set age (independent of card day-to-day volatility)
+      // ----------------------------
+      const SEALED_SET_ID = 'BaseSet1';
+      const SEALED_BASE_PACK_PRICE = 10; // Day 1 anchor price
+      const SEALED_APPRECIATION_RATE_PER_DAY = 0.0002; // ~7.6%/yr
+
+      const sealedMarket = useMemo(() => {
+        const round2 = (n) => (Math.round((n + Number.EPSILON) * 100) / 100);
+
+        const getValuesObj = (raw) => {
+          if (!raw) return null;
+          try { return JSON.parse(raw) || null; } catch (e) { return null; }
+        };
+
+        const baseValues = getValuesObj(localStorage.getItem('tcg-market-base')) || {};
+        const currentValues = marketValues || {};
+
+        const getVal = (vals, cardId) => {
+          const v = vals && vals[cardId];
+          return Number.isFinite(v) ? v : 0;
+        };
+
+        const avgRarity = (vals, rarity, includeHolo = false) => {
+          const arr = CARDS_BY_RARITY[rarity] || [];
+          if (!arr.length) return 0;
+          let sum = 0;
+          for (let i = 0; i < arr.length; i++) {
+            const card = arr[i];
+            const base = getVal(vals, card.id);
+            const mult = includeHolo ? (Number.isFinite(holoMultipliers[card.id]) ? holoMultipliers[card.id] : 1.50) : 1;
+            sum += base * mult;
+          }
+          return sum / arr.length;
+        };
+
+        const expectedPackEV = (vals) => {
+          // Pack structure (your current code):
+          // 7 commons, 5 uncommons, 2 "rare slots" with 89/10/1 rare/legendary/uxr, + 1 foil slot
+          const commonEV = avgRarity(vals, 'common', false);
+          const uncommonEV = avgRarity(vals, 'uncommon', false);
+          const rareEV = avgRarity(vals, 'rare', false);
+          const legendaryEV = avgRarity(vals, 'legendary', false);
+          const ultraXEV = avgRarity(vals, 'ultra x rare', false);
+
+          // Foil slot rarity weights (matches your current open-pack logic)
+          const foilEV =
+            0.47 * avgRarity(vals, 'common', true) +
+            0.34 * avgRarity(vals, 'uncommon', true) +
+            0.13 * avgRarity(vals, 'rare', true) +
+            0.05 * avgRarity(vals, 'legendary', true) +
+            0.01 * avgRarity(vals, 'ultra x rare', true);
+
+          const twoRareSlotsEV =
+            2 * ((0.89 * rareEV) + (0.10 * legendaryEV) + (0.01 * ultraXEV));
+
+          const ev = (7 * commonEV) + (5 * uncommonEV) + twoRareSlotsEV + foilEV;
+          return ev;
+        };
+
+        const baseEV = expectedPackEV(baseValues);
+        const curEV = expectedPackEV(currentValues);
+        const ratio = (baseEV > 0) ? (curEV / baseEV) : 1;
+
+        // Set release day (for future multi-set support). Default Day 1.
+        let releaseDay = 1;
+        try {
+          const raw = localStorage.getItem(`tcg-set-release-day-${SEALED_SET_ID}`);
+          const d = parseInt(raw || '1', 10);
+          if (Number.isFinite(d) && d > 0) releaseDay = d;
+          localStorage.setItem(`tcg-set-release-day-${SEALED_SET_ID}`, String(releaseDay));
+        } catch (e) {}
+
+        const age = Math.max(1, (gameDay || 1) - releaseDay + 1);
+        const appreciation = Math.pow(1 + SEALED_APPRECIATION_RATE_PER_DAY, age - 1);
+
+        // Market pack price (anchored to SEALED_BASE_PACK_PRICE at Day 1 base EV)
+        const pack = round2(SEALED_BASE_PACK_PRICE * ratio * appreciation);
+
+        // Your discount rules:
+        // bundles = value of 8 packs - 0.5 pack (7.5 packs)
+        // booster boxes = value of 20 packs (4 "free")
+        // cases = value of 100 packs (44 "free")
+        const prices = {
+          single: pack,
+          bundle: round2(pack * 7.5),
+          booster: round2(pack * 20),
+          case: round2(pack * 100)
+        };
+
+        return {
+          age,
+          appreciation: round2(appreciation),
+          baseEV: round2(baseEV),
+          curEV: round2(curEV),
+          prices
+        };
+      }, [marketValues, holoMultipliers, gameDay]);
       // Buy single pack
       const buySinglePack = () => {
-        if (rations < 10) return;
-        
+        const cost = (sealedMarket && sealedMarket.prices && Number.isFinite(sealedMarket.prices.single)) ? sealedMarket.prices.single : 10;
+        if (rations < cost) return;
+
         const newPack = {
           id: generatePackId(),
           type: 'single'
         };
-        
+
         const newInventory = [...packInventory, newPack];
-        const newRations = rations - 10;
-        
+        const newRations = parseFloat((rations - cost).toFixed(2));
+
         setPackInventory(newInventory);
         setRations(newRations);
         savePackInventory(newInventory);
@@ -2010,33 +2112,36 @@ body{
 
 // Buy bundle box (8 packs, 1 guaranteed legendary)
       const buyBundleBox = () => {
-        if (rations < 75) return;
+        const cost = (sealedMarket && sealedMarket.prices && Number.isFinite(sealedMarket.prices.bundle)) ? sealedMarket.prices.bundle : 75;
+        if (rations < cost) return;
 
         mutateSealedInventory(prev => ({ ...prev, bundle: (prev.bundle || 0) + 1 }));
 
-        const newRations = rations - 75;
+        const newRations = parseFloat((rations - cost).toFixed(2));
         setRations(newRations);
         saveRations(newRations);
       };
 
 // Buy booster box (24 packs, 4 guaranteed legendary)
       const buyBoosterBox = () => {
-        if (rations < 200) return;
+        const cost = (sealedMarket && sealedMarket.prices && Number.isFinite(sealedMarket.prices.booster)) ? sealedMarket.prices.booster : 200;
+        if (rations < cost) return;
 
         mutateSealedInventory(prev => ({ ...prev, booster: (prev.booster || 0) + 1 }));
 
-        const newRations = rations - 200;
+        const newRations = parseFloat((rations - cost).toFixed(2));
         setRations(newRations);
         saveRations(newRations);
       };
 
 // Buy booster box case (144 packs, 2 guaranteed ultra x rare)
       const buyBoosterCase = () => {
-        if (rations < 1000) return;
+        const cost = (sealedMarket && sealedMarket.prices && Number.isFinite(sealedMarket.prices.case)) ? sealedMarket.prices.case : 1000;
+        if (rations < cost) return;
 
         mutateSealedInventory(prev => ({ ...prev, case: (prev.case || 0) + 1 }));
 
-        const newRations = rations - 1000;
+        const newRations = parseFloat((rations - cost).toFixed(2));
         setRations(newRations);
         saveRations(newRations);
       };
@@ -2352,6 +2457,52 @@ const getRareSlotCard = () => {
         saveCollection(newCollection);
         saveRations(newRations);
         setSellConfirm(null);
+      };
+
+
+      // Sealed selling (75% of sealed market value)
+      const SEALED_SELL_RATE = 0.75;
+
+      const sellSealedSinglePack = () => {
+        const price = (sealedMarket && sealedMarket.prices && Number.isFinite(sealedMarket.prices.single)) ? sealedMarket.prices.single : 10;
+        const payout = parseFloat((price * SEALED_SELL_RATE).toFixed(2));
+
+        const idx = (packInventory || []).findIndex(p => p && p.type === 'single');
+        if (idx === -1) return;
+
+        const newInventory = [...packInventory];
+        newInventory.splice(idx, 1);
+
+        const newRations = parseFloat((rations + payout).toFixed(2));
+        setPackInventory(newInventory);
+        savePackInventory(newInventory);
+        setRations(newRations);
+        saveRations(newRations);
+      };
+
+      const sellSealedItem = (sealedType) => {
+        if (!sealedType) return;
+        const prices = (sealedMarket && sealedMarket.prices) ? sealedMarket.prices : {};
+        const price = Number.isFinite(prices[sealedType]) ? prices[sealedType] : 0;
+        const payout = parseFloat((price * SEALED_SELL_RATE).toFixed(2));
+
+        if (sealedType === 'single') {
+          sellSealedSinglePack();
+          return;
+        }
+
+        // bundle / booster / case live in sealedInventory
+        const currentCount = (sealedInventory && sealedInventory[sealedType]) ? sealedInventory[sealedType] : 0;
+        if (currentCount <= 0) return;
+
+        mutateSealedInventory(prev => ({
+          ...prev,
+          [sealedType]: Math.max(0, (prev[sealedType] || 0) - 1)
+        }));
+
+        const newRations = parseFloat((rations + payout).toFixed(2));
+        setRations(newRations);
+        saveRations(newRations);
       };
 
       const getCollectionCards = () => {
@@ -3182,26 +3333,26 @@ if (!isLoaded) {
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                       <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
-                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>10</span>
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>{sealedMarket.prices.single.toFixed(2)}</span>
                     </div>
                     
                     <button
-                      onClick={() => setPurchaseConfirm({ type: 'single', title: 'Single Pack', cost: 10, details: '15 cards: 7 Common, 5 Uncommon, 2 Rare+ (89% Rare / 10% Legendary / 1% Ultra X Rare), 1 Holo slot (47%C / 34%U / 13%R / 5%L / 1% UXR).' })}
-                      disabled={rations < 10 || ((shopStock && shopStock.single) ? shopStock.single.remaining <= 0 : false)}
+                      onClick={() => setPurchaseConfirm({ type: 'single', title: 'Single Pack', cost: sealedMarket.prices.single, details: '15 cards: 7 Common, 5 Uncommon, 2 Rare+ (89% Rare / 10% Legendary / 1% Ultra X Rare), 1 Holo slot (47%C / 34%U / 13%R / 5%L / 1% UXR).' })}
+                      disabled={rations < sealedMarket.prices.single || ((shopStock && shopStock.single) ? shopStock.single.remaining <= 0 : false)}
                       style={{
                         width: '100%',
                         padding: '12px',
-                        background: rations >= 10 ? 'linear-gradient(90deg, #9333ea, #ec4899)' : '#374151',
+                        background: rations >= sealedMarket.prices.single ? 'linear-gradient(90deg, #9333ea, #ec4899)' : '#374151',
                         color: 'white',
                         border: 'none',
                         borderRadius: 8,
-                        cursor: rations >= 10 ? 'pointer' : 'not-allowed',
+                        cursor: rations >= sealedMarket.prices.single ? 'pointer' : 'not-allowed',
                         fontSize: 16,
                         fontWeight: 'bold',
-                        opacity: rations >= 10 ? 1 : 0.5
+                        opacity: rations >= sealedMarket.prices.single ? 1 : 0.5
                       }}
                     >
-                      {((shopStock && shopStock.single) ? (shopStock.single.remaining <= 0 ? 'Sold Out Today' : (rations >= 10 ? `Buy Pack (${shopStock.single.remaining}/${shopStock.single.limit})` : `Not Enough Rations (${shopStock.single.remaining}/${shopStock.single.limit})`)) : (rations >= 10 ? 'Buy Pack' : 'Not Enough Rations'))}
+                      {((shopStock && shopStock.single) ? (shopStock.single.remaining <= 0 ? 'Sold Out Today' : (rations >= sealedMarket.prices.single ? `Buy Pack (${shopStock.single.remaining}/${shopStock.single.limit})` : `Not Enough Rations (${shopStock.single.remaining}/${shopStock.single.limit})`)) : (rations >= sealedMarket.prices.single ? 'Buy Pack' : 'Not Enough Rations'))}
                     </button>
                   </div>
 
@@ -3228,26 +3379,26 @@ if (!isLoaded) {
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                       <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
-                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>75</span>
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>{sealedMarket.prices.bundle.toFixed(2)}</span>
                     </div>
                     
                     <button
-                      onClick={() => setPurchaseConfirm({ type: 'bundle', title: 'Bundle Box (8 Packs)', cost: 75, details: '8 packs. One pack is guaranteed a Legendary in a rare slot.' })}
-                      disabled={rations < 75 || ((shopStock && shopStock.bundle) ? shopStock.bundle.remaining <= 0 : false)}
+                      onClick={() => setPurchaseConfirm({ type: 'bundle', title: 'Bundle Box (8 Packs)', cost: sealedMarket.prices.bundle, details: '8 packs. One pack is guaranteed a Legendary in a rare slot.' })}
+                      disabled={rations < sealedMarket.prices.bundle || ((shopStock && shopStock.bundle) ? shopStock.bundle.remaining <= 0 : false)}
                       style={{
                         width: '100%',
                         padding: '12px',
-                        background: rations >= 75 ? 'linear-gradient(90deg, #10b981, #059669)' : '#374151',
+                        background: rations >= sealedMarket.prices.bundle ? 'linear-gradient(90deg, #10b981, #059669)' : '#374151',
                         color: 'white',
                         border: 'none',
                         borderRadius: 8,
-                        cursor: rations >= 75 ? 'pointer' : 'not-allowed',
+                        cursor: rations >= sealedMarket.prices.bundle ? 'pointer' : 'not-allowed',
                         fontSize: 16,
                         fontWeight: 'bold',
-                        opacity: rations >= 75 ? 1 : 0.5
+                        opacity: rations >= sealedMarket.prices.bundle ? 1 : 0.5
                       }}
                     >
-                      {((shopStock && shopStock.bundle) ? (shopStock.bundle.remaining <= 0 ? 'Sold Out Today' : (rations >= 75 ? `Buy Bundle (${shopStock.bundle.remaining}/${shopStock.bundle.limit})` : `Not Enough Rations (${shopStock.bundle.remaining}/${shopStock.bundle.limit})`)) : (rations >= 75 ? 'Buy Bundle' : 'Not Enough Rations'))}
+                      {((shopStock && shopStock.bundle) ? (shopStock.bundle.remaining <= 0 ? 'Sold Out Today' : (rations >= sealedMarket.prices.bundle ? `Buy Bundle (${shopStock.bundle.remaining}/${shopStock.bundle.limit})` : `Not Enough Rations (${shopStock.bundle.remaining}/${shopStock.bundle.limit})`)) : (rations >= sealedMarket.prices.bundle ? 'Buy Bundle' : 'Not Enough Rations'))}
                     </button>
                   </div>
 
@@ -3274,26 +3425,26 @@ if (!isLoaded) {
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                       <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
-                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>200</span>
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>{sealedMarket.prices.booster.toFixed(2)}</span>
                     </div>
                     
                     <button
-                      onClick={() => setPurchaseConfirm({ type: 'booster', title: 'Booster Box (24 Packs)', cost: 200, details: '24 packs. One pack is guaranteed an Ultra X Rare in a rare slot.' })}
-                      disabled={rations < 200 || ((shopStock && shopStock.booster) ? shopStock.booster.remaining <= 0 : false)}
+                      onClick={() => setPurchaseConfirm({ type: 'booster', title: 'Booster Box (24 Packs)', cost: sealedMarket.prices.booster, details: '24 packs. One pack is guaranteed an Ultra X Rare in a rare slot.' })}
+                      disabled={rations < sealedMarket.prices.booster || ((shopStock && shopStock.booster) ? shopStock.booster.remaining <= 0 : false)}
                       style={{
                         width: '100%',
                         padding: '12px',
-                        background: (rations >= 200 && ((shopStock && shopStock.booster) ? shopStock.booster.remaining > 0 : true)) ? 'linear-gradient(90deg, #3b82f6, #2563eb)' : '#374151',
+                        background: (rations >= sealedMarket.prices.booster && ((shopStock && shopStock.booster) ? shopStock.booster.remaining > 0 : true)) ? 'linear-gradient(90deg, #3b82f6, #2563eb)' : '#374151',
                         color: 'white',
                         border: 'none',
                         borderRadius: 8,
-                        cursor: (rations >= 200 && ((shopStock && shopStock.booster) ? shopStock.booster.remaining > 0 : true)) ? 'pointer' : 'not-allowed',
+                        cursor: (rations >= sealedMarket.prices.booster && ((shopStock && shopStock.booster) ? shopStock.booster.remaining > 0 : true)) ? 'pointer' : 'not-allowed',
                         fontSize: 16,
                         fontWeight: 'bold',
-                        opacity: (rations >= 200 && ((shopStock && shopStock.booster) ? shopStock.booster.remaining > 0 : true)) ? 1 : 0.5
+                        opacity: (rations >= sealedMarket.prices.booster && ((shopStock && shopStock.booster) ? shopStock.booster.remaining > 0 : true)) ? 1 : 0.5
                       }}
                     >
-                      {((shopStock && shopStock.booster) ? (shopStock.booster.remaining <= 0 ? 'Sold Out Today' : (rations >= 200 ? `Buy Box (${shopStock.booster.remaining}/${shopStock.booster.limit})` : 'Not Enough Rations')) : (rations >= 200 ? 'Buy Box' : 'Not Enough Rations'))}
+                      {((shopStock && shopStock.booster) ? (shopStock.booster.remaining <= 0 ? 'Sold Out Today' : (rations >= sealedMarket.prices.booster ? `Buy Box (${shopStock.booster.remaining}/${shopStock.booster.limit})` : 'Not Enough Rations')) : (rations >= sealedMarket.prices.booster ? 'Buy Box' : 'Not Enough Rations'))}
                     </button>
                   </div>
 
@@ -3320,26 +3471,26 @@ if (!isLoaded) {
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                       <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
-                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>1000</span>
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>{sealedMarket.prices.case.toFixed(2)}</span>
                     </div>
                     
                     <button
-                      onClick={() => setPurchaseConfirm({ type: 'case', title: 'Booster Case (144 Packs)', cost: 1000, details: '144 packs (6 boxes). Two packs are guaranteed an Ultra X Rare in a rare slot.' })}
-                      disabled={rations < 1000 || ((shopStock && shopStock.case) ? shopStock.case.remaining <= 0 : false)}
+                      onClick={() => setPurchaseConfirm({ type: 'case', title: 'Booster Case (144 Packs)', cost: sealedMarket.prices.single00, details: '144 packs (6 boxes). Two packs are guaranteed an Ultra X Rare in a rare slot.' })}
+                      disabled={rations < sealedMarket.prices.single00 || ((shopStock && shopStock.case) ? shopStock.case.remaining <= 0 : false)}
                       style={{
                         width: '100%',
                         padding: '12px',
-                        background: rations >= 1000 ? 'linear-gradient(90deg, #fbbf24, #f59e0b)' : '#374151',
+                        background: rations >= sealedMarket.prices.single00 ? 'linear-gradient(90deg, #fbbf24, #f59e0b)' : '#374151',
                         color: 'white',
                         border: 'none',
                         borderRadius: 8,
-                        cursor: rations >= 1000 ? 'pointer' : 'not-allowed',
+                        cursor: rations >= sealedMarket.prices.single00 ? 'pointer' : 'not-allowed',
                         fontSize: 16,
                         fontWeight: 'bold',
-                        opacity: rations >= 1000 ? 1 : 0.5
+                        opacity: rations >= sealedMarket.prices.single00 ? 1 : 0.5
                       }}
                     >
-                      {((shopStock && shopStock.case) ? (shopStock.case.remaining <= 0 ? 'Sold Out Today' : (rations >= 1000 ? `Buy Case (${shopStock.case.remaining}/${shopStock.case.limit})` : `Not Enough Rations (${shopStock.case.remaining}/${shopStock.case.limit})`)) : (rations >= 1000 ? 'Buy Case' : 'Not Enough Rations'))}
+                      {((shopStock && shopStock.case) ? (shopStock.case.remaining <= 0 ? 'Sold Out Today' : (rations >= sealedMarket.prices.single00 ? `Buy Case (${shopStock.case.remaining}/${shopStock.case.limit})` : `Not Enough Rations (${shopStock.case.remaining}/${shopStock.case.limit})`)) : (rations >= sealedMarket.prices.single00 ? 'Buy Case' : 'Not Enough Rations'))}
                     </button>
                   </div>
                 </div>
@@ -3359,6 +3510,126 @@ if (!isLoaded) {
                       Select a card below to sell. The shop pays <b>{Math.round(SELL_TO_SHOP_RATE * 100)}%</b> of the current market value (and <b>{Math.round(SELL_TO_SHOP_RATE * 100)}%</b> of holo value for foils).
                     </div>
 
+
+                    <div style={{ marginBottom: 14, padding: '12px 12px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(0,0,0,0.18)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                        <div>
+                          <div style={{ fontSize: 16, fontWeight: 900 }}>Sealed Product</div>
+                          <div style={{ color: '#9ca3af', fontSize: 12, marginTop: 2 }}>
+                            Market = expected pack value (EV) × set age appreciation. Set age: <b>{sealedMarket.age}</b> • Appreciation: <b>{sealedMarket.appreciation}x</b>
+                          </div>
+                        </div>
+                        <div style={{ color: '#9ca3af', fontSize: 12 }}>
+                          Pack EV: <b>{sealedMarket.curEV.toFixed(2)}</b> (base {sealedMarket.baseEV.toFixed(2)})
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10, marginTop: 10 }}>
+                        <div style={{ padding: 12, borderRadius: 12, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                          <div style={{ fontWeight: 900, marginBottom: 4 }}>Single Pack</div>
+                          <div style={{ color: '#9ca3af', fontSize: 12 }}>You have: {(packInventory || []).filter(p => p && p.type === 'single').length}</div>
+                          <div style={{ color: '#d1d5db', fontSize: 12, marginTop: 6 }}>
+                            Market: <b>{sealedMarket.prices.single.toFixed(2)}</b> • Sell: <b>{(sealedMarket.prices.single * SEALED_SELL_RATE).toFixed(2)}</b>
+                          </div>
+                          <button
+                            onClick={() => sellSealedItem('single')}
+                            disabled={(packInventory || []).filter(p => p && p.type === 'single').length <= 0}
+                            style={{
+                              width: '100%',
+                              marginTop: 10,
+                              padding: '10px 12px',
+                              borderRadius: 10,
+                              border: '1px solid rgba(255,255,255,0.10)',
+                              background: 'rgba(168,85,247,0.22)',
+                              color: 'white',
+                              cursor: (packInventory || []).filter(p => p && p.type === 'single').length > 0 ? 'pointer' : 'not-allowed',
+                              fontWeight: 800
+                            }}
+                          >
+                            Sell Pack
+                          </button>
+                        </div>
+
+                        <div style={{ padding: 12, borderRadius: 12, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                          <div style={{ fontWeight: 900, marginBottom: 4 }}>Bundle (8 Packs)</div>
+                          <div style={{ color: '#9ca3af', fontSize: 12 }}>You have: {(sealedInventory && sealedInventory.bundle) ? sealedInventory.bundle : 0}</div>
+                          <div style={{ color: '#d1d5db', fontSize: 12, marginTop: 6 }}>
+                            Market: <b>{sealedMarket.prices.bundle.toFixed(2)}</b> • Sell: <b>{(sealedMarket.prices.bundle * SEALED_SELL_RATE).toFixed(2)}</b>
+                          </div>
+                          <button
+                            onClick={() => sellSealedItem('bundle')}
+                            disabled={!sealedInventory || (sealedInventory.bundle || 0) <= 0}
+                            style={{
+                              width: '100%',
+                              marginTop: 10,
+                              padding: '10px 12px',
+                              borderRadius: 10,
+                              border: '1px solid rgba(255,255,255,0.10)',
+                              background: 'rgba(168,85,247,0.22)',
+                              color: 'white',
+                              cursor: (sealedInventory && (sealedInventory.bundle || 0) > 0) ? 'pointer' : 'not-allowed',
+                              fontWeight: 800
+                            }}
+                          >
+                            Sell Bundle
+                          </button>
+                        </div>
+
+                        <div style={{ padding: 12, borderRadius: 12, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                          <div style={{ fontWeight: 900, marginBottom: 4 }}>Booster Box (24 Packs)</div>
+                          <div style={{ color: '#9ca3af', fontSize: 12 }}>You have: {(sealedInventory && sealedInventory.booster) ? sealedInventory.booster : 0}</div>
+                          <div style={{ color: '#d1d5db', fontSize: 12, marginTop: 6 }}>
+                            Market: <b>{sealedMarket.prices.booster.toFixed(2)}</b> • Sell: <b>{(sealedMarket.prices.booster * SEALED_SELL_RATE).toFixed(2)}</b>
+                          </div>
+                          <button
+                            onClick={() => sellSealedItem('booster')}
+                            disabled={!sealedInventory || (sealedInventory.booster || 0) <= 0}
+                            style={{
+                              width: '100%',
+                              marginTop: 10,
+                              padding: '10px 12px',
+                              borderRadius: 10,
+                              border: '1px solid rgba(255,255,255,0.10)',
+                              background: 'rgba(168,85,247,0.22)',
+                              color: 'white',
+                              cursor: (sealedInventory && (sealedInventory.booster || 0) > 0) ? 'pointer' : 'not-allowed',
+                              fontWeight: 800
+                            }}
+                          >
+                            Sell Box
+                          </button>
+                        </div>
+
+                        <div style={{ padding: 12, borderRadius: 12, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                          <div style={{ fontWeight: 900, marginBottom: 4 }}>Booster Case (144 Packs)</div>
+                          <div style={{ color: '#9ca3af', fontSize: 12 }}>You have: {(sealedInventory && sealedInventory.case) ? sealedInventory.case : 0}</div>
+                          <div style={{ color: '#d1d5db', fontSize: 12, marginTop: 6 }}>
+                            Market: <b>{sealedMarket.prices.case.toFixed(2)}</b> • Sell: <b>{(sealedMarket.prices.case * SEALED_SELL_RATE).toFixed(2)}</b>
+                          </div>
+                          <button
+                            onClick={() => sellSealedItem('case')}
+                            disabled={!sealedInventory || (sealedInventory.case || 0) <= 0}
+                            style={{
+                              width: '100%',
+                              marginTop: 10,
+                              padding: '10px 12px',
+                              borderRadius: 10,
+                              border: '1px solid rgba(255,255,255,0.10)',
+                              background: 'rgba(168,85,247,0.22)',
+                              color: 'white',
+                              cursor: (sealedInventory && (sealedInventory.case || 0) > 0) ? 'pointer' : 'not-allowed',
+                              fontWeight: 800
+                            }}
+                          >
+                            Sell Case
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ color: '#9ca3af', fontSize: 12, marginTop: 10 }}>
+                        Shop pays <b>{Math.round(SEALED_SELL_RATE * 100)}%</b> of sealed market value.
+                      </div>
+                    </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 14, alignItems: 'center' }}>
                       <input
                         value={shopSellSearch}
