@@ -1995,8 +1995,8 @@ body{
         };
 
         const expectedPackEV = (vals) => {
-          // Pack structure (your current code):
-          // 7 commons, 5 uncommons, 2 "rare slots" with 89/10/1 rare/legendary/uxr, + 1 foil slot
+          // Pack structure (8 cards):
+          // 4 commons, 2 uncommons, 1 "rare slot" with 89/10/1 rare/legendary/uxr, + 1 foil slot
           const commonEV = avgRarity(vals, 'common', false);
           const uncommonEV = avgRarity(vals, 'uncommon', false);
           const rareEV = avgRarity(vals, 'rare', false);
@@ -2011,10 +2011,10 @@ body{
             0.05 * avgRarity(vals, 'legendary', true) +
             0.01 * avgRarity(vals, 'ultra x rare', true);
 
-          const twoRareSlotsEV =
-            2 * ((0.89 * rareEV) + (0.10 * legendaryEV) + (0.01 * ultraXEV));
+          const oneRareSlotEV =
+            (0.89 * rareEV) + (0.10 * legendaryEV) + (0.01 * ultraXEV);
 
-          const ev = (7 * commonEV) + (5 * uncommonEV) + twoRareSlotsEV + foilEV;
+          const ev = (4 * commonEV) + (2 * uncommonEV) + oneRareSlotEV + foilEV;
           return ev;
         };
 
@@ -2269,26 +2269,26 @@ const getRareSlotCard = () => {
         const newPack = [];
 
         if (isGodPack) {
-          // God Pack: 15 total cards, ALL holo
-          // 4 Rare, 5 Legendary, 6 Ultra X Rare
+          // God Pack: 8 total cards, ALL holo
+          // 1 Rare, 3 Legendary, 4 Ultra X Rare
           let slot = 0;
 
-          for (let i = 0; i < 4; i++) {
+          for (let i = 0; i < 1; i++) {
             const card = getRandomCard('rare');
             if (card) newPack.push({ ...card, slot: slot++, isHolo: true, isGodPack: true });
           }
-          for (let i = 0; i < 5; i++) {
+          for (let i = 0; i < 3; i++) {
             const card = getRandomCard('legendary');
             if (card) newPack.push({ ...card, slot: slot++, isHolo: true, isGodPack: true });
           }
-          for (let i = 0; i < 6; i++) {
+          for (let i = 0; i < 4; i++) {
             const card = getRandomCard('ultra x rare');
             if (card) newPack.push({ ...card, slot: slot++, isHolo: true, isGodPack: true });
           }
 
           // Safety: if anything failed to generate (missing rarity pools), fill remaining slots with legendary/rare
-          while (newPack.length < 15) {
-            const fallback = getRandomCard(newPack.length < 10 ? 'legendary' : 'rare');
+          while (newPack.length < 8) {
+            const fallback = getRandomCard(newPack.length < 5 ? 'legendary' : 'rare');
             if (!fallback) break;
             newPack.push({ ...fallback, slot: slot++, isHolo: true, isGodPack: true });
           }
@@ -2298,39 +2298,33 @@ const getRareSlotCard = () => {
           // Re-assign slots after shuffle
           newPack.forEach((c, i) => c.slot = i);
         } else {
-          // Normal pack: 15 cards (7 Common, 5 Uncommon, 2 Rare+, 1 Holo slot)
-          // Generate 7 commons
-          for (let i = 0; i < 7; i++) {
+          // Normal pack: 8 cards (4 Common, 2 Uncommon, 1 Rare+, 1 Holo slot)
+          // Generate 4 commons
+          for (let i = 0; i < 4; i++) {
             const card = getRandomCard('common');
             if (card) newPack.push({ ...card, slot: i });
           }
 
-          // Generate 5 uncommons
-          for (let i = 0; i < 5; i++) {
+          // Generate 2 uncommons
+          for (let i = 0; i < 2; i++) {
             const card = getRandomCard('uncommon');
-            if (card) newPack.push({ ...card, slot: 7 + i });
+            if (card) newPack.push({ ...card, slot: 4 + i });
           }
 
-          // Generate 2 rare+ slots
+          // Generate 1 rare+ slot
           if (packToOpen.forceRarity) {
-            // First slot is guaranteed rarity
+            // Guaranteed rarity from sealed product
             const guaranteedCard = getRandomCard(packToOpen.forceRarity);
-            if (guaranteedCard) newPack.push({ ...guaranteedCard, slot: 12 });
-
-            // Second slot is normal rare+
-            const card = getRareSlotCard();
-            if (card) newPack.push({ ...card, slot: 13 });
+            if (guaranteedCard) newPack.push({ ...guaranteedCard, slot: 6 });
           } else {
-            // Both slots are normal rare+
-            for (let i = 0; i < 2; i++) {
-              const card = getRareSlotCard();
-              if (card) newPack.push({ ...card, slot: 12 + i });
-            }
+            // Normal rare+ slot
+            const card = getRareSlotCard();
+            if (card) newPack.push({ ...card, slot: 6 });
           }
 
           // Foil (holo) slot
           const foilCard = getFoilSlotCard();
-          if (foilCard) newPack.push({ ...foilCard, slot: 14, isHolo: true, isFoilSlot: true });
+          if (foilCard) newPack.push({ ...foilCard, slot: 7, isHolo: true, isFoilSlot: true });
         }
 
         // Record milestone events
@@ -2789,7 +2783,7 @@ if (!isLoaded) {
               <div className="godpack-gate-card" onClick={(e) => e.stopPropagation()}>
                 <div className="godpack-gate-content">
                   <div className="godpack-gate-title">GOD PACK</div>
-                  <div className="godpack-gate-sub">All 15 cards in this pack are holo.</div>
+                  <div className="godpack-gate-sub">All 8 cards in this pack are holo.</div>
                   <div className="godpack-gate-note">Tap continue to start the reveal.</div>
                   <div className="godpack-gate-actions">
                     <button className="btn btn-primary" onClick={dismissGodPackGate}>Continue</button>
@@ -2811,8 +2805,8 @@ if (!isLoaded) {
                   {formatEventSummary(selectedEvent)}
                 </div>
                 {selectedEvent.type === 'godpack' && Array.isArray(selectedEvent.cards) && (
-                  <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10 }}>
-                    {selectedEvent.cards.slice(0, 15).map((c, idx) => {
+                  <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
+                    {selectedEvent.cards.slice(0, 8).map((c, idx) => {
                       const card = getCardById(c.id);
                       if (!card) return <div key={idx} style={{ height: 90, borderRadius: 8, background: 'rgba(255,255,255,0.06)' }} />;
                       return (
@@ -3285,9 +3279,9 @@ if (!isLoaded) {
                       style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16, boxShadow: '0 0 40px rgba(236,72,153,0.25)' }}
                     />
                     <h3 style={{ color: '#f472b6', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>God Pack (Test)</h3>
-                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 6px', textAlign: 'center' }}>15 holo cards</p>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 6px', textAlign: 'center' }}>8 holo cards</p>
                     <p style={{ color: '#f472b6', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
-                      4 Rare • 5 Legendary • 6 Ultra X Rare
+                      1 Rare • 3 Legendary • 4 Ultra X Rare
                     </p>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -3329,7 +3323,7 @@ if (!isLoaded) {
                       style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
                     />
                     <h3 style={{ color: 'white', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Single Pack</h3>
-                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 16px', textAlign: 'center' }}>15 cards</p>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 16px', textAlign: 'center' }}>8 cards</p>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                       <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
@@ -3337,7 +3331,7 @@ if (!isLoaded) {
                     </div>
                     
                     <button
-                      onClick={() => setPurchaseConfirm({ type: 'single', title: 'Single Pack', cost: sealedMarket.prices.single, details: '15 cards: 7 Common, 5 Uncommon, 2 Rare+ (89% Rare / 10% Legendary / 1% Ultra X Rare), 1 Holo slot (47%C / 34%U / 13%R / 5%L / 1% UXR).' })}
+                      onClick={() => setPurchaseConfirm({ type: 'single', title: 'Single Pack', cost: sealedMarket.prices.single, details: '8 cards: 4 Common, 2 Uncommon, 1 Rare+ (89% Rare / 10% Legendary / 1% Ultra X Rare), 1 Holo slot (47%C / 34%U / 13%R / 5%L / 1% UXR).' })}
                       disabled={rations < sealedMarket.prices.single || ((shopStock && shopStock.single) ? shopStock.single.remaining <= 0 : false)}
                       style={{
                         width: '100%',
