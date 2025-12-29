@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Through The Ages - TCG Pack Opener</title>
+  <title>TCG Market Simulator</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -495,7 +495,7 @@ body{
 /* Grid reveal layout */
 .cards-grid-reveal {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
   max-width: 700px;
   margin: 0 auto;
@@ -532,428 +532,264 @@ body{
     // Since this is on GitHub Pages, use relative paths to images in the same repo
     const GITHUB_BASE = '.';
 
-    // All 391 cards
-    const ALL_CARDS = [
-      { id: "1", name: "A Big Stick", rarity: "common", file: "A Big Stick.png" },
-      { id: "2", name: "A Chill on the Wind", rarity: "uncommon", file: "A Chill on the Wind.png" },
-      { id: "3", name: "Adaptability", rarity: "common", file: "Adaptability.png" },
-      { id: "4", name: "Adrias", rarity: "legendary", file: "Adrias.png" },
-      { id: "5", name: "All Eyes On You", rarity: "common", file: "All Eyes On You.png" },
-      { id: "6", name: "All In", rarity: "rare", file: "All In.png" },
-      { id: "7", name: "Animal Experiments", rarity: "rare", file: "Animal Experiments.png" },
-      { id: "8", name: "Ante Up", rarity: "common", file: "Ante Up.png" },
-      { id: "9", name: "Arbeleatrier", rarity: "common", file: "Arbeleatrier.png" },
-      { id: "10", name: "Archer Legion", rarity: "common", file: "Archer Legion.png" },
-      { id: "11", name: "Archer's Greaves", rarity: "common", file: "Archer's Greaves.png" },
-      { id: "12", name: "Armistice", rarity: "uncommon", file: "Armistice.png" },
-      { id: "13", name: "Armor Fitter Herc", rarity: "common", file: "Armor Fitter Herc.png" },
-      { id: "14", name: "Armored Elephants", rarity: "common", file: "Armored Elephants.png" },
-      { id: "15", name: "Assassinate", rarity: "rare", file: "Assassinate.png" },
-      { id: "16", name: "Attempt at Re-Creation", rarity: "rare", file: "Attempt at Re-Creation.png" },
-      { id: "17", name: "Azure Guard", rarity: "common", file: "Azure Guard.png" },
-      { id: "18", name: "Azure, Star Seeker", rarity: "rare", file: "Azure, Star Seeker.png" },
-      { id: "19", name: "Azure's Assistant", rarity: "common", file: "Azure's Assistant.png" },
-      { id: "20", name: "Azure's Backup", rarity: "common", file: "Azure's Backup.png" },
-      { id: "21", name: "Azure's Feral Cats", rarity: "common", file: "Azure's Feral Cats.png" },
-      { id: "22", name: "Azure's Razor, Opus Dei", rarity: "legendary", file: "Azure's Razor, Opus Dei.png" },
-      { id: "23", name: "Azure's Razor, Opus Dei X", rarity: "ultra x rare", file: "Azure's Razor, Opus Dei X.png" },
-      { id: "24", name: "Azure's Stars Aligned", rarity: "rare", file: "Azure's Stars Aligned.png" },
-      { id: "25", name: "Azure's Stars Aligned X", rarity: "ultra x rare", file: "Azure's Stars Aligned X.png" },
-      { id: "26", name: "Banner of Death", rarity: "uncommon", file: "Banner of Death.png" },
-      { id: "27", name: "Banner of Pride", rarity: "uncommon", file: "Banner of Pride.png" },
-      { id: "28", name: "Banner of Unity", rarity: "rare", file: "Banner of Unity.png" },
-      { id: "29", name: "Banner of War", rarity: "uncommon", file: "Banner of War.png" },
-      { id: "30", name: "Barbaric Shout", rarity: "uncommon", file: "Barbaric Shout.png" },
-      { id: "31", name: "Basterd of Blades", rarity: "common", file: "Basterd of Blades.png" },
-      { id: "32", name: "Battle of Champions", rarity: "rare", file: "Battle of Champions.png" },
-      { id: "33", name: "Battle Owl", rarity: "uncommon", file: "Battle Owl.png" },
-      { id: "34", name: "Beard Tokens", rarity: "uncommon", file: "Beard Tokens.png" },
-      { id: "35", name: "Beastly Leather Gown", rarity: "uncommon", file: "Beastly Leather Gown.png" },
-      { id: "36", name: "Behind Enemy Lines", rarity: "common", file: "Behind Enemy Lines.png" },
-      { id: "37", name: "Belt of the Bold", rarity: "common", file: "Belt of the Bold.png" },
-      { id: "38", name: "Benne, Indric's Only Friend", rarity: "common", file: "Benne, Indric's Only Friend.png" },
-      { id: "39", name: "Berserker Mushroom", rarity: "common", file: "Berserker Mushroom.png" },
-      { id: "40", name: "Biting Bats", rarity: "common", file: "Biting Bats.png" },
-      { id: "41", name: "Blacksmith's Daughter", rarity: "uncommon", file: "Blacksmith's Daughter.png" },
-      { id: "42", name: "Blade of Beginnings", rarity: "legendary", file: "Blade of Beginnings.png" },
-      { id: "43", name: "Blade Sharpener Ansil", rarity: "uncommon", file: "Blade Sharpener Ansil.png" },
-      { id: "44", name: "Blade-Winged Eagles", rarity: "uncommon", file: "Blade-Winged Eagles.png" },
-      { id: "45", name: "Blinded Jalio, the One Who Takes", rarity: "common", file: "Blinded Jalio, the One Who Takes.png" },
-      { id: "46", name: "Blizzerd", rarity: "common", file: "Blizzerd.png" },
-      { id: "47", name: "Bloodlust", rarity: "common", file: "Bloodlust.png" },
-      { id: "48", name: "Bloodmorn", rarity: "uncommon", file: "Bloodmorn.png" },
-      { id: "49", name: "Bloodthirsty Mice", rarity: "common", file: "Bloodthirsty Mice.png" },
-      { id: "50", name: "Bloody Bear", rarity: "common", file: "Bloody Bear.png" },
-      { id: "51", name: "Bloody Scream", rarity: "uncommon", file: "Bloody Scream.png" },
-      { id: "52", name: "Bluff", rarity: "common", file: "Bluff.png" },
-      { id: "53", name: "Bonfire", rarity: "rare", file: "Bonfire.png" },
-      { id: "54", name: "Bookkeeper Terrin", rarity: "uncommon", file: "Bookkeeper Terrin.png" },
-      { id: "55", name: "Bounty Collectors", rarity: "common", file: "Bounty Collectors.png" },
-      { id: "56", name: "Breaker Captain", rarity: "common", file: "Breaker Captain.png" },
-      { id: "57", name: "Breaker Guard", rarity: "common", file: "Breaker Guard.png" },
-      { id: "58", name: "Breaker's Focus", rarity: "common", file: "Breaker's Focus.png" },
-      { id: "59", name: "Brew of the Dawn", rarity: "uncommon", file: "Brew of the Dawn.png" },
-      { id: "60", name: "Bribe the Guards", rarity: "common", file: "Bribe the Guards.png" },
-      { id: "61", name: "Burn the Tents", rarity: "uncommon", file: "Burn the Tents.png" },
-      { id: "62", name: "Burned Into Memory", rarity: "common", file: "Burned Into Memory.png" },
-      { id: "63", name: "Burning Soul", rarity: "uncommon", file: "Burning Soul.png" },
-      { id: "64", name: "Call of Beasts", rarity: "uncommon", file: "Call of Beasts.png" },
-      { id: "65", name: "Called It", rarity: "uncommon", file: "Called It.png" },
-      { id: "66", name: "Cascade of Darkness", rarity: "common", file: "Cascade of Darkness.png" },
-      { id: "67", name: "Castle Walls", rarity: "uncommon", file: "Castle Walls.png" },
-      { id: "68", name: "Cerberus", rarity: "legendary", file: "Cerberus.png" },
-      { id: "69", name: "Chain of the Gravetender", rarity: "rare", file: "Chain of the Gravetender.png" },
-      { id: "70", name: "Chainmail Hood", rarity: "uncommon", file: "Chainmail Hood.png" },
-      { id: "71", name: "Chalice of God", rarity: "uncommon", file: "Chalice of God.png" },
-      { id: "72", name: "Change of the Seasons", rarity: "common", file: "Change of the Seasons.png" },
-      { id: "73", name: "Charge", rarity: "legendary", file: "Charge.png" },
-      { id: "74", name: "Chivalry", rarity: "uncommon", file: "Chivalry.png" },
-      { id: "75", name: "Cleric", rarity: "rare", file: "Cleric.png" },
-      { id: "76", name: "Combusting Mushroom", rarity: "common", file: "Combusting Mushroom.png" },
-      { id: "77", name: "Commander Hew's Helm of Command", rarity: "uncommon", file: "Commander Hew's Helm of Command.png" },
-      { id: "78", name: "Commander's Decree", rarity: "uncommon", file: "Commander's Decree.png" },
-      { id: "79", name: "Cooked in Armor", rarity: "uncommon", file: "Cooked in Armor.png" },
-      { id: "80", name: "Counterintelligence", rarity: "uncommon", file: "Counterintelligence.png" },
-      { id: "81", name: "Crowspies", rarity: "uncommon", file: "Crowspies.png" },
-      { id: "82", name: "Cultists", rarity: "uncommon", file: "Cultists.png" },
-      { id: "83", name: "De'vone Matria", rarity: "common", file: "De'vone Matria.png" },
-      { id: "84", name: "Death Becomes", rarity: "uncommon", file: "Death Becomes.png" },
-      { id: "85", name: "Death Enough", rarity: "uncommon", file: "Death Enough.png" },
-      { id: "86", name: "Death Forgets", rarity: "uncommon", file: "Death Forgets.png" },
-      { id: "87", name: "Death Forgives", rarity: "uncommon", file: "Death Forgives.png" },
-      { id: "88", name: "Death Indeed", rarity: "uncommon", file: "Death Indeed.png" },
-      { id: "89", name: "Death Mushroom", rarity: "common", file: "Death Mushroom.png" },
-      { id: "90", name: "Death Remembers", rarity: "uncommon", file: "Death Remembers.png" },
-      { id: "91", name: "Defel, The Rain", rarity: "uncommon", file: "Defel, The Rain.png" },
-      { id: "92", name: "Demense", rarity: "uncommon", file: "Demense.png" },
-      { id: "93", name: "Deranged Prisoners", rarity: "common", file: "Deranged Prisoners.png" },
-      { id: "94", name: "Diorys Gianpetro", rarity: "rare", file: "Diorys Gianpetro.png" },
-      { id: "95", name: "Directionless", rarity: "common", file: "Directionless.png" },
-      { id: "96", name: "Dishonorable Discharge", rarity: "common", file: "Dishonorable Discharge.png" },
-      { id: "97", name: "Distortion Curse", rarity: "uncommon", file: "Distortion Curse.png" },
-      { id: "98", name: "Divination Scribe", rarity: "common", file: "Divination Scribe.png" },
-      { id: "99", name: "Divine Intervention", rarity: "legendary", file: "Divine Intervention.png" },
-      { id: "100", name: "Double Down", rarity: "rare", file: "Double Down.png" },
-      { id: "101", name: "Double Up", rarity: "common", file: "Double Up.png" },
-      { id: "102", name: "Draft the Recruits", rarity: "rare", file: "Draft the Recruits.png" },
-      { id: "103", name: "Dragonslayer", rarity: "rare", file: "Dragonslayer.png" },
-      { id: "104", name: "Draught", rarity: "common", file: "Draught.png" },
-      { id: "105", name: "Droves of Wolves", rarity: "common", file: "Droves of Wolves.png" },
-      { id: "106", name: "Duray, Pickpocket", rarity: "common", file: "Duray, Pickpocket.png" },
-      { id: "107", name: "Eat Up", rarity: "common", file: "Eat Up.png" },
-      { id: "108", name: "Embolden", rarity: "common", file: "Embolden.png" },
-      { id: "109", name: "Endless Knives", rarity: "rare", file: "Endless Knives.png" },
-      { id: "110", name: "Enough!", rarity: "common", file: "Enough!.png" },
-      { id: "111", name: "Ethical Soldier", rarity: "uncommon", file: "Ethical Soldier.png" },
-      { id: "112", name: "Expensive Armor", rarity: "common", file: "Expensive Armor.png" },
-      { id: "113", name: "Exploding Rats", rarity: "common", file: "Exploding Rats.png" },
-      { id: "114", name: "Extortion", rarity: "common", file: "Extortion.png" },
-      { id: "115", name: "Eye of Pride", rarity: "common", file: "Eye of Pride.png" },
-      { id: "116", name: "Failed Insurrection", rarity: "rare", file: "Failed Insurrection.png" },
-      { id: "117", name: "Fattened Battle Cattle", rarity: "common", file: "Fattened Battle Cattle.png" },
-      { id: "118", name: "Fatty Gunni", rarity: "common", file: "Fatty Gunni.png" },
-      { id: "119", name: "Feral Cats", rarity: "common", file: "Feral Cats.png" },
-      { id: "120", name: "Field of Blood", rarity: "common", file: "Field of Blood.png" },
-      { id: "121", name: "Final Charge", rarity: "uncommon", file: "Final Charge.png" },
-      { id: "122", name: "Fire Arrows", rarity: "common", file: "Fire Arrows.png" },
-      { id: "123", name: "Fisherman Yimoti", rarity: "common", file: "Fisherman Yimoti.png" },
-      { id: "124", name: "Fixed Result", rarity: "common", file: "Fixed Result.png" },
-      { id: "125", name: "Flute Player's Anthem", rarity: "uncommon", file: "Flute Player's Anthem.png" },
-      { id: "126", name: "Foggy Hills", rarity: "common", file: "Foggy Hills.png" },
-      { id: "127", name: "Foggy Morning", rarity: "rare", file: "Foggy Morning.png" },
-      { id: "128", name: "Forged Vambraces", rarity: "common", file: "Forged Vambraces.png" },
-      { id: "129", name: "Forgotten By the Future", rarity: "uncommon", file: "Forgotten By the Future.png" },
-      { id: "130", name: "Fresh Drinking Water", rarity: "rare", file: "Fresh Drinking Water.png" },
-      { id: "131", name: "Full Belly Ceddir", rarity: "common", file: "Full Belly Ceddir.png" },
-      { id: "132", name: "General Azure", rarity: "rare", file: "General Azure.png" },
-      { id: "133", name: "General's Bounty", rarity: "uncommon", file: "General's Bounty.png" },
-      { id: "134", name: "General's Command", rarity: "common", file: "General's Command.png" },
-      { id: "135", name: "Getaway Steeds", rarity: "uncommon", file: "Getaway Steeds.png" },
-      { id: "136", name: "Give Ground", rarity: "common", file: "Give Ground.png" },
-      { id: "137", name: "Golden Knight Captain", rarity: "uncommon", file: "Golden Knight Captain.png" },
-      { id: "138", name: "Golden Knight Leader Lorren", rarity: "uncommon", file: "Golden Knight Leader Lorren.png" },
-      { id: "139", name: "Golden Ymra", rarity: "rare", file: "Golden Ymra.png" },
-      { id: "140", name: "Golden Ymra X", rarity: "ultra x rare", file: "Golden Ymra X.png" },
-      { id: "141", name: "Grand Researcher Udolvis", rarity: "uncommon", file: "Grand Researcher Udolvis.png" },
-      { id: "142", name: "Grandfather Pine", rarity: "uncommon", file: "Grandfather Pine.png" },
-      { id: "143", name: "Gravetender's Shovel", rarity: "uncommon", file: "Gravetender's Shovel.png" },
-      { id: "144", name: "Greatwall Yvera", rarity: "uncommon", file: "Greatwall Yvera.png" },
-      { id: "145", name: "Greselia, Worldhopper", rarity: "uncommon", file: "Greselia, Worldhopper.png" },
-      { id: "146", name: "Grew Up Together", rarity: "common", file: "Grew Up Together.png" },
-      { id: "147", name: "Group of Corrupts", rarity: "common", file: "Group of Corrupts.png" },
-      { id: "148", name: "Grozu", rarity: "common", file: "Grozu.png" },
-      { id: "149", name: "Guttermite Drinny", rarity: "common", file: "Guttermite Drinny.png" },
-      { id: "150", name: "Handwraps", rarity: "common", file: "Handwraps.png" },
-      { id: "151", name: "Helm of Time", rarity: "rare", file: "Helm of Time.png" },
-      { id: "152", name: "Hide", rarity: "uncommon", file: "Hide.png" },
-      { id: "153", name: "High Morale", rarity: "rare", file: "High Morale.png" },
-      { id: "154", name: "Honorable Discharge", rarity: "common", file: "Honorable Discharge.png" },
-      { id: "155", name: "Hornman Thut", rarity: "common", file: "Hornman Thut.png" },
-      { id: "156", name: "Houndmaster Bretta", rarity: "rare", file: "Houndmaster Bretta.png" },
-      { id: "157", name: "Human Test Subject", rarity: "uncommon", file: "Human Test Subject.png" },
-      { id: "158", name: "Hungover Golden Knights", rarity: "common", file: "Hungover Golden Knights.png" },
-      { id: "159", name: "Huntsman Brekka", rarity: "common", file: "Huntsman Brekka.png" },
-      { id: "160", name: "Hurd and Grozu", rarity: "common", file: "Hurd and Grozu.png" },
-      { id: "161", name: "Ignorant Foresh", rarity: "common", file: "Ignorant Foresh.png" },
-      { id: "162", name: "In the Shade of the Trees", rarity: "rare", file: "In the Shade of the Trees.png" },
-      { id: "163", name: "Indric Puratta, the World is His", rarity: "rare", file: "Indric Puratta, the World is His.png" },
-      { id: "164", name: "Indric Puratta, The World Is His X", rarity: "ultra x rare", file: "Indric Puratta, The World Is His X.png" },
-      { id: "165", name: "Injection of Funds", rarity: "uncommon", file: "Injection of Funds.png" },
-      { id: "166", name: "Intersection of Past and Future", rarity: "common", file: "Intersection of Past and Future.png" },
-      { id: "167", name: "Intimidation", rarity: "rare", file: "Intimidation.png" },
-      { id: "168", name: "Jacques", rarity: "rare", file: "Jacques.png" },
-      { id: "169", name: "Jailbreak", rarity: "common", file: "Jailbreak.png" },
-      { id: "170", name: "Journey to the Otherside", rarity: "common", file: "Journey to the Otherside.png" },
-      { id: "171", name: "Keep the Family Close", rarity: "rare", file: "Keep the Family Close.png" },
-      { id: "172", name: "King's Favor", rarity: "uncommon", file: "King's Favor.png" },
-      { id: "173", name: "Kingkiller Vodd", rarity: "rare", file: "Kingkiller Vodd.png" },
-      { id: "174", name: "Knife Maiden", rarity: "common", file: "Knife Maiden.png" },
-      { id: "175", name: "Landshark", rarity: "common", file: "Landshark.png" },
-      { id: "176", name: "Latrine Diggers", rarity: "common", file: "Latrine Diggers.png" },
-      { id: "177", name: "Lead Astray", rarity: "uncommon", file: "Lead Astray.png" },
-      { id: "178", name: "Leader of the Maggots", rarity: "common", file: "Leader of the Maggots.png" },
-      { id: "179", name: "Leather Coat", rarity: "uncommon", file: "Leather Coat.png" },
-      { id: "180", name: "Lectio Divinia", rarity: "legendary", file: "Lectio Divinia.png" },
-      { id: "181", name: "Letters to the Future", rarity: "rare", file: "Letters to the Future.png" },
-      { id: "182", name: "Lost Company", rarity: "common", file: "Lost Company.png" },
-      { id: "183", name: "Loyal Hounds", rarity: "common", file: "Loyal Hounds.png" },
-      { id: "184", name: "Lupin, Young Royal", rarity: "common", file: "Lupin, Young Royal.png" },
-      { id: "185", name: "Marching On", rarity: "common", file: "Marching On.png" },
-      { id: "186", name: "Marshland", rarity: "common", file: "Marshland.png" },
-      { id: "187", name: "Master Assassin", rarity: "uncommon", file: "Master Assassin.png" },
-      { id: "188", name: "Midnight Concoction", rarity: "uncommon", file: "Midnight Concoction.png" },
-      { id: "189", name: "Mink, Jester of Kings", rarity: "uncommon", file: "Mink, Jester of Kings.png" },
-      { id: "190", name: "Misplaced Treasure", rarity: "rare", file: "Misplaced Treasure.png" },
-      { id: "191", name: "Moldy Bread", rarity: "common", file: "Moldy Bread.png" },
-      { id: "192", name: "More Than Enough", rarity: "uncommon", file: "More Than Enough.png" },
-      { id: "193", name: "Mouth of Hate", rarity: "uncommon", file: "Mouth of Hate.png" },
-      { id: "194", name: "Mundane Murderer", rarity: "common", file: "Mundane Murderer.png" },
-      { id: "195", name: "Mushroom Feaster", rarity: "common", file: "Mushroom Feaster.png" },
-      { id: "196", name: "Necrokane", rarity: "common", file: "Necrokane.png" },
-      { id: "197", name: "Nightfall", rarity: "legendary", file: "Nightfall.png" },
-      { id: "198", name: "Nightretch Assassins", rarity: "uncommon", file: "Nightretch Assassins.png" },
-      { id: "199", name: "No Soldier Goes Unpaid", rarity: "uncommon", file: "No Soldier Goes Unpaid.png" },
-      { id: "200", name: "Not Enough to Drink", rarity: "common", file: "Not Enough to Drink.png" },
-      { id: "201", name: "Not So Well Thought Plan", rarity: "common", file: "Not So Well Thought Plan.png" },
-      { id: "202", name: "Not Today, Soldier!", rarity: "uncommon", file: "Not Today, Soldier!.png" },
-      { id: "203", name: "Nothing Left", rarity: "rare", file: "Nothing Left.png" },
-      { id: "204", name: "Old Man Sigra", rarity: "uncommon", file: "Old Man Sigra.png" },
-      { id: "205", name: "Oracle", rarity: "uncommon", file: "Oracle.png" },
-      { id: "206", name: "Overworked Bookkeeper", rarity: "common", file: "Overworked Bookkeeper.png" },
-      { id: "207", name: "Pack of Hounds", rarity: "common", file: "Pack of Hounds.png" },
-      { id: "208", name: "Page Idica", rarity: "uncommon", file: "Page Idica.png" },
-      { id: "209", name: "Page of Hands", rarity: "uncommon", file: "Page of Hands.png" },
-      { id: "210", name: "Page Yus", rarity: "uncommon", file: "Page Yus.png" },
-      { id: "211", name: "Paid Off", rarity: "common", file: "Paid Off.png" },
-      { id: "212", name: "Parade", rarity: "common", file: "Parade.png" },
-      { id: "213", name: "Parley", rarity: "common", file: "Parley.png" },
-      { id: "214", name: "Pay Up", rarity: "common", file: "Pay Up.png" },
-      { id: "215", name: "Penny Pincher", rarity: "uncommon", file: "Penny Pincher.png" },
-      { id: "216", name: "Pickpocket", rarity: "common", file: "Pickpocket.png" },
-      { id: "217", name: "Place the Order", rarity: "common", file: "Place the Order.png" },
-      { id: "218", name: "Plague of Rats", rarity: "common", file: "Plague of Rats.png" },
-      { id: "219", name: "Plan", rarity: "common", file: "Plan.png" },
-      { id: "220", name: "Plate of Night", rarity: "uncommon", file: "Plate of Night.png" },
-      { id: "221", name: "Porous Ducts", rarity: "common", file: "Porous Ducts.png" },
-      { id: "222", name: "Prayer", rarity: "common", file: "Prayer.png" },
-      { id: "223", name: "Prayer of Winds", rarity: "uncommon", file: "Prayer of Winds.png" },
-      { id: "224", name: "Premeditated", rarity: "uncommon", file: "Premeditated.png" },
-      { id: "225", name: "Prepare to Strike", rarity: "uncommon", file: "Prepare to Strike.png" },
-      { id: "226", name: "Promising Recruit", rarity: "common", file: "Promising Recruit.png" },
-      { id: "227", name: "Prophecy", rarity: "common", file: "Prophecy.png" },
-      { id: "228", name: "Protectorate Genus", rarity: "common", file: "Protectorate Genus.png" },
-      { id: "229", name: "Protectorate Leader of All", rarity: "uncommon", file: "Protectorate Leader of All.png" },
-      { id: "230", name: "Proud Soldiers", rarity: "common", file: "Proud Soldiers.png" },
-      { id: "231", name: "Puratta's Broadsword, Blessed Blade", rarity: "legendary", file: "Puratta's Broadsword, Blessed Blade.png" },
-      { id: "232", name: "Puratta's Broadsword, Blessed Blade X", rarity: "ultra x rare", file: "Puratta's Broadsword, Blessed Blade X.png" },
-      { id: "233", name: "Puratta's Oath", rarity: "common", file: "Puratta's Oath.png" },
-      { id: "234", name: "Putyr, Viero, and Shara Vallobranch", rarity: "rare", file: "Putyr, Viero, and Shara Vallobranch.png" },
-      { id: "235", name: "Putyr's Favorite Charger", rarity: "common", file: "Putyr's Favorite Charger.png" },
-      { id: "236", name: "Quake", rarity: "legendary", file: "Quake.png" },
-      { id: "237", name: "Quartermaster Bergana", rarity: "rare", file: "Quartermaster Bergana.png" },
-      { id: "238", name: "Queens Command", rarity: "uncommon", file: "Queens Command.png" },
-      { id: "239", name: "Quick Grab", rarity: "uncommon", file: "Quick Grab.png" },
-      { id: "240", name: "Rampaging Demigod Vodd", rarity: "rare", file: "Rampaging Demigod Vodd.png" },
-      { id: "241", name: "Rampaging Demigod Vodd X", rarity: "ultra x rare", file: "Rampaging Demigod Vodd X.png" },
-      { id: "242", name: "Ready Or Not", rarity: "uncommon", file: "Ready Or Not.png" },
-      { id: "243", name: "Reborn Rabbit", rarity: "common", file: "Reborn Rabbit.png" },
-      { id: "244", name: "Recco", rarity: "rare", file: "Recco.png" },
-      { id: "245", name: "Recco Demonblood", rarity: "rare", file: "Recco Demonblood.png" },
-      { id: "246", name: "Recco, Plane of Hate", rarity: "legendary", file: "Recco, Plane of Hate.png" },
-      { id: "247", name: "Regroup", rarity: "common", file: "Regroup.png" },
-      { id: "248", name: "Researcher Pilio", rarity: "common", file: "Researcher Pilio.png" },
-      { id: "249", name: "Researcher Recruit", rarity: "common", file: "Researcher Recruit.png" },
-      { id: "250", name: "Retreat", rarity: "common", file: "Retreat.png" },
-      { id: "251", name: "Rew, the Butcher", rarity: "uncommon", file: "Rew, the Butcher.png" },
-      { id: "252", name: "Ritual Maiden Ferlindie", rarity: "uncommon", file: "Ritual Maiden Ferlindie.png" },
-      { id: "253", name: "Roques", rarity: "legendary", file: "Roques.png" },
-      { id: "254", name: "Royal Palace", rarity: "common", file: "Royal Palace.png" },
-      { id: "255", name: "Rupert, Flag Bearer", rarity: "uncommon", file: "Rupert, Flag Bearer.png" },
-      { id: "256", name: "Rusty Sword", rarity: "common", file: "Rusty Sword.png" },
-      { id: "257", name: "Sacrificial Boars", rarity: "uncommon", file: "Sacrificial Boars.png" },
-      { id: "258", name: "Sadistic Wretch", rarity: "common", file: "Sadistic Wretch.png" },
-      { id: "259", name: "Salla Salvato, Disguise Master", rarity: "common", file: "Salla Salvato, Disguise Master.png" },
-      { id: "260", name: "Salutations", rarity: "common", file: "Salutations.png" },
-      { id: "261", name: "Scars of a General's Past", rarity: "rare", file: "Scars of a General's Past.png" },
-      { id: "262", name: "See it in the Bones", rarity: "common", file: "See it in the Bones.png" },
-      { id: "263", name: "Send in the Ladies", rarity: "uncommon", file: "Send in the Ladies.png" },
-      { id: "264", name: "Ser Banyon", rarity: "common", file: "Ser Banyon.png" },
-      { id: "265", name: "Ser Geren, Knight of the King", rarity: "uncommon", file: "Ser Geren, Knight of the King.png" },
-      { id: "266", name: "Ser Indric", rarity: "rare", file: "Ser Indric.png" },
-      { id: "267", name: "Ser Indric's Victory", rarity: "rare", file: "Ser Indric's Victory.png" },
-      { id: "268", name: "Sewers", rarity: "common", file: "Sewers.png" },
-      { id: "269", name: "Shamed Royal", rarity: "common", file: "Shamed Royal.png" },
-      { id: "270", name: "Shara, The Lone Branch", rarity: "rare", file: "Shara, The Lone Branch.png" },
-      { id: "271", name: "Shara, The Lone Branch X", rarity: "ultra x rare", file: "Shara, The Lone Branch X.png" },
-      { id: "272", name: "Sharpened Blade", rarity: "uncommon", file: "Sharpened Blade.png" },
-      { id: "273", name: "Siege Weapons", rarity: "rare", file: "Siege Weapons.png" },
-      { id: "274", name: "Sister Wressa", rarity: "common", file: "Sister Wressa.png" },
-      { id: "275", name: "Sister Wrinna", rarity: "common", file: "Sister Wrinna.png" },
-      { id: "276", name: "Sleep Mushroom", rarity: "common", file: "Sleep Mushroom.png" },
-      { id: "277", name: "Slingshot", rarity: "common", file: "Slingshot.png" },
-      { id: "278", name: "Snake Under the Sheets", rarity: "common", file: "Snake Under the Sheets.png" },
-      { id: "279", name: "Snakeskin Assassin", rarity: "uncommon", file: "Snakeskin Assassin.png" },
-      { id: "280", name: "Son of Arvada, Personal Guard", rarity: "common", file: "Son of Arvada, Personal Guard.png" },
-      { id: "281", name: "Soulcloud", rarity: "common", file: "Soulcloud.png" },
-      { id: "282", name: "Speak with Animals", rarity: "common", file: "Speak with Animals.png" },
-      { id: "283", name: "Split Open", rarity: "common", file: "Split Open.png" },
-      { id: "284", name: "Spotter", rarity: "common", file: "Spotter.png" },
-      { id: "285", name: "Sprout Horns", rarity: "common", file: "Sprout Horns.png" },
-      { id: "286", name: "Spyglass", rarity: "uncommon", file: "Spyglass.png" },
-      { id: "287", name: "Spymaster Droxy", rarity: "rare", file: "Spymaster Droxy.png" },
-      { id: "288", name: "Squire Moveux", rarity: "common", file: "Squire Moveux.png" },
-      { id: "289", name: "Staff of the Beast", rarity: "common", file: "Staff of the Beast.png" },
-      { id: "290", name: "Starlight", rarity: "legendary", file: "Starlight.png" },
-      { id: "291", name: "Stash House", rarity: "common", file: "Stash House.png" },
-      { id: "292", name: "Steady!", rarity: "common", file: "Steady!.png" },
-      { id: "293", name: "Stigmata", rarity: "uncommon", file: "Stigmata.png" },
-      { id: "294", name: "Stone Mushroom", rarity: "common", file: "Stone Mushroom.png" },
-      { id: "295", name: "Stored for Later", rarity: "common", file: "Stored for Later.png" },
-      { id: "296", name: "Sturdy Leather Boots", rarity: "common", file: "Sturdy Leather Boots.png" },
-      { id: "297", name: "Sturdy Phalanx", rarity: "uncommon", file: "Sturdy Phalanx.png" },
-      { id: "298", name: "Summoner Aslye", rarity: "uncommon", file: "Summoner Aslye.png" },
-      { id: "299", name: "Sunrise", rarity: "legendary", file: "Sunrise.png" },
-      { id: "300", name: "Sunset", rarity: "common", file: "Sunset.png" },
-      { id: "301", name: "Supplies", rarity: "common", file: "Supplies.png" },
-      { id: "302", name: "Supply Line Cutoff", rarity: "uncommon", file: "Supply Line Cutoff.png" },
-      { id: "303", name: "Sweat", rarity: "common", file: "Sweat.png" },
-      { id: "304", name: "Tales of Yternus", rarity: "uncommon", file: "Tales of Yternus.png" },
-      { id: "305", name: "Tears of God", rarity: "legendary", file: "Tears of God.png" },
-      { id: "306", name: "Temporary Encampment", rarity: "rare", file: "Temporary Encampment.png" },
-      { id: "307", name: "Tempted Traitor", rarity: "uncommon", file: "Tempted Traitor.png" },
-      { id: "308", name: "Tent Maiden", rarity: "common", file: "Tent Maiden.png" },
-      { id: "309", name: "Teserio the Mage", rarity: "common", file: "Teserio the Mage.png" },
-      { id: "310", name: "The Bonfire", rarity: "common", file: "The Bonfire.png" },
-      { id: "311", name: "The Burning Pile", rarity: "common", file: "The Burning Pile.png" },
-      { id: "312", name: "The Castle", rarity: "common", file: "The Castle.png" },
-      { id: "313", name: "The Core", rarity: "rare", file: "The Core.png" },
-      { id: "314", name: "The Creator's Star", rarity: "rare", file: "The Creator's Star.png" },
-      { id: "315", name: "The Fixer", rarity: "uncommon", file: "The Fixer.png" },
-      { id: "316", name: "The Forgotten Branch", rarity: "rare", file: "The Forgotten Branch.png" },
-      { id: "317", name: "The Funeral", rarity: "rare", file: "The Funeral.png" },
-      { id: "318", name: "The House", rarity: "rare", file: "The House.png" },
-      { id: "319", name: "The House Always Wins", rarity: "common", file: "The House Always Wins.png" },
-      { id: "320", name: "The Influence", rarity: "rare", file: "The Influence.png" },
-      { id: "321", name: "The Knights Creed", rarity: "common", file: "The Knights Creed.png" },
-      { id: "322", name: "The Laughing Knight", rarity: "common", file: "The Laughing Knight.png" },
-      { id: "323", name: "The Lie", rarity: "rare", file: "The Lie.png" },
-      { id: "324", name: "The Negotiator", rarity: "uncommon", file: "The Negotiator.png" },
-      { id: "325", name: "The Night Before", rarity: "uncommon", file: "The Night Before.png" },
-      { id: "326", name: "The Pact", rarity: "rare", file: "The Pact.png" },
-      { id: "327", name: "The People's Knight", rarity: "rare", file: "The People's Knight.png" },
-      { id: "328", name: "The Perfect Moment", rarity: "common", file: "The Perfect Moment.png" },
-      { id: "329", name: "The Reborn", rarity: "common", file: "The Reborn.png" },
-      { id: "330", name: "The Ritual", rarity: "rare", file: "The Ritual.png" },
-      { id: "331", name: "The Sleepless Man", rarity: "uncommon", file: "The Sleepless Man.png" },
-      { id: "332", name: "The Timer", rarity: "uncommon", file: "The Timer.png" },
-      { id: "333", name: "The Vallobranch Family Blade", rarity: "legendary", file: "The Vallobranch Family Blade.png" },
-      { id: "334", name: "The Vallobranch Family Blade X", rarity: "ultra x rare", file: "The Vallobranch Family Blade X.png" },
-      { id: "335", name: "Thunderstorm", rarity: "common", file: "Thunderstorm.png" },
-      { id: "336", name: "Too Much to Drink", rarity: "uncommon", file: "Too Much to Drink.png" },
-      { id: "337", name: "Trained Hawk", rarity: "common", file: "Trained Hawk.png" },
-      { id: "338", name: "Trash Panda", rarity: "common", file: "Trash Panda.png" },
-      { id: "339", name: "Traveling Merchant", rarity: "uncommon", file: "Traveling Merchant.png" },
-      { id: "340", name: "Trebuchet Tactics", rarity: "rare", file: "Trebuchet Tactics.png" },
-      { id: "341", name: "Tremors", rarity: "uncommon", file: "Tremors.png" },
-      { id: "342", name: "Trench Diggers", rarity: "common", file: "Trench Diggers.png" },
-      { id: "343", name: "Turn the Other Way", rarity: "common", file: "Turn the Other Way.png" },
-      { id: "344", name: "Unchained Tiger", rarity: "uncommon", file: "Unchained Tiger.png" },
-      { id: "345", name: "Uncontrollable Bloom", rarity: "legendary", file: "Uncontrollable Bloom.png" },
-      { id: "346", name: "Under the Stars", rarity: "common", file: "Under the Stars.png" },
-      { id: "347", name: "Unnamed Slaves", rarity: "common", file: "Unnamed Slaves.png" },
-      { id: "348", name: "Unseen Forces", rarity: "rare", file: "Unseen Forces.png" },
-      { id: "349", name: "Unseen Terror-Monger", rarity: "common", file: "Unseen Terror-Monger.png" },
-      { id: "350", name: "Used Chainmail", rarity: "uncommon", file: "Used Chainmail.png" },
-      { id: "351", name: "Utility Belt", rarity: "common", file: "Utility Belt.png" },
-      { id: "352", name: "Vallobranch Riches", rarity: "uncommon", file: "Vallobranch Riches.png" },
-      { id: "353", name: "Valuable Prisoner", rarity: "rare", file: "Valuable Prisoner.png" },
-      { id: "354", name: "Veiled Guard of Stars", rarity: "common", file: "Veiled Guard of Stars.png" },
-      { id: "355", name: "Vesta's Roar", rarity: "rare", file: "Vesta's Roar.png" },
-      { id: "356", name: "Victorious!", rarity: "common", file: "Victorious!.png" },
-      { id: "357", name: "Viero and Shara", rarity: "rare", file: "Viero and Shara.png" },
-      { id: "358", name: "Viero's Family Ring", rarity: "rare", file: "Viero's Family Ring.png" },
-      { id: "359", name: "Violetta Shadowhunt", rarity: "rare", file: "Violetta Shadowhunt.png" },
-      { id: "360", name: "Violetta Shadowhunt X", rarity: "ultra x rare", file: "Violetta Shadowhunt X.png" },
-      { id: "361", name: "Violetta, First Meeting", rarity: "rare", file: "Violetta, First Meeting.png" },
-      { id: "362", name: "Violetta's Gamble", rarity: "rare", file: "Violetta's Gamble.png" },
-      { id: "363", name: "Violetta's Mistakes", rarity: "rare", file: "Violetta's Mistakes.png" },
-      { id: "364", name: "Violetta's Straight Sword, Oathtaker", rarity: "legendary", file: "Violetta's Straight Sword, Oathtaker.png" },
-      { id: "365", name: "Violetta's Straight Sword, Oathtaker X", rarity: "ultra x rare", file: "Violetta's Straight Sword, Oathtaker X.png" },
-      { id: "366", name: "Visions", rarity: "uncommon", file: "Visions.png" },
-      { id: "367", name: "Vodd, Tamed", rarity: "rare", file: "Vodd, Tamed.png" },
-      { id: "368", name: "Vodd's Champion", rarity: "uncommon", file: "Vodd's Champion.png" },
-      { id: "369", name: "Vodd's Dual Swords, Tyrant and Tamer", rarity: "legendary", file: "Vodd's Dual Swords, Tyrant and Tamer.png" },
-      { id: "370", name: "Vodd's Dual Swords, Tyrant and Tamer X", rarity: "ultra x rare", file: "Vodd's Dual Swords, Tyrant and Tamer X.png" },
-      { id: "371", name: "Vodd's Duststorm", rarity: "uncommon", file: "Vodd's Duststorm.png" },
-      { id: "372", name: "Vodd's Visions", rarity: "rare", file: "Vodd's Visions.png" },
-      { id: "373", name: "Wannabe Killer", rarity: "common", file: "Wannabe Killer.png" },
-      { id: "374", name: "War Horse", rarity: "common", file: "War Horse.png" },
-      { id: "375", name: "Washed Clean", rarity: "common", file: "Washed Clean.png" },
-      { id: "376", name: "Wasted Talent", rarity: "common", file: "Wasted Talent.png" },
-      { id: "377", name: "Weary Traveller", rarity: "common", file: "Weary Traveller.png" },
-      { id: "378", name: "Well Thought Plan", rarity: "uncommon", file: "Well Thought Plan.png" },
-      { id: "379", name: "What the Future Holds", rarity: "rare", file: "What the Future Holds.png" },
-      { id: "380", name: "Wide Swing", rarity: "uncommon", file: "Wide Swing.png" },
-      { id: "381", name: "Wild Visionary", rarity: "common", file: "Wild Visionary.png" },
-      { id: "382", name: "Words, Soft Spoken", rarity: "uncommon", file: "Words, Soft Spoken.png" },
-      { id: "383", name: "Ymra, Barbarica", rarity: "rare", file: "Ymra, Barbarica.png" },
-      { id: "384", name: "Ymra, Covered In Blood", rarity: "rare", file: "Ymra, Covered In Blood.png" },
-      { id: "385", name: "Ymra's Axe of the Sun", rarity: "legendary", file: "Ymra's Axe of the Sun.png" },
-      { id: "386", name: "Ymra's Axe of the Sun X", rarity: "ultra x rare", file: "Ymra's Axe of the Sun X.png" },
-      { id: "387", name: "Ymra's Chosen Sacrifice", rarity: "uncommon", file: "Ymra's Chosen Sacrifice.png" },
-      { id: "388", name: "Ymra's Prayers", rarity: "uncommon", file: "Ymra's Prayers.png" },
-      { id: "389", name: "Ymra's Wolves", rarity: "uncommon", file: "Ymra's Wolves.png" },
-      { id: "390", name: "Young Fil", rarity: "common", file: "Young Fil.png" },
-      { id: "391", name: "Yun-Wa, Advisor", rarity: "common", file: "Yun-Wa, Advisor.png" }
-    ];
+    // ===== CONFIG LOADING =====
+    const fetchJson = async (path) => {
+      const res = await fetch(`${GITHUB_BASE}/${path}`);
+      if (!res.ok) throw new Error(`Failed to load ${path}`);
+      return res.json();
+    };
 
-    const getImageUrl = (card) => {
+    // Helper to build image URL from config
+    const buildImageUrl = (gameId, setId, card) => {
       const folder = card.rarity.replace(/ /g, '%20');
       const filename = card.file.replace(/ /g, '%20');
-      return `${GITHUB_BASE}/${folder}/${filename}`;
+      return `${GITHUB_BASE}/games/${gameId}/${setId}/${folder}/${filename}`;
     };
 
-    const CARDS_BY_RARITY = {
-      common: ALL_CARDS.filter(c => c.rarity === 'common'),
-      uncommon: ALL_CARDS.filter(c => c.rarity === 'uncommon'),
-      rare: ALL_CARDS.filter(c => c.rarity === 'rare'),
-      legendary: ALL_CARDS.filter(c => c.rarity === 'legendary'),
-      'ultra x rare': ALL_CARDS.filter(c => c.rarity === 'ultra x rare')
+    // Helper to build cardback URL
+    const buildCardbackUrl = (gameConfig) => {
+      return `${GITHUB_BASE}/${gameConfig.cardback}`;
     };
 
-    const RARITY_COLORS = {
-      common: { bg: '#4b5563', border: '#9ca3af', text: '#d1d5db' },
-      uncommon: { bg: '#15803d', border: '#4ade80', text: '#86efac' },
-      rare: { bg: '#1d4ed8', border: '#60a5fa', text: '#93c5fd' },
-      legendary: { bg: '#7e22ce', border: '#a855f7', text: '#c4b5fd' },
-      'ultra x rare': { bg: '#dc2626', border: '#fbbf24', text: '#fef08a' }
+    // Build RARITY_COLORS from game config
+    const buildRarityColors = (gameConfig) => {
+      const colors = {};
+      gameConfig.rarities.forEach(r => {
+        colors[r.id] = {
+          bg: r.bgColor,
+          border: r.borderColor,
+          text: r.color,
+          isRainbow: r.isRainbow || false
+        };
+      });
+      return colors;
     };
 
-    const RARITY_ORDER = ['common', 'uncommon', 'rare', 'legendary', 'ultra x rare'];
+    // Build CARDS_BY_RARITY from set config
+    const buildCardsByRarity = (setConfig, rarityOrder) => {
+      const byRarity = {};
+      rarityOrder.forEach(r => {
+        byRarity[r] = setConfig.cards.filter(c => c.rarity === r);
+      });
+      return byRarity;
+    };
 
-    function TCGPackOpener() {
-      const CORE_SAVE_KEY = 'tcg-save-v2';
+    // ===== MAIN APP WRAPPER =====
+    function App() {
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [gamesIndex, setGamesIndex] = useState(null);
+      const [gameConfigs, setGameConfigs] = useState({});
+      const [setConfigs, setSetConfigs] = useState({});
+      
+      // Current selection
+      const [currentGameId, setCurrentGameId] = useState(null);
+      const [currentSetId, setCurrentSetId] = useState(null);
 
+      // Load all configs on mount
+      useEffect(() => {
+        const loadConfigs = async () => {
+          try {
+            // Load main index
+            const index = await fetchJson('games/index.json');
+            setGamesIndex(index);
+
+            // Load all game configs
+            const gameConfigsMap = {};
+            const setConfigsMap = {};
+
+            for (const game of index.games) {
+              if (!game.enabled) continue;
+              
+              const gameConfig = await fetchJson(game.configPath);
+              gameConfigsMap[game.id] = gameConfig;
+              setConfigsMap[game.id] = {};
+
+              // Load all sets for this game
+              for (const setId of gameConfig.sets) {
+                const setPath = `games/${game.id}/${setId}/set.json`;
+                const setConfig = await fetchJson(setPath);
+                setConfigsMap[game.id][setId] = setConfig;
+              }
+            }
+
+            setGameConfigs(gameConfigsMap);
+            setSetConfigs(setConfigsMap);
+
+            // Set default game/set from localStorage or index default
+            const savedGame = localStorage.getItem('tcg-current-game');
+            const savedSet = localStorage.getItem('tcg-current-set');
+            
+            const defaultGameId = savedGame && gameConfigsMap[savedGame] ? savedGame : index.defaultGame;
+            setCurrentGameId(defaultGameId);
+            
+            const defaultSetId = savedSet && setConfigsMap[defaultGameId]?.[savedSet] 
+              ? savedSet 
+              : gameConfigsMap[defaultGameId]?.sets[0];
+            setCurrentSetId(defaultSetId);
+
+            setLoading(false);
+          } catch (err) {
+            console.error('Failed to load configs:', err);
+            setError(err.message);
+            setLoading(false);
+          }
+        };
+
+        loadConfigs();
+      }, []);
+
+      // Save current game/set selection
+      useEffect(() => {
+        if (currentGameId) localStorage.setItem('tcg-current-game', currentGameId);
+      }, [currentGameId]);
+
+      useEffect(() => {
+        if (currentSetId) localStorage.setItem('tcg-current-set', currentSetId);
+      }, [currentSetId]);
+
+      // Switch game handler
+      const switchGame = useCallback((gameId) => {
+        if (!gameConfigs[gameId]) return;
+        setCurrentGameId(gameId);
+        // Reset to first set of new game
+        const firstSet = gameConfigs[gameId].sets[0];
+        setCurrentSetId(firstSet);
+      }, [gameConfigs]);
+
+      // Switch set handler  
+      const switchSet = useCallback((setId) => {
+        if (!setConfigs[currentGameId]?.[setId]) return;
+        setCurrentSetId(setId);
+      }, [currentGameId, setConfigs]);
+
+      if (loading) {
+        return (
+          <div style={{ 
+            minHeight: '100vh', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            flexDirection: 'column',
+            gap: 16,
+            color: 'white'
+          }}>
+            <div style={{ 
+              width: 48, 
+              height: 48, 
+              border: '4px solid rgba(255,255,255,0.2)', 
+              borderTopColor: '#a855f7',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }} />
+            <div>Loading game data...</div>
+          </div>
+        );
+      }
+
+      if (error) {
+        return (
+          <div style={{ 
+            minHeight: '100vh', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            flexDirection: 'column',
+            gap: 16,
+            color: 'white',
+            padding: 32
+          }}>
+            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#f87171' }}>Failed to Load</div>
+            <div style={{ color: '#9ca3af', textAlign: 'center' }}>{error}</div>
+            <button 
+              onClick={() => window.location.reload()}
+              style={{
+                padding: '12px 24px',
+                background: '#9333ea',
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                cursor: 'pointer',
+                marginTop: 16
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        );
+      }
+
+      const currentGameConfig = gameConfigs[currentGameId];
+      const currentSetConfig = setConfigs[currentGameId]?.[currentSetId];
+
+      if (!currentGameConfig || !currentSetConfig) {
+        return <div style={{ color: 'white', padding: 32 }}>No game data available</div>;
+      }
+
+      return (
+        <TCGPackOpener
+          gamesIndex={gamesIndex}
+          gameConfigs={gameConfigs}
+          setConfigs={setConfigs}
+          currentGameId={currentGameId}
+          currentSetId={currentSetId}
+          currentGameConfig={currentGameConfig}
+          currentSetConfig={currentSetConfig}
+          switchGame={switchGame}
+          switchSet={switchSet}
+        />
+      );
+    }
+
+    // ===== MAIN GAME COMPONENT =====
+    function TCGPackOpener({ 
+      gamesIndex, 
+      gameConfigs, 
+      setConfigs, 
+      currentGameId, 
+      currentSetId,
+      currentGameConfig,
+      currentSetConfig,
+      switchGame,
+      switchSet
+    }) {
+      // Derived values from config
+      const ALL_CARDS = currentSetConfig.cards;
+      const RARITY_ORDER = currentGameConfig.rarityOrder;
+      const RARITY_COLORS = useMemo(() => buildRarityColors(currentGameConfig), [currentGameConfig]);
+      const CARDS_BY_RARITY = useMemo(() => buildCardsByRarity(currentSetConfig, RARITY_ORDER), [currentSetConfig, RARITY_ORDER]);
+      
+      const getImageUrl = useCallback((card) => {
+        return buildImageUrl(currentGameId, currentSetId, card);
+      }, [currentGameId, currentSetId]);
+
+      const getCardbackUrl = useCallback(() => {
+        return buildCardbackUrl(currentGameConfig);
+      }, [currentGameConfig]);
+
+      // Helper to get sealed product info from config
+      const getSealedInfo = useCallback((type) => {
+        const config = currentSetConfig.sealedProducts?.[type];
+        const packSize = currentSetConfig.packStructure?.size || 8;
+        const packs = config?.packs || (type === 'bundle' ? 8 : type === 'booster' ? 24 : 144);
+        const cards = packs * packSize;
+        const guaranteed = config?.guaranteed || [];
+        
+        // Format guaranteed text
+        const guaranteedText = guaranteed.map(g => {
+          const rarityName = currentGameConfig.rarities.find(r => r.id === g.rarity)?.name || g.rarity;
+          return `${g.count} ${rarityName}`;
+        }).join(', ');
+        
+        return { packs, cards, guaranteed: guaranteedText };
+      }, [currentSetConfig, currentGameConfig]);
+
+      // Generate save key scoped to game/set
+      const getSaveKey = useCallback((base) => {
+        return `tcg-${currentGameId}-${currentSetId}-${base}`;
+      }, [currentGameId, currentSetId]);
+
+      const CORE_SAVE_KEY = useMemo(() => getSaveKey('save-v2'), [getSaveKey]);
       const readCoreSave = () => {
         try {
           const raw = localStorage.getItem(CORE_SAVE_KEY);
@@ -1116,16 +952,24 @@ body{
       };
 
       const summarizeGodPack = (evt) => {
-        const counts = { rare: 0, legendary: 0, 'ultra x rare': 0, other: 0 };
+        // Dynamic counting based on actual card rarities in the event
         const cards = Array.isArray(evt.cards) ? evt.cards : [];
+        const counts = {};
         cards.forEach(c => {
-          const r = c.rarity;
-          if (r === 'rare') counts.rare += 1;
-          else if (r === 'legendary') counts.legendary += 1;
-          else if (r === 'ultra x rare') counts['ultra x rare'] += 1;
-          else counts.other += 1;
+          const r = c.rarity || 'unknown';
+          counts[r] = (counts[r] || 0) + 1;
         });
-        return `${counts.rare} Rare, ${counts.legendary} Legendary, ${counts['ultra x rare']} Ultra`; 
+        
+        // Format the counts
+        const parts = Object.entries(counts)
+          .filter(([_, count]) => count > 0)
+          .map(([rarity, count]) => {
+            // Capitalize first letter of each word
+            const label = rarity.split(/[-\s]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            return `${count} ${label}`;
+          });
+        
+        return parts.join(', ') || 'No cards';
       };
 
       const formatEventSummary = (evt) => {
@@ -1416,40 +1260,33 @@ body{
         return Math.max(min, Math.min(max, n));
       };
 
-      // Generate initial market values for all cards
+      // Generate initial market values for all cards using config ranges
       const generateMarketValues = () => {
         const values = {};
+        const ranges = currentSetConfig.marketValueRanges || {};
+        
         ALL_CARDS.forEach(card => {
+          const range = ranges[card.rarity];
           let value;
-          switch(card.rarity) {
-            case 'common':
-              value = generateWeightedValue(0.5, 5.5, 1.0);
-              break;
-            case 'uncommon':
-              value = generateWeightedValue(1.5, 8.0, 3.0);
-              break;
-            case 'rare':
-              value = generateWeightedValue(3.5, 25.0, 5.0);
-              break;
-            case 'legendary':
-              value = generateWeightedValue(9.25, 87.0, 20.0);
-              break;
-            case 'ultra x rare':
-              value = generateWeightedValue(23.0, 820.0, 100.0);
-              break;
-            default:
-              value = 1.0;
+          
+          if (range) {
+            value = generateWeightedValue(range.min, range.max, range.peak);
+          } else {
+            // Fallback for unknown rarities
+            value = 1.0;
           }
           values[card.id] = value;
         });
         return values;
       }
 
-      // Generate per-card holo multipliers (range 1.10x - 2.50x, bell-curved around 1.50x)
+      // Generate per-card holo multipliers using config ranges
       const generateHoloMultipliers = () => {
         const multipliers = {};
+        const holoRange = currentGameConfig.holoMultiplierRange || { min: 1.10, max: 2.50, peak: 1.50 };
+        
         ALL_CARDS.forEach(card => {
-          multipliers[card.id] = generateWeightedValue(1.10, 2.50, 1.50);
+          multipliers[card.id] = generateWeightedValue(holoRange.min, holoRange.max, holoRange.peak);
         });
         return multipliers;
       };
@@ -1466,11 +1303,10 @@ body{
         return getBaseMarketValue(cardId) * getHoloMultiplier(cardId);
       };
 
-      const DAILY_SHOP_RARITIES = ['common', 'uncommon', 'rare', 'legendary', 'ultra x rare'];
-
+      // Use rarities from config for daily shop
       const generateDailyShopPicks = () => {
         const picks = {};
-        DAILY_SHOP_RARITIES.forEach(rarity => {
+        RARITY_ORDER.forEach(rarity => {
           const cards = CARDS_BY_RARITY[rarity] || [];
           if (!cards.length) return;
           const pick = cards[Math.floor(rand() * cards.length)];
@@ -1501,8 +1337,8 @@ body{
 
 
       // ===== God Pack helpers =====
-      // NOTE: user spec says "0.01% (1/1000)" — we implement 1/1000 = 0.1% chance unless a pack is explicitly flagged.
-      const GOD_PACK_CHANCE = 1 / 1000;
+      // Get god pack chance from config, default to 1/1000
+      const GOD_PACK_CHANCE = currentSetConfig.godPack?.chance || (1 / 1000);
 
       const triggerGodPackEffect = useCallback(() => {
         // Make a small burst of confetti + a quick glow overlay
@@ -1966,13 +1802,27 @@ body{
       // Open sealed products into packs (no daily open limit)
       const openBundleBox = () => {
         if ((sealedInventory?.bundle || 0) <= 0) return;
+        const sealedConfig = currentSetConfig.sealedProducts?.bundle;
+        const packCount = sealedConfig?.packs || 8;
+        const guaranteed = sealedConfig?.guaranteed || [];
+        
         const boxId = `bundle_${Date.now()}`;
         const newPacks = [];
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < packCount; i++) {
           newPacks.push({ id: generatePackId(), type: 'bundle', boxId });
         }
-        const luckyIndex = Math.floor(rand() * 8);
-        newPacks[luckyIndex].forceRarity = 'legendary';
+        
+        // Apply guaranteed rarities
+        const shuffled = shuffleIndices(packCount);
+        let guaranteeIdx = 0;
+        for (const g of guaranteed) {
+          for (let i = 0; i < g.count; i++) {
+            if (guaranteeIdx < packCount) {
+              newPacks[shuffled[guaranteeIdx]].forceRarity = g.rarity;
+              guaranteeIdx++;
+            }
+          }
+        }
 
         const newInventory = [...packInventory, ...newPacks];
         setPackInventory(newInventory);
@@ -1983,15 +1833,26 @@ body{
 
       const openBoosterBox = () => {
         if ((sealedInventory?.booster || 0) <= 0) return;
+        const sealedConfig = currentSetConfig.sealedProducts?.booster;
+        const packCount = sealedConfig?.packs || 24;
+        const guaranteed = sealedConfig?.guaranteed || [];
+        
         const boxId = `booster_${Date.now()}`;
         const newPacks = [];
-        for (let i = 0; i < 24; i++) {
+        for (let i = 0; i < packCount; i++) {
           newPacks.push({ id: generatePackId(), type: 'booster', boxId });
         }
-        // 4 guaranteed legendary packs
-        const shuffled = shuffleIndices(24);
-        for (let i = 0; i < 4; i++) {
-          newPacks[shuffled[i]].forceRarity = 'legendary';
+        
+        // Apply guaranteed rarities
+        const shuffled = shuffleIndices(packCount);
+        let guaranteeIdx = 0;
+        for (const g of guaranteed) {
+          for (let i = 0; i < g.count; i++) {
+            if (guaranteeIdx < packCount) {
+              newPacks[shuffled[guaranteeIdx]].forceRarity = g.rarity;
+              guaranteeIdx++;
+            }
+          }
         }
 
         const newInventory = [...packInventory, ...newPacks];
@@ -2003,15 +1864,26 @@ body{
 
       const openBoosterCase = () => {
         if ((sealedInventory?.case || 0) <= 0) return;
+        const sealedConfig = currentSetConfig.sealedProducts?.case;
+        const packCount = sealedConfig?.packs || 144;
+        const guaranteed = sealedConfig?.guaranteed || [];
+        
         const caseId = `case_${Date.now()}`;
         const newPacks = [];
-        for (let i = 0; i < 144; i++) {
+        for (let i = 0; i < packCount; i++) {
           newPacks.push({ id: generatePackId(), type: 'case', caseId });
         }
-        // 2 guaranteed ultra x rare packs
-        const shuffled = shuffleIndices(144);
-        for (let i = 0; i < 2; i++) {
-          newPacks[shuffled[i]].forceRarity = 'ultra x rare';
+        
+        // Apply guaranteed rarities
+        const shuffled = shuffleIndices(packCount);
+        let guaranteeIdx = 0;
+        for (const g of guaranteed) {
+          for (let i = 0; i < g.count; i++) {
+            if (guaranteeIdx < packCount) {
+              newPacks[shuffled[guaranteeIdx]].forceRarity = g.rarity;
+              guaranteeIdx++;
+            }
+          }
         }
 
         const newInventory = [...packInventory, ...newPacks];
@@ -2144,27 +2016,47 @@ body{
         };
 
         const expectedPackEV = (vals) => {
-          // Pack structure (8 cards):
-          // 4 commons, 2 uncommons, 1 "rare slot" with 89/10/1 rare/legendary/uxr, + 1 foil slot
-          const commonEV = avgRarity(vals, 'common', false);
-          const uncommonEV = avgRarity(vals, 'uncommon', false);
-          const rareEV = avgRarity(vals, 'rare', false);
-          const legendaryEV = avgRarity(vals, 'legendary', false);
-          const ultraXEV = avgRarity(vals, 'ultra x rare', false);
-
-          // Foil slot rarity weights (matches your current open-pack logic)
-          const foilEV =
-            0.47 * avgRarity(vals, 'common', true) +
-            0.34 * avgRarity(vals, 'uncommon', true) +
-            0.13 * avgRarity(vals, 'rare', true) +
-            0.05 * avgRarity(vals, 'legendary', true) +
-            0.01 * avgRarity(vals, 'ultra x rare', true);
-
-          const oneRareSlotEV =
-            (0.89 * rareEV) + (0.10 * legendaryEV) + (0.01 * ultraXEV);
-
-          const ev = (4 * commonEV) + (2 * uncommonEV) + oneRareSlotEV + foilEV;
-          return ev;
+          // Config-driven pack EV calculation
+          const packStructure = currentSetConfig.packStructure;
+          let totalEV = 0;
+          
+          for (const slot of packStructure.slots) {
+            const count = slot.count || 1;
+            
+            if (slot.type === 'guaranteed') {
+              // Guaranteed rarity slot
+              const ev = avgRarity(vals, slot.rarity, false);
+              totalEV += count * ev;
+            } else if (slot.type === 'weighted' || slot.type === 'rare-slot') {
+              // Weighted rarity slot
+              let slotEV = 0;
+              const odds = slot.odds || {};
+              const totalOdds = Object.values(odds).reduce((a, b) => a + b, 0);
+              
+              for (const [rarity, chance] of Object.entries(odds)) {
+                const weight = chance / totalOdds;
+                // For rare-slot type, check if it has holoChance
+                const holoChance = slot.holoChance || 0;
+                const normalEV = avgRarity(vals, rarity, false);
+                const holoEV = avgRarity(vals, rarity, true);
+                slotEV += weight * ((1 - holoChance) * normalEV + holoChance * holoEV);
+              }
+              totalEV += count * slotEV;
+            } else if (slot.type === 'holo') {
+              // Holo slot (always holo)
+              let slotEV = 0;
+              const odds = slot.odds || {};
+              const totalOdds = Object.values(odds).reduce((a, b) => a + b, 0);
+              
+              for (const [rarity, chance] of Object.entries(odds)) {
+                const weight = chance / totalOdds;
+                slotEV += weight * avgRarity(vals, rarity, true);
+              }
+              totalEV += count * slotEV;
+            }
+          }
+          
+          return totalEV;
         };
 
         const baseEV = expectedPackEV(baseValues);
@@ -2381,21 +2273,52 @@ const persistShopStock = (ss) => {
       };
 
 const getRareSlotCard = () => {
+        // Get weighted slot config from pack structure
+        const packStructure = currentSetConfig.packStructure;
+        const weightedSlot = packStructure.slots.find(s => s.type === 'weighted' || s.type === 'rare-slot');
+        
+        if (!weightedSlot || !weightedSlot.odds) {
+          // Fallback to rare
+          return getRandomCard('rare');
+        }
+        
+        const odds = weightedSlot.odds;
         const roll = rand() * 100;
-        if (roll < 1) return getRandomCard('ultra x rare');
-        if (roll < 11) return getRandomCard('legendary');
-        return getRandomCard('rare');
+        let cumulative = 0;
+        
+        for (const [rarity, chance] of Object.entries(odds)) {
+          cumulative += chance;
+          if (roll < cumulative) {
+            return getRandomCard(rarity);
+          }
+        }
+        
+        // Fallback to first rarity in odds
+        return getRandomCard(Object.keys(odds)[0]);
       }
 
-      // Foil slot distribution:
-      // 47% common, 34% uncommon, 13% rare, 5% legendary, 1% ultra x rare
+      // Get card from holo/foil slot using config odds
       const getFoilSlotCard = () => {
+        const packStructure = currentSetConfig.packStructure;
+        const holoSlot = packStructure.slots.find(s => s.type === 'holo');
+        
+        if (!holoSlot || !holoSlot.odds) {
+          // Fallback behavior
+          return getRandomCard('common');
+        }
+        
+        const odds = holoSlot.odds;
         const roll = rand() * 100;
-        if (roll < 47) return getRandomCard('common');
-        if (roll < 81) return getRandomCard('uncommon');
-        if (roll < 94) return getRandomCard('rare');
-        if (roll < 99) return getRandomCard('legendary');
-        return getRandomCard('ultra x rare');
+        let cumulative = 0;
+        
+        for (const [rarity, chance] of Object.entries(odds)) {
+          cumulative += chance;
+          if (roll < cumulative) {
+            return getRandomCard(rarity);
+          }
+        }
+        
+        return getRandomCard(Object.keys(odds)[0]);
       }
 ;
 
@@ -2416,64 +2339,77 @@ const getRareSlotCard = () => {
         }
 
         const newPack = [];
+        const packStructure = currentSetConfig.packStructure;
+        const godPackConfig = currentSetConfig.godPack;
 
-        if (isGodPack) {
-          // God Pack: 8 total cards, ALL holo
-          // 1 Rare, 3 Legendary, 4 Ultra X Rare
+        if (isGodPack && godPackConfig) {
+          // God Pack: use config distribution
           let slot = 0;
+          const distribution = godPackConfig.distribution || [];
+          
+          for (const dist of distribution) {
+            for (let i = 0; i < dist.count; i++) {
+              const card = getRandomCard(dist.rarity);
+              if (card) {
+                newPack.push({ 
+                  ...card, 
+                  slot: slot++, 
+                  isHolo: godPackConfig.allHolo !== false, 
+                  isGodPack: true 
+                });
+              }
+            }
+          }
 
-          for (let i = 0; i < 1; i++) {
-            const card = getRandomCard('rare');
-            if (card) newPack.push({ ...card, slot: slot++, isHolo: true, isGodPack: true });
-          }
-          for (let i = 0; i < 3; i++) {
-            const card = getRandomCard('legendary');
-            if (card) newPack.push({ ...card, slot: slot++, isHolo: true, isGodPack: true });
-          }
-          for (let i = 0; i < 4; i++) {
-            const card = getRandomCard('ultra x rare');
-            if (card) newPack.push({ ...card, slot: slot++, isHolo: true, isGodPack: true });
-          }
-
-          // Safety: if anything failed to generate (missing rarity pools), fill remaining slots with legendary/rare
-          while (newPack.length < 8) {
-            const fallback = getRandomCard(newPack.length < 5 ? 'legendary' : 'rare');
+          // Safety: fill remaining slots if needed
+          const targetSize = godPackConfig.size || packStructure.size;
+          while (newPack.length < targetSize) {
+            const fallbackRarity = distribution.length > 0 ? distribution[0].rarity : 'rare';
+            const fallback = getRandomCard(fallbackRarity);
             if (!fallback) break;
             newPack.push({ ...fallback, slot: slot++, isHolo: true, isGodPack: true });
           }
 
-          // Shuffle slightly so the sequence isn't always identical (still respects counts)
+          // Shuffle slightly so the sequence isn't always identical
           newPack.sort(() => rand() - 0.5);
-          // Re-assign slots after shuffle
           newPack.forEach((c, i) => c.slot = i);
         } else {
-          // Normal pack: 8 cards (4 Common, 2 Uncommon, 1 Rare+, 1 Holo slot)
-          // Generate 4 commons
-          for (let i = 0; i < 4; i++) {
-            const card = getRandomCard('common');
-            if (card) newPack.push({ ...card, slot: i });
+          // Normal pack: use config structure
+          let slotIndex = 0;
+          
+          for (const slotConfig of packStructure.slots) {
+            const count = slotConfig.count || 1;
+            
+            if (slotConfig.type === 'guaranteed') {
+              // Guaranteed rarity cards
+              for (let i = 0; i < count; i++) {
+                const card = getRandomCard(slotConfig.rarity);
+                if (card) newPack.push({ ...card, slot: slotIndex++ });
+              }
+            } else if (slotConfig.type === 'weighted' || slotConfig.type === 'rare-slot') {
+              // Weighted rarity slot
+              for (let i = 0; i < count; i++) {
+                if (packToOpen.forceRarity) {
+                  // Guaranteed rarity from sealed product
+                  const guaranteedCard = getRandomCard(packToOpen.forceRarity);
+                  if (guaranteedCard) newPack.push({ ...guaranteedCard, slot: slotIndex++ });
+                } else {
+                  const card = getRareSlotCard();
+                  if (card) {
+                    // Check if this slot has a holo chance (for SP-style rare slots)
+                    const isHolo = slotConfig.holoChance && rand() < slotConfig.holoChance;
+                    newPack.push({ ...card, slot: slotIndex++, isHolo });
+                  }
+                }
+              }
+            } else if (slotConfig.type === 'holo') {
+              // Holo slot - always holo
+              for (let i = 0; i < count; i++) {
+                const foilCard = getFoilSlotCard();
+                if (foilCard) newPack.push({ ...foilCard, slot: slotIndex++, isHolo: true, isFoilSlot: true });
+              }
+            }
           }
-
-          // Generate 2 uncommons
-          for (let i = 0; i < 2; i++) {
-            const card = getRandomCard('uncommon');
-            if (card) newPack.push({ ...card, slot: 4 + i });
-          }
-
-          // Generate 1 rare+ slot
-          if (packToOpen.forceRarity) {
-            // Guaranteed rarity from sealed product
-            const guaranteedCard = getRandomCard(packToOpen.forceRarity);
-            if (guaranteedCard) newPack.push({ ...guaranteedCard, slot: 6 });
-          } else {
-            // Normal rare+ slot
-            const card = getRareSlotCard();
-            if (card) newPack.push({ ...card, slot: 6 });
-          }
-
-          // Foil (holo) slot
-          const foilCard = getFoilSlotCard();
-          if (foilCard) newPack.push({ ...foilCard, slot: 7, isHolo: true, isFoilSlot: true });
         }
 
         // Record milestone events
@@ -2481,6 +2417,8 @@ const getRareSlotCard = () => {
           appendEvent({
             id: `gp-${gameDay || 1}-${packCount + 1}-${Math.floor(rand() * 1e9)}`,
             type: 'godpack',
+            game: currentGameId,
+            set: currentSetId,
             day: gameDay || 1,
             packIndex: packCount + 1,
             cards: newPack.map(c => ({ id: c.id, rarity: c.rarity, isHolo: !!c.isHolo, holoMult: c.holoMult || null }))
@@ -3027,7 +2965,7 @@ if (!isLoaded) {
               <div className="godpack-gate-card" onClick={(e) => e.stopPropagation()}>
                 <div className="godpack-gate-content">
                   <div className="godpack-gate-title">GOD PACK</div>
-                  <div className="godpack-gate-sub">All 8 cards in this pack are holo.</div>
+                  <div className="godpack-gate-sub">All {currentSetConfig.godPack?.size || currentSetConfig.packStructure?.size || 8} cards in this pack are holo.</div>
                   <div className="godpack-gate-note">Tap continue to start the reveal.</div>
                   <div className="godpack-gate-actions">
                     <button className="btn btn-primary" onClick={dismissGodPackGate}>Continue</button>
@@ -3049,8 +2987,8 @@ if (!isLoaded) {
                   {formatEventSummary(selectedEvent)}
                 </div>
                 {selectedEvent.type === 'godpack' && Array.isArray(selectedEvent.cards) && (
-                  <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
-                    {selectedEvent.cards.slice(0, 8).map((c, idx) => {
+                  <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: `repeat(${Math.min(4, selectedEvent.cards.length)}, minmax(0, 1fr))`, gap: 10 }}>
+                    {selectedEvent.cards.map((c, idx) => {
                       const card = getCardById(c.id);
                       if (!card) return <div key={idx} style={{ height: 90, borderRadius: 8, background: 'rgba(255,255,255,0.06)' }} />;
                       return (
@@ -3068,9 +3006,53 @@ if (!isLoaded) {
 
           <header style={{ background: 'rgba(0,0,0,0.4)', borderBottom: '1px solid rgba(168,85,247,0.3)', padding: '12px 16px', position: 'sticky', top: 0, zIndex: 50 }} className="topbar">
             <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="topbar-inner">
-              <h1 className="topbar-title" style={{ fontSize: 24, fontWeight: 'bold', background: 'linear-gradient(90deg, #a855f7, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
-                Through The Ages
-              </h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <h1 className="topbar-title" style={{ fontSize: 24, fontWeight: 'bold', background: 'linear-gradient(90deg, #a855f7, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+                  {currentGameConfig.name}
+                </h1>
+                {/* Game/Set Selector */}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <select
+                    value={currentGameId}
+                    onChange={(e) => switchGame(e.target.value)}
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: 6,
+                      border: '1px solid rgba(168,85,247,0.4)',
+                      background: 'rgba(0,0,0,0.4)',
+                      color: 'white',
+                      fontSize: 12,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {gamesIndex.games.filter(g => g.enabled).map(game => (
+                      <option key={game.id} value={game.id}>{game.name}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={currentSetId}
+                    onChange={(e) => switchSet(e.target.value)}
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: 6,
+                      border: '1px solid rgba(168,85,247,0.4)',
+                      background: 'rgba(0,0,0,0.4)',
+                      color: 'white',
+                      fontSize: 12,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {currentGameConfig.sets.map(setId => {
+                      const setConfig = setConfigs[currentGameId]?.[setId];
+                      return (
+                        <option key={setId} value={setId}>
+                          {setConfig?.name || setId}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(168,85,247,0.2)', borderRadius: 8, border: '1px solid rgba(168,85,247,0.4)' }}>
                   <img src="./rations.png" alt="Rations" style={{ width: 24, height: 24 }} />
@@ -3259,7 +3241,7 @@ if (!isLoaded) {
                       cursor: (sealedInventory.bundle || 0) > 0 ? 'pointer' : 'not-allowed'
                     }}
                   >
-                    Open Bundle (+8 Packs)
+                    Open Bundle (+{currentSetConfig.sealedProducts?.bundle?.packs || 8} Packs)
                   </button>
 
                   <button
@@ -3274,7 +3256,7 @@ if (!isLoaded) {
                       cursor: (sealedInventory.booster || 0) > 0 ? 'pointer' : 'not-allowed'
                     }}
                   >
-                    Open Booster Box (+24 Packs)
+                    Open Booster Box (+{currentSetConfig.sealedProducts?.booster?.packs || 24} Packs)
                   </button>
 
                   <button
@@ -3289,14 +3271,14 @@ if (!isLoaded) {
                       cursor: (sealedInventory.case || 0) > 0 ? 'pointer' : 'not-allowed'
                     }}
                   >
-                    Open Case (+144 Packs)
+                    Open Case (+{currentSetConfig.sealedProducts?.case?.packs || 144} Packs)
                   </button>
                 </div>
 
                 {packInventory.length > 0 ? (
                   <div onClick={openPack} style={{ width: 256, height: 384, margin: '0 auto', cursor: 'pointer', position: 'relative' }}>
                     <img 
-                      src="./cardback.png" 
+                      src={getCardbackUrl()} 
                       alt="Booster Pack" 
                       style={{ 
                         width: '100%', 
@@ -3471,7 +3453,7 @@ if (!isLoaded) {
                     alignItems: 'center'
                   }}>
                     <img
-                      src="./cardback.png"
+                      src={getCardbackUrl()}
                       alt="Free Starter Box"
                       style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
                     />
@@ -3518,14 +3500,17 @@ if (!isLoaded) {
                     alignItems: 'center'
                   }}>
                     <img
-                      src="./cardback.png"
+                      src={getCardbackUrl()}
                       alt="God Pack"
                       style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16, boxShadow: '0 0 40px rgba(236,72,153,0.25)' }}
                     />
                     <h3 style={{ color: '#f472b6', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>God Pack (Test)</h3>
-                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 6px', textAlign: 'center' }}>8 holo cards</p>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 6px', textAlign: 'center' }}>{currentSetConfig.godPack?.size || currentSetConfig.packStructure.size} holo cards</p>
                     <p style={{ color: '#f472b6', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
-                      1 Rare • 3 Legendary • 4 Ultra X Rare
+                      {(currentSetConfig.godPack?.distribution || []).map(d => {
+                        const rarityInfo = currentGameConfig.rarities.find(r => r.id === d.rarity);
+                        return `${d.count} ${rarityInfo?.name || d.rarity}`;
+                      }).join(' • ')}
                     </p>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -3534,7 +3519,7 @@ if (!isLoaded) {
                     </div>
 
                     <button
-                      onClick={() => setPurchaseConfirm({ type: 'godpack', title: 'God Pack (Test)', cost: 0, details: 'For testing. Adds 1 guaranteed God Pack to your inventory (all holo).' })}
+                      onClick={() => setPurchaseConfirm({ type: 'godpack', title: 'God Pack (Test)', cost: 0, details: `For testing. Adds 1 guaranteed God Pack to your inventory (${currentSetConfig.godPack?.allHolo !== false ? 'all holo' : ''}).` })}
                       style={{
                         width: '100%',
                         padding: '12px',
@@ -3562,12 +3547,12 @@ if (!isLoaded) {
                     alignItems: 'center'
                   }}>
                     <img 
-                      src="./cardback.png" 
+                      src={getCardbackUrl()} 
                       alt="Single Pack"
                       style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
                     />
                     <h3 style={{ color: 'white', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Single Pack</h3>
-                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 16px', textAlign: 'center' }}>8 cards</p>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 16px', textAlign: 'center' }}>{currentSetConfig.packStructure?.size || 8} cards</p>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                       <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
@@ -3575,7 +3560,7 @@ if (!isLoaded) {
                     </div>
                     
                     <button
-                      onClick={() => setPurchaseConfirm({ type: 'single', title: 'Single Pack', cost: sealedMarket.prices.single, details: '8 cards: 4 Common, 2 Uncommon, 1 Rare+ (89% Rare / 10% Legendary / 1% Ultra X Rare), 1 Holo slot (47%C / 34%U / 13%R / 5%L / 1% UXR).' })}
+                      onClick={() => setPurchaseConfirm({ type: 'single', title: 'Single Pack', cost: sealedMarket.prices.single, details: `${currentSetConfig.packStructure?.size || 8} cards per pack.` })}
                       disabled={rations < sealedMarket.prices.single || ((shopStock && shopStock.single) ? shopStock.single.remaining <= 0 : false)}
                       style={{
                         width: '100%',
@@ -3605,14 +3590,14 @@ if (!isLoaded) {
                     alignItems: 'center'
                   }}>
                     <img 
-                      src="./cardback.png" 
+                      src={getCardbackUrl()} 
                       alt="Bundle Box"
                       style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
                     />
                     <h3 style={{ color: '#10b981', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Bundle Box</h3>
-                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>8 packs (120 cards)</p>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>{getSealedInfo('bundle').packs} packs ({getSealedInfo('bundle').cards} cards)</p>
                     <p style={{ color: '#10b981', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
-                      ⭐ 1 Legendary Guaranteed
+                      ⭐ {getSealedInfo('bundle').guaranteed || 'Bonus included'}
                     </p>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -3651,14 +3636,14 @@ if (!isLoaded) {
                     alignItems: 'center'
                   }}>
                     <img 
-                      src="./cardback.png" 
+                      src={getCardbackUrl()} 
                       alt="Booster Box"
                       style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
                     />
                     <h3 style={{ color: '#3b82f6', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Booster Box</h3>
-                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>24 packs (360 cards)</p>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>{getSealedInfo('booster').packs} packs ({getSealedInfo('booster').cards} cards)</p>
                     <p style={{ color: '#3b82f6', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
-                      ⭐ 4 Legendaries Guaranteed
+                      ⭐ {getSealedInfo('booster').guaranteed || 'Bonus included'}
                     </p>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -3697,14 +3682,14 @@ if (!isLoaded) {
                     alignItems: 'center'
                   }}>
                     <img 
-                      src="./cardback.png" 
+                      src={getCardbackUrl()} 
                       alt="Booster Box Case"
                       style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
                     />
                     <h3 style={{ color: '#fbbf24', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Booster Case</h3>
-                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>144 packs (2160 cards)</p>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>{getSealedInfo('case').packs} packs ({getSealedInfo('case').cards} cards)</p>
                     <p style={{ color: '#fbbf24', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
-                      🌟 2 Ultra X Rares Guaranteed
+                      🌟 {getSealedInfo('case').guaranteed || 'Bonus included'}
                     </p>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -3898,11 +3883,11 @@ if (!isLoaded) {
                         }}
                       >
                         <option value="all">All rarities</option>
-                        <option value="common">Common</option>
-                        <option value="uncommon">Uncommon</option>
-                        <option value="rare">Rare</option>
-                        <option value="legendary">Legendary</option>
-                        <option value="ultra x rare">Ultra X Rare</option>
+                        {RARITY_ORDER.map(rarity => (
+                          <option key={rarity} value={rarity} style={{ textTransform: 'capitalize' }}>
+                            {currentGameConfig.rarities.find(r => r.id === rarity)?.name || rarity}
+                          </option>
+                        ))}
                       </select>
 
                       <select
@@ -4088,7 +4073,7 @@ if (!isLoaded) {
                       <div className="pack-wrapper">
                         <div className="pack-body">
                           <img 
-                            src="./cardback.png" 
+                            src={getCardbackUrl()} 
                             alt="Booster Pack" 
                             style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
                             draggable={false}
@@ -4466,11 +4451,14 @@ if (!isLoaded) {
                       <button onClick={() => setCollectionFilter('all')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === 'all' ? '#9333ea' : '#374151', color: 'white' }}>
                         All
                       </button>
-                      {RARITY_ORDER.map(rarity => (
-                        <button key={rarity} onClick={() => setCollectionFilter(rarity)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === rarity ? RARITY_COLORS[rarity].bg : '#374151', color: 'white', textTransform: 'capitalize' }}>
-                          {rarity}
-                        </button>
-                      ))}
+                      {RARITY_ORDER.map(rarity => {
+                        const rarityConfig = currentGameConfig.rarities.find(r => r.id === rarity);
+                        return (
+                          <button key={rarity} onClick={() => setCollectionFilter(rarity)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === rarity ? (RARITY_COLORS[rarity]?.bg || '#374151') : '#374151', color: 'white' }}>
+                            {rarityConfig?.name || rarity}
+                          </button>
+                        );
+                      })}
                     </div>
 
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#e5e7eb', fontSize: 13, userSelect: 'none' }}>
@@ -5290,7 +5278,7 @@ return (
       );
     }
 
-    ReactDOM.render(<TCGPackOpener />, document.getElementById('root'));
+    ReactDOM.render(<App />, document.getElementById('root'));
   </script>
 </body>
 </html>
