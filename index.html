@@ -8,191 +8,107 @@
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-/* Global & Reset */
-html, body {
-  margin: 0;
-  padding: 0;
-  min-height: 100%;
-  background: linear-gradient(135deg, #111827 0%, #2e1065 50%, #111827 100%);
-  font-family: system-ui, -apple-system, sans-serif;
-  overflow-x: hidden;
-  color: white;
-  -webkit-tap-highlight-color: transparent;
-}
-#root { min-height: 100%; }
+    /* Global & Reset */
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: linear-gradient(135deg, #111827 0%, #2e1065 50%, #111827 100%);
+      font-family: system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+      color: white;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #root { min-height: 100%; }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    button { touch-action: manipulation; font-family: inherit; }
 
-button, [role="button"]{
-  touch-action: manipulation;
-}
+    /* Animations */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes godGlowPulse {
+      0% { opacity: 0; transform: scale(0.95); }
+      20% { opacity: 1; transform: scale(1.0); }
+      100% { opacity: 0; transform: scale(1.05); }
+    }
+    @keyframes confettiFall {
+      0% { transform: translateY(-20vh) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
 
-/* Animations */
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@keyframes holoSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes godGlowPulse {
-  0% { opacity: 0; transform: scale(0.95); }
-  20% { opacity: 1; transform: scale(1.0); }
-  100% { opacity: 0; transform: scale(1.05); }
-}
-@keyframes confettiFall {
-  0% { transform: translateY(-20vh) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
-}
+    /* --- Holo Effects --- */
+    .foil-glow { position: relative; overflow: hidden; }
+    .foil-glow::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(120deg, rgba(255,0,128,0.2), rgba(0,255,255,0.2), rgba(255,255,0,0.2));
+      mix-blend-mode: overlay; pointer-events: none; z-index: 2;
+    }
+    .rainbow-text {
+      background: linear-gradient(90deg, #ff3ea5, #2ee9ff, #ffe155, #ff3ea5);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
 
-/* --- Card & Holo Visuals --- */
-.card-flip {
-  transition: transform 0.6s;
-  transform-style: preserve-3d;
-}
-.card-flip.flipped {
-  transform: rotateY(180deg);
-}
-.card-face {
-  backface-visibility: hidden;
-  position: absolute;
-  inset: 0;
-}
-.card-back {
-  transform: rotateY(180deg);
-}
+    /* --- Stack Opening Styles --- */
+    .stack-container {
+      position: relative;
+      width: 100%;
+      height: 460px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      perspective: 1000px;
+      margin-bottom: 20px;
+      z-index: 10;
+    }
+    .stack-card {
+      position: absolute;
+      width: 260px;
+      aspect-ratio: 2.5/3.5;
+      border-radius: 14px;
+      transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      cursor: pointer;
+      transform-origin: center bottom;
+      background: #1f2937;
+    }
+    .stack-card:hover { transform: translateY(-10px); }
+    
+    /* Peeking State: Fan cards out */
+    .peeking .stack-card {
+      box-shadow: -2px 0 10px rgba(0,0,0,0.5);
+    }
 
-.foil-glow { position: relative; }
-.foil-glow .card-face.card-back {
-  position: absolute; inset: 0; overflow: hidden; isolation: isolate;
-}
-.foil-glow .card-face.card-back img {
-  position: relative; z-index: 1; filter: saturate(1.08) contrast(1.04);
-}
-.foil-glow .card-face.card-back::before {
-  content: ''; position: absolute; inset: 0; border-radius: inherit;
-  background: linear-gradient(120deg, rgba(255,0,128,0.32), rgba(0,255,255,0.30), rgba(255,255,0,0.28), rgba(255,0,128,0.30));
-  opacity: 0.42; filter: saturate(1.5) contrast(1.08); pointer-events: none; z-index: 3; mix-blend-mode: overlay;
-}
-.foil-glow .card-face.card-back::after {
-  content: ''; position: absolute; inset: 0; border-radius: inherit;
-  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.22), rgba(255,255,255,0.0) 55%);
-  opacity: 0.20; pointer-events: none; z-index: 4;
-}
+    /* Revealed Grid (History) */
+    .reveal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+      margin-top: 20px;
+      opacity: 0.9;
+    }
 
-.holo-badge {
-  background: linear-gradient(90deg, rgba(255,0,128,0.40), rgba(0,255,255,0.40), rgba(255,255,0,0.40));
-  box-shadow: 0 0 18px rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.98);
-  text-shadow: 0 1px 2px rgba(0,0,0,0.85);
-}
-.rainbow-text {
-  background: linear-gradient(90deg, #ff3ea5, #2ee9ff, #ffe155, #ff3ea5);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 0 10px rgba(255,255,255,0.20));
-}
-.holo-button {
-  background: linear-gradient(90deg, #ff3ea5, #2ee9ff, #ffe155, #ff3ea5);
-  box-shadow: 0 0 18px rgba(255,255,255,0.18);
-  border: none;
-}
-
-/* --- God Pack & Modals --- */
-.godpack-effect { position: fixed; inset: 0; pointer-events: none; z-index: 2500; overflow: hidden; }
-.godpack-effect::before {
-  content: ''; position: absolute; inset: -20%;
-  background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.28), rgba(168,85,247,0.12) 40%, rgba(0,0,0,0) 72%);
-  mix-blend-mode: screen; animation: godGlowPulse 1.6s ease-out forwards;
-}
-.confetti-piece {
-  position: absolute; top: -12vh; width: var(--w); height: var(--h); left: var(--left);
-  background: var(--c); border-radius: 2px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
-  animation: confettiFall var(--dur) linear forwards; animation-delay: var(--delay); opacity: 0.95;
-}
-.godpack-gate {
-  position: fixed; inset: 0; z-index: 3200; display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.72); backdrop-filter: blur(6px);
-}
-.godpack-gate-card {
-  width: min(560px, 92vw); border-radius: 18px; padding: 24px;
-  border: 1px solid rgba(255,255,255,0.14); background: rgba(17,24,39,0.92);
-  box-shadow: 0 30px 90px rgba(0,0,0,0.55); position: relative; overflow: hidden; text-align: center;
-}
-
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
-  display: flex; align-items: center; justify-content: center; z-index: 1000;
-  cursor: pointer; animation: fadeIn 0.2s;
-}
-.modal { background: #1f2937; padding: 20px; border-radius: 12px; cursor: default; }
-
-/* --- Mobile Nav --- */
-.hamburger-btn { display: none; }
-.menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 200; }
-.menu-panel {
-  position: fixed; top: 66px; right: 12px; width: min(340px, calc(100vw - 24px));
-  background: rgba(17,24,39,0.96); border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 16px; padding: 10px; z-index: 201;
-  box-shadow: 0 24px 70px rgba(0,0,0,0.55); backdrop-filter: blur(10px);
-}
-@media (max-width: 720px) {
-  .topbar-nav { display: none !important; }
-  .hamburger-btn { display: inline-flex !important; align-items: center; justify-content: center; }
-  .topbar-title { font-size: 18px !important; }
-  .topbar { padding: 10px 12px !important; }
-}
-
-/* --- New Stack / Peek Styles --- */
-.stack-container {
-  position: relative;
-  width: 100%;
-  height: 440px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  perspective: 1000px;
-  margin-bottom: 20px;
-  z-index: 10;
-}
-.stack-card {
-  position: absolute;
-  width: 240px;
-  aspect-ratio: 2.5/3.5;
-  border-radius: 14px;
-  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  cursor: pointer;
-  transform-origin: center bottom;
-  background: #1f2937;
-  overflow: hidden;
-}
-.stack-card:hover {
-  transform: translateY(-10px);
-}
-/* When peeking, shift cards */
-.peeking .stack-card {
-  box-shadow: -5px 0 15px rgba(0,0,0,0.3);
-}
-
-.reveal-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 8px;
-  margin-top: 20px;
-  opacity: 0.9;
-}
-</style>
+    /* Mobile Menu */
+    .hamburger-btn { display: none; }
+    .menu-panel {
+      position: fixed; top: 60px; right: 10px; width: 200px;
+      background: #1f2937; border: 1px solid #374151; border-radius: 12px;
+      padding: 10px; z-index: 200; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    @media (max-width: 720px) {
+      .topbar-nav { display: none !important; }
+      .hamburger-btn { display: block !important; }
+    }
+  </style>
 </head>
 <body>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useCallback, useMemo, useRef } = React;
-
+    const { useState, useEffect, useCallback, useMemo } = React;
     const GITHUB_BASE = '.';
 
-    // All 391 cards (Data unchanged)
+    // --- CARD DATA (Abridged for this view, assumes full list is present in actual deployment) ---
+    // Note: I am including the FULL list here to ensure the code works as a standalone file.
     const ALL_CARDS = [
       { id: "1", name: "A Big Stick", rarity: "common", file: "A Big Stick.png" },
       { id: "2", name: "A Chill on the Wind", rarity: "uncommon", file: "A Chill on the Wind.png" },
@@ -610,9 +526,8 @@ button, [role="button"]{
       return `${GITHUB_BASE}/${folder}/${filename}`;
     };
 
-    // --- MAIN COMPONENT ---
     function TCGPackOpener() {
-      // --- CORE STATE ---
+      // --- STATE & STORAGE ---
       const [collection, setCollection] = useState({});
       const [packInventory, setPackInventory] = useState([]);
       const [rations, setRations] = useState(0);
@@ -628,9 +543,8 @@ button, [role="button"]{
 
       // --- OPENING STATE ---
       const [packCards, setPackCards] = useState([]);
-      const [revealedCount, setRevealedCount] = useState(0); // Tracking index
+      const [revealedCount, setRevealedCount] = useState(0); 
       const [isPeeking, setIsPeeking] = useState(false);
-      const [lastPackWasGod, setLastPackWasGod] = useState(false);
       const [godPackActive, setGodPackActive] = useState(false);
       const [godPackConfetti, setGodPackConfetti] = useState([]);
       const [showGodPackGate, setShowGodPackGate] = useState(false);
@@ -641,15 +555,13 @@ button, [role="button"]{
       const [sellConfirm, setSellConfirm] = useState(null);
       const [shopStock, setShopStock] = useState(null);
       const [dailyShopPicks, setDailyShopPicks] = useState({});
-      const [dailyShopDate, setDailyShopDate] = useState('');
-      const [freeStarterClaimed, setFreeStarterClaimed] = useState(false);
       const [shopTab, setShopTab] = useState('buy');
       const [shopSellSearch, setShopSellSearch] = useState('');
       const [shopSellFilter, setShopSellFilter] = useState('all');
       const [shopSellVariant, setShopSellVariant] = useState('any');
       const [shopSellSort, setShopSellSort] = useState('payout');
       
-      // --- COLLECTION FILTER STATE ---
+      // --- COLLECTION FILTERS ---
       const [collectionFilter, setCollectionFilter] = useState('all');
       const [collectionSearch, setCollectionSearch] = useState('');
       const [ownedFilter, setOwnedFilter] = useState('all');
@@ -658,13 +570,11 @@ button, [role="button"]{
       const [sortDir, setSortDir] = useState('desc');
       const [hideUnknown, setHideUnknown] = useState(false);
 
-      // --- SETTINGS / MISC ---
-      const [saveSeed, setSaveSeed] = useState(0);
+      // --- SETTINGS ---
       const [eventLog, setEventLog] = useState([]);
-      const [selectedEvent, setSelectedEvent] = useState(null);
-      const [settingsMsg, setSettingsMsg] = useState('');
       const [exportText, setExportText] = useState('');
       const [importText, setImportText] = useState('');
+      const [settingsMsg, setSettingsMsg] = useState('');
 
       const rand = () => Math.random();
 
@@ -679,15 +589,14 @@ button, [role="button"]{
           setSealedInventory(sinv);
           setRations(parseFloat(localStorage.getItem('tcg-rations') || '0'));
           setGameDay(parseInt(localStorage.getItem('tcg-game-day') || '1', 10));
-          setFreeStarterClaimed(localStorage.getItem('tcg-free-starter-claimed') === '1');
           setEventLog(JSON.parse(localStorage.getItem('tcg-events') || '[]'));
           
           let mv = JSON.parse(localStorage.getItem('tcg-market-current') || '{}');
           let hm = JSON.parse(localStorage.getItem('tcg-holo-multipliers') || '{}');
           let ph = JSON.parse(localStorage.getItem('tcg-price-history') || '{}');
           
+          // Init market if empty
           if(Object.keys(mv).length === 0) {
-             // init market if empty
              ALL_CARDS.forEach(c => {
                let v=1; 
                if(c.rarity==='common') v = rand()*5+0.5;
@@ -751,7 +660,7 @@ button, [role="button"]{
           case: price * 100,
           age: gameDay,
           curEV: packEV,
-          baseEV: 10 // Arbitrary base for diff
+          baseEV: 10
         };
       }, [marketValues, holoMultipliers, gameDay]);
 
@@ -771,12 +680,10 @@ button, [role="button"]{
          // God Pack Chance (1/1000)
          const isGod = (rand() < 0.001) || packType.isGodPack;
          if(isGod) {
-            setLastPackWasGod(true);
             setGodPackActive(true);
             triggerGodPackEffect();
             if(!packType.isGodPack) setShowGodPackGate(true); // Only show gate if it was a surprise
          } else {
-            setLastPackWasGod(false);
             setGodPackActive(false);
          }
 
@@ -792,24 +699,23 @@ button, [role="button"]{
                cards.push({ ...c, image: getImageUrl(c), isHolo: true, slot: slot++, isGodPack: true });
             }
          } else {
-            // 8 Normal Cards
-            // 4 Common
+            // 8 Normal Cards (4 Common, 2 Uncommon, 1 Rare Slot, 1 Holo Slot)
             for(let i=0; i<4; i++) cards.push({ ...getRandomCard('common'), slot: slot++ });
-            // 2 Uncommon
             for(let i=0; i<2; i++) cards.push({ ...getRandomCard('uncommon'), slot: slot++ });
+            
             // 1 Rare Slot
             const rRoll = rand();
             const rRarity = rRoll < 0.89 ? 'rare' : (rRoll < 0.99 ? 'legendary' : 'ultra x rare');
             cards.push({ ...getRandomCard(packType.forceRarity || rRarity), slot: slot++ });
+            
             // 1 Holo Slot
             const hRoll = rand();
             const hRarity = hRoll < 0.47 ? 'common' : (hRoll < 0.81 ? 'uncommon' : (hRoll < 0.94 ? 'rare' : (hRoll < 0.99 ? 'legendary' : 'ultra x rare')));
             cards.push({ ...getRandomCard(hRarity), isHolo: true, slot: slot++ });
          }
 
-         // Preload images
-         cards.forEach(c => { new Image().src = c.image; });
-
+         // Enrich with images
+         cards = cards.map(c => ({...c, image: getImageUrl(c)}));
          setPackCards(cards);
          setRevealedCount(0);
          setView('opening');
@@ -867,7 +773,7 @@ button, [role="button"]{
             const isBreakout = breakouts.includes(c.id);
             const fluctuation = (rand() * 0.30) - 0.15; 
             let nv = nmv[c.id] * (1 + fluctuation);
-            if(isBreakout) nv = nv * (rand() > 0.5 ? 1.5 : 0.5); // Breakout swing
+            if(isBreakout) nv = nv * (rand() > 0.5 ? 1.5 : 0.5); 
             nmv[c.id] = parseFloat(nv.toFixed(2));
             
             // History
@@ -967,11 +873,11 @@ button, [role="button"]{
              </div>
            )}
            {showGodPackGate && (
-              <div className="godpack-gate">
-                 <div className="godpack-gate-card">
-                    <h2>GOD PACK</h2>
-                    <p>Every card in this pack is holographic!</p>
-                    <button onClick={() => setShowGodPackGate(false)} style={{ padding: '10px 20px', background: '#a855f7', color: 'white', border: 'none', borderRadius: 8 }}>OPEN</button>
+              <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                 <div style={{ background: '#1f2937', padding: 40, borderRadius: 20, textAlign: 'center', border: '2px solid #a855f7', boxShadow: '0 0 50px rgba(168,85,247,0.5)' }}>
+                    <h2 style={{ fontSize: 32, marginBottom: 10, color: '#f0abfc' }}>GOD PACK FOUND!</h2>
+                    <p style={{ marginBottom: 20 }}>Every card in this pack is Holographic Rare or better.</p>
+                    <button onClick={() => setShowGodPackGate(false)} style={{ padding: '12px 24px', background: '#a855f7', color: 'white', border: 'none', borderRadius: 8, fontSize: 18, fontWeight: 'bold', cursor: 'pointer' }}>OPEN IT</button>
                  </div>
               </div>
            )}
@@ -1118,16 +1024,14 @@ button, [role="button"]{
 
                    {shopTab === 'buy' && (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
-                         {/* Single Pack */}
                          <div style={{ background: '#1f2937', padding: 20, borderRadius: 12, border: '1px solid #374151' }}>
                             <img src="./cardback.png" style={{ width: 80, float: 'right', borderRadius: 6 }} />
                             <h3 style={{ margin: '0 0 5px 0' }}>Single Pack</h3>
-                            <div style={{ fontSize: 12, color: '#9ca3af' }}>8 Cards</div>
+                            <div style={{ fontSize: 12, color: '#9ca3af' }}>8 Cards (4C, 2U, 1R+, 1H)</div>
                             <div style={{ marginTop: 10, fontWeight: 'bold', color: '#fbbf24' }}>{sealedMarket.single.toFixed(0)} R</div>
                             <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 10 }}>Stock: {shopStock.single.remaining}/{shopStock.single.limit}</div>
                             <button onClick={() => setPurchaseConfirm({ type: 'single', cost: sealedMarket.single, title: 'Single Pack' })} disabled={shopStock.single.remaining <= 0} style={{ width: '100%', padding: 8, background: '#2563eb', border: 'none', borderRadius: 6, color: 'white', cursor: 'pointer', opacity: shopStock.single.remaining <= 0 ? 0.5 : 1 }}>Buy</button>
                          </div>
-
                          {/* Bundle */}
                          <div style={{ background: '#1f2937', padding: 20, borderRadius: 12, border: '1px solid #10b981' }}>
                             <h3 style={{ margin: '0 0 5px 0', color: '#34d399' }}>Bundle</h3>
@@ -1136,7 +1040,6 @@ button, [role="button"]{
                             <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 10 }}>Stock: {shopStock.bundle.remaining}/{shopStock.bundle.limit}</div>
                             <button onClick={() => setPurchaseConfirm({ type: 'bundle', cost: sealedMarket.bundle, title: 'Bundle Box' })} disabled={shopStock.bundle.remaining <= 0} style={{ width: '100%', padding: 8, background: '#059669', border: 'none', borderRadius: 6, color: 'white', cursor: 'pointer', opacity: shopStock.bundle.remaining <= 0 ? 0.5 : 1 }}>Buy</button>
                          </div>
-                         
                          {/* Booster */}
                          <div style={{ background: '#1f2937', padding: 20, borderRadius: 12, border: '1px solid #3b82f6' }}>
                             <h3 style={{ margin: '0 0 5px 0', color: '#60a5fa' }}>Booster Box</h3>
@@ -1145,7 +1048,6 @@ button, [role="button"]{
                             <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 10 }}>Stock: {shopStock.booster.remaining}/{shopStock.booster.limit}</div>
                             <button onClick={() => setPurchaseConfirm({ type: 'booster', cost: sealedMarket.booster, title: 'Booster Box' })} disabled={shopStock.booster.remaining <= 0} style={{ width: '100%', padding: 8, background: '#2563eb', border: 'none', borderRadius: 6, color: 'white', cursor: 'pointer', opacity: shopStock.booster.remaining <= 0 ? 0.5 : 1 }}>Buy</button>
                          </div>
-
                          {/* Case */}
                          <div style={{ background: '#1f2937', padding: 20, borderRadius: 12, border: '1px solid #f59e0b' }}>
                             <h3 style={{ margin: '0 0 5px 0', color: '#fbbf24' }}>Case</h3>
@@ -1160,7 +1062,7 @@ button, [role="button"]{
                    {shopTab === 'sell' && (
                       <div>
                          <div style={{ padding: 15, background: '#1f2937', borderRadius: 12, marginBottom: 20 }}>
-                            <h3 style={{ margin: '0 0 10px 0' }}>Sell Cards</h3>
+                            <h3 style={{ margin: 0 0 10px 0 }}>Sell Cards</h3>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                                <input value={shopSellSearch} onChange={e => setShopSellSearch(e.target.value)} placeholder="Search..." style={{ padding: 8, background: '#374151', border: 'none', color: 'white', borderRadius: 6 }} />
                                <select value={shopSellFilter} onChange={e => setShopSellFilter(e.target.value)} style={{ padding: 8, background: '#374151', border: 'none', color: 'white', borderRadius: 6 }}>
@@ -1251,7 +1153,7 @@ button, [role="button"]{
            
            {/* --- MODALS --- */}
            {enlargedCard && (
-              <div className="modal-overlay" onClick={() => setEnlargedCard(null)}>
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setEnlargedCard(null)}>
                  <div style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                     <img src={getImageUrl(enlargedCard)} style={{ maxHeight: '70vh', maxWidth: '90vw', borderRadius: 16, border: `4px solid ${RARITY_COLORS[enlargedCard.rarity].border}`, boxShadow: `0 0 30px ${RARITY_COLORS[enlargedCard.rarity].border}` }} />
                     <div style={{ marginTop: 20 }}>
@@ -1264,8 +1166,8 @@ button, [role="button"]{
            )}
 
            {purchaseConfirm && (
-              <div className="modal-overlay" onClick={() => setPurchaseConfirm(null)}>
-                 <div className="modal" onClick={e => e.stopPropagation()}>
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setPurchaseConfirm(null)}>
+                 <div style={{ background: '#1f2937', padding: 20, borderRadius: 12, width: 300 }} onClick={e => e.stopPropagation()}>
                     <h3>Confirm Purchase</h3>
                     <p>Buy <b>{purchaseConfirm.title}</b> for <b>{purchaseConfirm.cost.toFixed(0)} R</b>?</p>
                     <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
@@ -1277,8 +1179,8 @@ button, [role="button"]{
            )}
            
            {sellConfirm && (
-              <div className="modal-overlay" onClick={() => setSellConfirm(null)}>
-                 <div className="modal" onClick={e => e.stopPropagation()}>
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setSellConfirm(null)}>
+                 <div style={{ background: '#1f2937', padding: 20, borderRadius: 12, width: 300 }} onClick={e => e.stopPropagation()}>
                     <h3>Confirm Sale</h3>
                     <p>Sell <b>{sellConfirm.name}</b> ({sellConfirm.variant}) for <b>{sellConfirm.price.toFixed(1)} R</b>?</p>
                     <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
@@ -1288,7 +1190,6 @@ button, [role="button"]{
                  </div>
               </div>
            )}
-
         </div>
       );
     }
