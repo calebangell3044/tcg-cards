@@ -2,143 +2,398 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Through The Ages - TCG Pack Opener</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    /* Global & Reset */
-    html, body {
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: linear-gradient(135deg, #111827 0%, #2e1065 50%, #111827 100%);
+}
+#root { min-height: 100%; }
+
+
+    * {
       margin: 0;
       padding: 0;
-      min-height: 100%;
-      background: linear-gradient(135deg, #111827 0%, #2e1065 50%, #111827 100%);
+      box-sizing: border-box;
+    }
+    body {
       font-family: system-ui, -apple-system, sans-serif;
       overflow-x: hidden;
-      color: white;
-      -webkit-tap-highlight-color: transparent;
     }
-    #root { min-height: 100%; }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    button { touch-action: manipulation; font-family: inherit; }
-
-    /* Animations */
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes godGlowPulse {
-      0% { opacity: 0; transform: scale(0.95); }
-      20% { opacity: 1; transform: scale(1.0); }
-      100% { opacity: 0; transform: scale(1.05); }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
-    @keyframes confettiFall {
-      0% { transform: translateY(-20vh) rotate(0deg); opacity: 1; }
-      100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    .card-flip {
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
     }
-
-    /* --- Holo Effects --- */
-    .foil-glow { position: relative; overflow: hidden; }
-    .foil-glow::before {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(120deg, rgba(255,0,128,0.2), rgba(0,255,255,0.2), rgba(255,255,0,0.2));
-      mix-blend-mode: overlay; pointer-events: none; z-index: 2;
+    .card-flip.flipped {
+      transform: rotateY(180deg);
     }
-    .rainbow-text {
-      background: linear-gradient(90deg, #ff3ea5, #2ee9ff, #ffe155, #ff3ea5);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-    }
-    .holo-badge {
-      background: linear-gradient(90deg, rgba(255, 0, 128, 0.40), rgba(0, 255, 255, 0.40), rgba(255, 255, 0, 0.40));
-      box-shadow: 0 0 18px rgba(255,255,255,0.15);
-      color: rgba(255,255,255,0.98);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.85);
-    }
-
-    /* --- Stack Opening Styles (NEW) --- */
-    .stack-container {
-      position: relative;
-      width: 100%;
-      height: 460px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      perspective: 1000px;
-      margin-bottom: 20px;
-      z-index: 10;
-    }
-    .stack-card {
+    .card-face {
+      backface-visibility: hidden;
       position: absolute;
-      width: 260px;
-      aspect-ratio: 2.5/3.5;
-      border-radius: 14px;
-      transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      inset: 0;
+    }
+    .card-back {
+      transform: rotateY(180deg);
+    }
+    .card-tooltip {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      margin-bottom: 8px;
+      z-index: 100;
+    }
+    .card-wrapper:hover .card-tooltip {
+      opacity: 1;
+    }
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
       cursor: pointer;
-      transform-origin: center bottom;
-      background: #1f2937;
-      overflow: hidden;
+      animation: fadeIn 0.2s;
     }
-    .stack-card:hover { transform: translateY(-10px); }
-    
-    /* Peeking State: Fan cards out */
-    .peeking .stack-card {
-      box-shadow: -4px 0 15px rgba(0,0,0,0.5);
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
+    .modal-image {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 12px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      animation: zoomIn 0.2s;
+    }
+    @keyframes zoomIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+  
 
-    /* Revealed Grid (History) */
-    .reveal-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-      gap: 8px;
-      margin-top: 20px;
-      opacity: 0.9;
-    }
+/* ---- Holo / Foil visuals ---- */
+@keyframes holoSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
-    /* God Pack Overlay */
-    .godpack-effect { position: fixed; inset: 0; pointer-events: none; z-index: 2500; overflow: hidden; }
-    .godpack-effect::before {
-      content: ''; position: absolute; inset: -20%;
-      background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.28), rgba(168,85,247,0.12) 40%, rgba(0,0,0,0) 72%);
-      mix-blend-mode: screen; animation: godGlowPulse 1.6s ease-out forwards;
-    }
-    .confetti-piece {
-      position: absolute; top: -12vh; width: var(--w); height: var(--h); left: var(--left);
-      background: var(--c); border-radius: 2px;
-      animation: confettiFall var(--dur) linear forwards; animation-delay: var(--delay);
-    }
-    .godpack-gate {
-      position: fixed; inset: 0; z-index: 3200; display: flex; align-items: center; justify-content: center;
-      background: rgba(0,0,0,0.72); backdrop-filter: blur(6px);
-    }
-    .godpack-gate-card {
-      width: min(560px, 92vw); border-radius: 18px; padding: 24px;
-      background: #1f2937; border: 1px solid #a855f7; text-align: center;
-      box-shadow: 0 0 50px rgba(168,85,247,0.5);
-    }
+@keyframes holoShimmer {
+  0% { opacity: 0.10; transform: translateX(-20%) skewX(-10deg); }
+  50% { opacity: 0.25; transform: translateX(20%) skewX(-10deg); }
+  100% { opacity: 0.10; transform: translateX(-20%) skewX(-10deg); }
+}
 
-    /* Mobile Menu */
-    .hamburger-btn { display: none; }
-    .menu-panel {
-      position: fixed; top: 60px; right: 10px; width: 200px;
-      background: #1f2937; border: 1px solid #374151; border-radius: 12px;
-      padding: 10px; z-index: 200; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
-    .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 200; }
-    
-    @media (max-width: 720px) {
-      .topbar-nav { display: none !important; }
-      .hamburger-btn { display: block !important; }
-    }
-  </style>
+.foil-glow {
+  position: relative;
+}
+
+/* Holo overlay applies to the revealed face that shows the card art */
+.foil-glow .card-face.card-back {
+  /* Keep absolute positioning so flipping doesn't shift layout */
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+
+.foil-glow .card-face.card-back img {
+  position: relative;
+  z-index: 1;
+  filter: saturate(1.08) contrast(1.04);
+}
+
+
+/* Static, slightly-opaque rainbow filter to make the card itself look holographic */
+.foil-glow .card-face.card-back::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg,
+    rgba(255, 0, 128, 0.32),
+    rgba(0, 255, 255, 0.30),
+    rgba(255, 255, 0, 0.28),
+    rgba(255, 0, 128, 0.30)
+  );
+  opacity: 0.42;
+  filter: saturate(1.5) contrast(1.08);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Subtle highlight to sell the holo effect without animation */
+.foil-glow .card-face.card-back::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.22), rgba(255,255,255,0.0) 55%);
+  opacity: 0.20;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.holo-badge {
+  background: linear-gradient(90deg,
+    rgba(255, 0, 128, 0.40),
+    rgba(0, 255, 255, 0.40),
+    rgba(255, 255, 0, 0.40)
+  );
+  box-shadow: 0 0 18px rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.98);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.85);
+}
+
+.rainbow-text {
+  background: linear-gradient(90deg, #ff3ea5, #2ee9ff, #ffe155, #ff3ea5);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 10px rgba(255,255,255,0.20));
+}
+
+.holo-button {
+  background: linear-gradient(90deg, #ff3ea5, #2ee9ff, #ffe155, #ff3ea5);
+  box-shadow: 0 0 18px rgba(255,255,255,0.18);
+}
+
+/* ===== God Pack effect ===== */
+@keyframes godGlowPulse {
+  0% { opacity: 0; transform: scale(0.95); }
+  20% { opacity: 1; transform: scale(1.0); }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+@keyframes confettiFall {
+  0% { transform: translateY(-20vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+.godpack-effect {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2500;
+  overflow: hidden;
+}
+.godpack-effect::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.28), rgba(168,85,247,0.12) 40%, rgba(0,0,0,0) 72%);
+  mix-blend-mode: screen;
+  animation: godGlowPulse 1.6s ease-out forwards;
+}
+.confetti-piece {
+  position: absolute;
+  top: -12vh;
+  width: var(--w);
+  height: var(--h);
+  left: var(--left);
+  background: var(--c);
+  border-radius: 2px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+  animation: confettiFall var(--dur) linear forwards;
+  animation-delay: var(--delay);
+  opacity: 0.95;
+}
+.godpack-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 3200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(6px);
+}
+.godpack-gate-card {
+  width: min(560px, 92vw);
+  border-radius: 18px;
+  padding: 24px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(17,24,39,0.92);
+  box-shadow: 0 30px 90px rgba(0,0,0,0.55);
+  position: relative;
+  overflow: hidden;
+}
+.godpack-gate-card::before {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  background: conic-gradient(from 90deg, rgba(168,85,247,0.35), rgba(34,211,238,0.28), rgba(250,204,21,0.28), rgba(244,63,94,0.26), rgba(168,85,247,0.35));
+  filter: blur(20px);
+  opacity: 0.85;
+}
+.godpack-gate-content {
+  position: relative;
+  text-align: center;
+}
+.godpack-gate-title {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0 0 8px 0;
+}
+.godpack-gate-sub {
+  color: rgba(255,255,255,0.85);
+  margin: 0 0 18px 0;
+  line-height: 1.35;
+}
+.godpack-gate-note {
+  color: rgba(255,255,255,0.70);
+  margin: 0 0 18px 0;
+  font-size: 13px;
+}
+.godpack-gate-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.godpack-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.20);
+  background: radial-gradient(circle at 30% 30%, rgba(236,72,153,0.25), rgba(168,85,247,0.15), rgba(0,0,0,0.25));
+  box-shadow: 0 0 40px rgba(236,72,153,0.20), 0 0 60px rgba(168,85,247,0.18);
+}
+
+
+
+/* ===== Mobile Navigation ===== */
+.hamburger-btn { display: none; }
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 200;
+}
+.menu-panel {
+  position: fixed;
+  top: 66px;
+  right: 12px;
+  width: min(340px, calc(100vw - 24px));
+  background: rgba(17,24,39,0.96);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 10px;
+  z-index: 201;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px);
+}
+@media (max-width: 720px) {
+  .topbar-nav { display: none !important; }
+  .hamburger-btn { display: inline-flex !important; align-items: center; justify-content: center; }
+  .topbar-title { font-size: 18px !important; }
+  .topbar { padding: 10px 12px !important; }
+}
+
+
+/* ===== Mobile UX improvements (v14) ===== */
+:root{
+  --ui-radius: 16px;
+  --ui-radius-sm: 12px;
+  --ui-pad: 12px;
+  --ui-pad-sm: 10px;
+  --ui-border: 1px solid rgba(255,255,255,0.12);
+}
+
+button, [role="button"]{
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.topbar{
+  position: sticky;
+  top: 0;
+  z-index: 220;
+  backdrop-filter: blur(10px);
+}
+
+/* Make sure the page never shows white on iOS when rubber-banding */
+body{
+  background-color: #111827;
+  overscroll-behavior-y: none;
+}
+
+@keyframes menuSlideUp{
+  from{ transform: translateY(14px); opacity: 0.0; }
+  to{ transform: translateY(0); opacity: 1; }
+}
+
+@media (max-width: 720px){
+  /* Respect iOS safe areas */
+  .topbar{
+    padding-top: calc(10px + env(safe-area-inset-top)) !important;
+    padding-left: calc(12px + env(safe-area-inset-left)) !important;
+    padding-right: calc(12px + env(safe-area-inset-right)) !important;
+  }
+
+  
+
+
+
+  .menu-item{
+    padding: 14px 14px !important;
+    font-size: 16px !important;
+    border-radius: 14px !important;
+  }
+
+  /* Bigger taps across the app */
+  .hamburger-btn{
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Modal images slightly larger and less cramped */
+  .modal-image{
+    max-width: 94vw !important;
+    max-height: 86vh !important;
+  }
+}
+
+/* Improve readability on small screens (badges, small overlays) */
+.card-dup-badge, .holo-dup-badge{
+  text-shadow: 0 1px 2px rgba(0,0,0,0.65);
+}
+
+</style>
 </head>
 <body>
   <div id="root"></div>
 
   <script type="text/babel">
     const { useState, useEffect, useCallback, useMemo, useRef } = React;
+
+    // Since this is on GitHub Pages, use relative paths to images in the same repo
     const GITHUB_BASE = '.';
 
-    // --- CARD DATA ---
+    // All 391 cards
     const ALL_CARDS = [
       { id: "1", name: "A Big Stick", rarity: "common", file: "A Big Stick.png" },
       { id: "2", name: "A Chill on the Wind", rarity: "uncommon", file: "A Chill on the Wind.png" },
@@ -609,10 +864,6 @@
       const [priceHistory, setPriceHistory] = useState({});
       const [sellConfirm, setSellConfirm] = useState(null);
       const [packInventory, setPackInventory] = useState([]);
-
-      // NEW: Stack Opening State
-      const [revealedCount, setRevealedCount] = useState(0); // For stack opening index
-      const [isPeeking, setIsPeeking] = useState(false);
 
       const [sealedInventory, setSealedInventory] = useState(() => {
         try {
@@ -1101,6 +1352,7 @@
 
 
       // ===== God Pack helpers =====
+      // NOTE: user spec says "0.01% (1/1000)" — we implement 1/1000 = 0.1% chance unless a pack is explicitly flagged.
       const GOD_PACK_CHANCE = 1 / 1000;
 
       const triggerGodPackEffect = useCallback(() => {
@@ -1251,9 +1503,14 @@
           }
         }
 
+        // Ensure game day key exists and is aligned (legacy key kept for compatibility)
         try { localStorage.setItem('tcg-game-day', String(bootDay)); } catch (e) {}
         if (bootDay !== gameDay) setGameDay(bootDay);
 
+        // (bootDay already aligned above)
+
+
+        // Initialize a stable seed for this save (used for deterministic testing)
         const existingSeedRaw = localStorage.getItem('tcg-save-seed');
         if (!existingSeedRaw) {
           const seed = Math.floor(Math.random() * 2147483647) + 1;
@@ -1264,6 +1521,7 @@
           if (Number.isFinite(seed) && seed > 0) setSaveSeed(seed);
         }
 
+        // If debug mode is enabled, ensure deterministic RNG stream state exists
         const dbgEnabled = (localStorage.getItem('tcg-debug-enabled') === '1' || localStorage.getItem('tcg-debug-enabled') === 'true');
         if (dbgEnabled) {
           const dbgSeedRaw = localStorage.getItem('tcg-debug-seed') || '';
@@ -1276,6 +1534,7 @@
           }
         }
 
+        // Load saved data (prefer unified core save)
         if (bootCollection) {
           try {
             setCollection(normalizeCollection(bootCollection));
@@ -1316,12 +1575,14 @@
           if (savedStarter) setFreeStarterClaimed(savedStarter === '1' || savedStarter === 'true');
         }
 
+                // Load milestone/event log
         if (Array.isArray(bootEvents)) {
           setEventLog(bootEvents);
         } else {
           setEventLog([]);
         }
 
+        // Load pack inventory (fixes refresh losing owned packs)
         if (Array.isArray(bootPackInventory)) {
           setPackInventory(bootPackInventory);
         } else {
@@ -1334,6 +1595,7 @@
           }
         }
 
+        // Initialize or load daily shop rotation (5 singles, 1 per rarity)
         let dsDate = localStorage.getItem('tcg-daily-shop-date');
         let dsPicksRaw = localStorage.getItem('tcg-daily-shop-picks');
         let dsPicks = null;
@@ -1341,6 +1603,8 @@
           try { dsPicks = JSON.parse(dsPicksRaw); } catch (e) { dsPicks = null; }
         }
 
+
+        // Initialize or load market values
         let baseValues = localStorage.getItem('tcg-market-base');
         let currentValues = localStorage.getItem('tcg-market-current');
         let breakoutCards = localStorage.getItem('tcg-market-breakouts');
@@ -1349,6 +1613,7 @@
         
         const currentDay = bootDay;
 
+        // Validate / rotate daily shop picks (advances by in-game Day, not real time)
         let dsDay = parseInt(localStorage.getItem('tcg-daily-shop-day') || '0', 10);
         if (!dsDay || dsDay !== currentDay || !dsPicks || typeof dsPicks !== 'object') {
           dsPicks = generateDailyShopPicks();
@@ -1356,6 +1621,7 @@
           localStorage.setItem('tcg-daily-shop-day', String(dsDay));
           localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(dsPicks));
         } else {
+          // Patch missing rarities (in case data changed)
           let didPatch = false;
           DAILY_SHOP_RARITIES.forEach(rarity => {
             if (!dsPicks[rarity]) {
@@ -1371,6 +1637,7 @@
         setDailyShopDate(`Day ${dsDay || currentDay}`);
         setDailyShopPicks(dsPicks || {});
 
+        // Validate / rotate daily shop stock (in-game Day)
         try {
           let ss = bootShopStock;
           if (!ss) {
@@ -1384,6 +1651,7 @@
           setShopStock(ss);
         } catch (e) {}
 
+        // Initialize or load holo multipliers (foil premiums)
         let holoMap = {};
         const savedHolo = localStorage.getItem('tcg-holo-multipliers');
         if (!savedHolo) {
@@ -1395,6 +1663,7 @@
           } catch (e) {
             holoMap = {};
           }
+          // Fill any missing card IDs (in case new cards were added)
           let didPatch = false;
           ALL_CARDS.forEach(card => {
             if (!holoMap[card.id]) {
@@ -1405,6 +1674,7 @@
           if (didPatch) localStorage.setItem('tcg-holo-multipliers', JSON.stringify(holoMap));
         }
         
+        // First time setup
         if (!baseValues) {
           baseValues = generateMarketValues();
           currentValues = { ...baseValues };
@@ -1415,6 +1685,7 @@
           localStorage.setItem('tcg-market-breakouts', JSON.stringify(breakoutCards));
           localStorage.setItem('tcg-market-last-day', String(currentDay));
           
+          // Initialize price history with today's prices
           const initialHistory = {};
           Object.keys(currentValues).forEach(cardId => {
             initialHistory[cardId] = [{ day: currentDay, value: currentValues[cardId] }];
@@ -1427,15 +1698,18 @@
           breakoutCards = JSON.parse(breakoutCards);
           history = history ? JSON.parse(history) : {};
           
+          // Prices only change when in-game Day advances (via the Advance Day button)
           let lastDayNum = parseInt(localStorage.getItem('tcg-market-last-day') || '0', 10);
           if (!lastDayNum || !Number.isFinite(lastDayNum)) {
             lastDayNum = currentDay;
             localStorage.setItem('tcg-market-last-day', String(currentDay));
           }
 
+          // If the saved day is behind (e.g., after a reload), catch up one day at a time
           if (lastDayNum < currentDay) {
             for (let d = lastDayNum + 1; d <= currentDay; d++) {
               currentValues = fluctuateMarket(baseValues, currentValues, breakoutCards);
+              // Update price history (keep last 30 days)
               Object.keys(currentValues).forEach(cardId => {
                 if (!history[cardId]) history[cardId] = [];
                 history[cardId].push({ day: d, value: currentValues[cardId] });
@@ -1452,6 +1726,7 @@
         setPriceHistory(history);
         setHoloMultipliers(holoMap);
 
+        // Persist / refresh unified core save (v2). Market/history remain in existing keys for performance.
         try {
           let coreCollection = bootCollection;
           if (!coreCollection) {
@@ -1539,6 +1814,7 @@
         return a;
       };
 
+      // Open sealed products into packs (no daily open limit)
       const openBundleBox = () => {
         if ((sealedInventory?.bundle || 0) <= 0) return;
         const boxId = `bundle_${Date.now()}`;
@@ -1563,6 +1839,7 @@
         for (let i = 0; i < 24; i++) {
           newPacks.push({ id: generatePackId(), type: 'booster', boxId });
         }
+        // 4 guaranteed legendary packs
         const shuffled = shuffleIndices(24);
         for (let i = 0; i < 4; i++) {
           newPacks[shuffled[i]].forceRarity = 'legendary';
@@ -1582,6 +1859,7 @@
         for (let i = 0; i < 144; i++) {
           newPacks.push({ id: generatePackId(), type: 'case', caseId });
         }
+        // 2 guaranteed ultra x rare packs
         const shuffled = shuffleIndices(144);
         for (let i = 0; i < 2; i++) {
           newPacks[shuffled[i]].forceRarity = 'ultra x rare';
@@ -1606,6 +1884,7 @@
         setGameDay(nextDay);
         try { updateCoreSave({ gameDay: nextDay }); } catch (e) {}
 
+        // Rotate market values for the new day
         try {
           let base = {};
           let breakout = {};
@@ -1621,6 +1900,7 @@
           if (currentRaw) { try { current = JSON.parse(currentRaw) || {}; } catch (e) { current = {}; } }
           if (historyRaw) { try { history = JSON.parse(historyRaw) || {}; } catch (e) { history = {}; } }
 
+          // Safety: if market not initialized yet, initialize it now
           if (!base || Object.keys(base).length === 0) {
             base = generateMarketValues();
             current = { ...base };
@@ -1647,6 +1927,7 @@
           console.error(e);
         }
 
+        // Rotate daily shop picks for the new day
         try {
           const picks = generateDailyShopPicks();
           localStorage.setItem('tcg-daily-shop-day', String(nextDay));
@@ -1661,16 +1942,28 @@
           console.error(e);
         }
       
-        persistRngState();
-      };
 
+        // Persist deterministic RNG state after advancing the day (debug mode only)
+        persistRngState();
+};
+
+
+
+
+      // Generate unique pack ID
       const generatePackId = () => {
         return `pack_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       };
 
+
+      // ----------------------------
+      // Sealed market pricing (BaseSet1)
+      // - Pack price is anchored to 10 Rations on Day 1 and scales with expected pack value (EV)
+      // - Sealed appreciates slowly with set age (independent of card day-to-day volatility)
+      // ----------------------------
       const SEALED_SET_ID = 'BaseSet1';
-      const SEALED_BASE_PACK_PRICE = 10;
-      const SEALED_APPRECIATION_RATE_PER_DAY = 0.0002;
+      const SEALED_BASE_PACK_PRICE = 10; // Day 1 anchor price
+      const SEALED_APPRECIATION_RATE_PER_DAY = 0.0002; // ~7.6%/yr
 
       const sealedMarket = useMemo(() => {
         const round2 = (n) => (Math.round((n + Number.EPSILON) * 100) / 100);
@@ -1702,14 +1995,15 @@
         };
 
         const expectedPackEV = (vals) => {
-          // --- UPDATED TO 8-CARD PACK STRUCTURE ---
-          // 4 Common, 2 Uncommon, 1 Rare Slot, 1 Holo Slot
+          // Pack structure (your current code):
+          // 7 commons, 5 uncommons, 2 "rare slots" with 89/10/1 rare/legendary/uxr, + 1 foil slot
           const commonEV = avgRarity(vals, 'common', false);
           const uncommonEV = avgRarity(vals, 'uncommon', false);
           const rareEV = avgRarity(vals, 'rare', false);
           const legendaryEV = avgRarity(vals, 'legendary', false);
           const ultraXEV = avgRarity(vals, 'ultra x rare', false);
 
+          // Foil slot rarity weights (matches your current open-pack logic)
           const foilEV =
             0.47 * avgRarity(vals, 'common', true) +
             0.34 * avgRarity(vals, 'uncommon', true) +
@@ -1717,9 +2011,10 @@
             0.05 * avgRarity(vals, 'legendary', true) +
             0.01 * avgRarity(vals, 'ultra x rare', true);
 
-          const rareSlotEV = (0.89 * rareEV) + (0.10 * legendaryEV) + (0.01 * ultraXEV);
+          const twoRareSlotsEV =
+            2 * ((0.89 * rareEV) + (0.10 * legendaryEV) + (0.01 * ultraXEV));
 
-          const ev = (4 * commonEV) + (2 * uncommonEV) + rareSlotEV + foilEV;
+          const ev = (7 * commonEV) + (5 * uncommonEV) + twoRareSlotsEV + foilEV;
           return ev;
         };
 
@@ -1727,6 +2022,7 @@
         const curEV = expectedPackEV(currentValues);
         const ratio = (baseEV > 0) ? (curEV / baseEV) : 1;
 
+        // Set release day (for future multi-set support). Default Day 1.
         let releaseDay = 1;
         try {
           const raw = localStorage.getItem(`tcg-set-release-day-${SEALED_SET_ID}`);
@@ -1738,8 +2034,13 @@
         const age = Math.max(1, (gameDay || 1) - releaseDay + 1);
         const appreciation = Math.pow(1 + SEALED_APPRECIATION_RATE_PER_DAY, age - 1);
 
+        // Market pack price (anchored to SEALED_BASE_PACK_PRICE at Day 1 base EV)
         const pack = round2(SEALED_BASE_PACK_PRICE * appreciation * Math.max(1, ratio));
 
+        // Your discount rules:
+        // bundles = value of 8 packs - 0.5 pack (7.5 packs)
+        // booster boxes = value of 20 packs (4 "free")
+        // cases = value of 100 packs (44 "free")
         const prices = {
           single: pack,
           bundle: round2(pack * 7.5),
@@ -1755,7 +2056,7 @@
           prices
         };
       }, [marketValues, holoMultipliers, gameDay]);
-
+      // Buy single pack
       const buySinglePack = () => {
         const cost = (sealedMarket && sealedMarket.prices && Number.isFinite(sealedMarket.prices.single)) ? sealedMarket.prices.single : 10;
         if (rations < cost) return;
@@ -1774,6 +2075,8 @@
         saveRations(newRations);
       };
 
+      
+      // Claim free starter box (5 packs, one-time)
       const claimFreeStarterBox = () => {
         if (freeStarterClaimed) return;
 
@@ -1790,6 +2093,7 @@
         saveFreeStarterClaimed(true);
       };
 
+      // Buy a daily rotating single (non-holo), 25% markup
       const buyDailyShopCard = (cardId, cost) => {
         if (!cardId) return;
         if (rations < cost) return;
@@ -1806,6 +2110,7 @@
         saveRations(newRations);
       };
 
+// Buy bundle box (8 packs, 1 guaranteed legendary)
       const buyBundleBox = () => {
         const cost = (sealedMarket && sealedMarket.prices && Number.isFinite(sealedMarket.prices.bundle)) ? sealedMarket.prices.bundle : 75;
         if (rations < cost) return;
@@ -1817,6 +2122,7 @@
         saveRations(newRations);
       };
 
+// Buy booster box (24 packs, 4 guaranteed legendary)
       const buyBoosterBox = () => {
         const cost = (sealedMarket && sealedMarket.prices && Number.isFinite(sealedMarket.prices.booster)) ? sealedMarket.prices.booster : 200;
         if (rations < cost) return;
@@ -1828,6 +2134,7 @@
         saveRations(newRations);
       };
 
+// Buy booster box case (144 packs, 2 guaranteed ultra x rare)
       const buyBoosterCase = () => {
         const cost = (sealedMarket && sealedMarket.prices && Number.isFinite(sealedMarket.prices.case)) ? sealedMarket.prices.case : 1000;
         if (rations < cost) return;
@@ -1839,7 +2146,7 @@
         saveRations(newRations);
       };
 
-      const persistShopStock = (ss) => {
+const persistShopStock = (ss) => {
         try { localStorage.setItem('tcg-shop-stock', JSON.stringify(ss)); } catch (e) {}
         try { updateCoreSave({ shopStock: ss }); } catch (e) {}
       };
@@ -1899,11 +2206,15 @@
           case 'godpack':
             buyGodPack();
             break;
-          default: break;
+
+          default:
+            break;
         }
+        // Persist deterministic RNG state after a purchase (debug mode only)
         persistRngState();
         setPurchaseConfirm(null);
       };
+;
 
       const getRandomCard = (rarity) => {
         const cards = CARDS_BY_RARITY[rarity];
@@ -1912,6 +2223,7 @@
         return { ...card, image: getImageUrl(card) };
       };
 
+      
       const getCardById = (cardId) => {
         const idStr = String(cardId);
         const card = ALL_CARDS.find(c => String(c.id) === idStr);
@@ -1919,13 +2231,15 @@
         return { ...card, image: getImageUrl(card) };
       };
 
-      const getRareSlotCard = () => {
+const getRareSlotCard = () => {
         const roll = rand() * 100;
         if (roll < 1) return getRandomCard('ultra x rare');
         if (roll < 11) return getRandomCard('legendary');
         return getRandomCard('rare');
       }
 
+      // Foil slot distribution:
+      // 47% common, 34% uncommon, 13% rare, 5% legendary, 1% ultra x rare
       const getFoilSlotCard = () => {
         const roll = rand() * 100;
         if (roll < 47) return getRandomCard('common');
@@ -1934,12 +2248,17 @@
         if (roll < 99) return getRandomCard('legendary');
         return getRandomCard('ultra x rare');
       }
+;
 
       const openPack = () => {
+        // Check if we have packs
         if (packInventory.length === 0) return;
+
+        // Take the first pack from inventory
         const packToOpen = packInventory[0];
         const newInventory = packInventory.slice(1);
 
+        // Determine if this is a God Pack
         const isGodPack = !!packToOpen.isGodPack || (rand() < GOD_PACK_CHANCE);
         setLastPackWasGod(isGodPack);
         if (isGodPack) {
@@ -1950,53 +2269,71 @@
         const newPack = [];
 
         if (isGodPack) {
-          // God Pack: 8 cards, ALL holo
-          // 2 Rare, 3 Legendary, 3 Ultra X Rare (approximate distribution for 8 cards)
+          // God Pack: 15 total cards, ALL holo
+          // 4 Rare, 5 Legendary, 6 Ultra X Rare
           let slot = 0;
-          for (let i = 0; i < 2; i++) {
+
+          for (let i = 0; i < 4; i++) {
             const card = getRandomCard('rare');
             if (card) newPack.push({ ...card, slot: slot++, isHolo: true, isGodPack: true });
           }
-          for (let i = 0; i < 3; i++) {
+          for (let i = 0; i < 5; i++) {
             const card = getRandomCard('legendary');
             if (card) newPack.push({ ...card, slot: slot++, isHolo: true, isGodPack: true });
           }
-          for (let i = 0; i < 3; i++) {
+          for (let i = 0; i < 6; i++) {
             const card = getRandomCard('ultra x rare');
             if (card) newPack.push({ ...card, slot: slot++, isHolo: true, isGodPack: true });
           }
+
+          // Safety: if anything failed to generate (missing rarity pools), fill remaining slots with legendary/rare
+          while (newPack.length < 15) {
+            const fallback = getRandomCard(newPack.length < 10 ? 'legendary' : 'rare');
+            if (!fallback) break;
+            newPack.push({ ...fallback, slot: slot++, isHolo: true, isGodPack: true });
+          }
+
+          // Shuffle slightly so the sequence isn't always identical (still respects counts)
           newPack.sort(() => rand() - 0.5);
+          // Re-assign slots after shuffle
           newPack.forEach((c, i) => c.slot = i);
         } else {
-          // Normal pack: 8 cards
-          let slot = 0;
-          
-          // 4 Commons
-          for (let i = 0; i < 4; i++) {
+          // Normal pack: 15 cards (7 Common, 5 Uncommon, 2 Rare+, 1 Holo slot)
+          // Generate 7 commons
+          for (let i = 0; i < 7; i++) {
             const card = getRandomCard('common');
-            if (card) newPack.push({ ...card, slot: slot++ });
+            if (card) newPack.push({ ...card, slot: i });
           }
 
-          // 2 Uncommons
-          for (let i = 0; i < 2; i++) {
+          // Generate 5 uncommons
+          for (let i = 0; i < 5; i++) {
             const card = getRandomCard('uncommon');
-            if (card) newPack.push({ ...card, slot: slot++ });
+            if (card) newPack.push({ ...card, slot: 7 + i });
           }
 
-          // 1 Rare+ Slot
+          // Generate 2 rare+ slots
           if (packToOpen.forceRarity) {
+            // First slot is guaranteed rarity
             const guaranteedCard = getRandomCard(packToOpen.forceRarity);
-            if (guaranteedCard) newPack.push({ ...guaranteedCard, slot: slot++ });
-          } else {
+            if (guaranteedCard) newPack.push({ ...guaranteedCard, slot: 12 });
+
+            // Second slot is normal rare+
             const card = getRareSlotCard();
-            if (card) newPack.push({ ...card, slot: slot++ });
+            if (card) newPack.push({ ...card, slot: 13 });
+          } else {
+            // Both slots are normal rare+
+            for (let i = 0; i < 2; i++) {
+              const card = getRareSlotCard();
+              if (card) newPack.push({ ...card, slot: 12 + i });
+            }
           }
 
-          // 1 Holo Slot
+          // Foil (holo) slot
           const foilCard = getFoilSlotCard();
-          if (foilCard) newPack.push({ ...foilCard, slot: slot++, isHolo: true, isFoilSlot: true });
+          if (foilCard) newPack.push({ ...foilCard, slot: 14, isHolo: true, isFoilSlot: true });
         }
 
+        // Record milestone events
         if (isGodPack) {
           appendEvent({
             id: `gp-${gameDay || 1}-${packCount + 1}-${Math.floor(rand() * 1e9)}`,
@@ -2007,57 +2344,56 @@
           });
         }
 
+        // Preload all images in the pack for instant display
         newPack.forEach(card => {
           const img = new Image();
           img.src = card.image;
         });
 
+        // Update state
         setPackInventory(newInventory);
         savePackInventory(newInventory);
         setPackCards(newPack);
-        
-        // Reset reveal state for stack view
-        setRevealedCount(0);
-        setIsPeeking(false);
-        setRevealedCards([]); // still used for tracking collection add logic
+        setRevealedCards([]);
         setAllRevealed(false);
-        
         setView('opening');
         const newCount = packCount + 1;
         setPackCount(newCount);
         savePackCount(newCount);
+      
+
+        // Persist deterministic RNG state after opening a pack (debug mode only)
         persistRngState();
-      };
+};
 
-      const revealNextCardInStack = () => {
-        if (revealedCount >= packCards.length) return;
-        
-        const card = packCards[revealedCount];
-        const newCollection = { ...collection };
-        const entry = newCollection[card.id] || { normal: 0, holo: 0 };
-        if (card.isHolo) entry.holo += 1; else entry.normal += 1;
-        newCollection[card.id] = entry;
-        setCollection(newCollection);
-        saveCollection(newCollection);
-        
-        setRevealedCount(prev => prev + 1);
-        
-        if (revealedCount + 1 === packCards.length) {
-          setAllRevealed(true);
+      const revealCard = (index) => {
+        if (revealedCards.includes(index)) return;
+        const newRevealed = [...revealedCards, index];
+        setRevealedCards(newRevealed);
+        const card = packCards[index];
+        if (card) {
+          const newCollection = { ...collection };
+          const entry = newCollection[card.id] || { normal: 0, holo: 0 };
+          if (card.isHolo) entry.holo += 1;
+          else entry.normal += 1;
+          newCollection[card.id] = entry;
+          setCollection(newCollection);
+          saveCollection(newCollection);
         }
+        if (newRevealed.length === packCards.length) setAllRevealed(true);
       };
 
-      // (Grid reveal kept for "Reveal All" if needed, but primary UI is Stack now)
       const revealAll = () => {
         const newCollection = { ...collection };
         packCards.forEach((card, index) => {
-          if (index >= revealedCount) {
+          if (!revealedCards.includes(index)) {
             const entry = newCollection[card.id] || { normal: 0, holo: 0 };
-            if (card.isHolo) entry.holo += 1; else entry.normal += 1;
+            if (card.isHolo) entry.holo += 1;
+            else entry.normal += 1;
             newCollection[card.id] = entry;
           }
         });
-        setRevealedCount(packCards.length);
+        setRevealedCards(packCards.map((_, i) => i));
         setCollection(newCollection);
         saveCollection(newCollection);
         setAllRevealed(true);
@@ -2086,13 +2422,16 @@
       const sellNormalCard = (cardId) => {
         const entry = collection[cardId];
         if (!entry || (entry.normal || 0) === 0) return;
+
         const marketValue = getBaseMarketValue(cardId);
         const newCollection = { ...collection };
         const nextEntry = { ...(newCollection[cardId] || { normal: 0, holo: 0 }) };
         nextEntry.normal = Math.max(0, (nextEntry.normal || 0) - 1);
         if ((nextEntry.normal || 0) + (nextEntry.holo || 0) === 0) delete newCollection[cardId];
         else newCollection[cardId] = nextEntry;
+
         const newRations = rations + (marketValue * SELL_TO_SHOP_RATE);
+
         setCollection(newCollection);
         setRations(newRations);
         saveCollection(newCollection);
@@ -2103,13 +2442,16 @@
       const sellHoloCard = (cardId) => {
         const entry = collection[cardId];
         if (!entry || (entry.holo || 0) === 0) return;
+
         const marketValue = getHoloMarketValue(cardId);
         const newCollection = { ...collection };
         const nextEntry = { ...(newCollection[cardId] || { normal: 0, holo: 0 }) };
         nextEntry.holo = Math.max(0, (nextEntry.holo || 0) - 1);
         if ((nextEntry.normal || 0) + (nextEntry.holo || 0) === 0) delete newCollection[cardId];
         else newCollection[cardId] = nextEntry;
+
         const newRations = rations + (marketValue * SELL_TO_SHOP_RATE);
+
         setCollection(newCollection);
         setRations(newRations);
         saveCollection(newCollection);
@@ -2117,15 +2459,20 @@
         setSellConfirm(null);
       };
 
+
+      // Sealed selling (75% of sealed market value)
       const SEALED_SELL_RATE = 0.75;
 
       const sellSealedSinglePack = () => {
         const price = (sealedMarket && sealedMarket.prices && Number.isFinite(sealedMarket.prices.single)) ? sealedMarket.prices.single : 10;
         const payout = parseFloat((price * SEALED_SELL_RATE).toFixed(2));
+
         const idx = (packInventory || []).findIndex(p => p && p.type === 'single');
         if (idx === -1) return;
+
         const newInventory = [...packInventory];
         newInventory.splice(idx, 1);
+
         const newRations = parseFloat((rations + payout).toFixed(2));
         setPackInventory(newInventory);
         savePackInventory(newInventory);
@@ -2138,16 +2485,21 @@
         const prices = (sealedMarket && sealedMarket.prices) ? sealedMarket.prices : {};
         const price = Number.isFinite(prices[sealedType]) ? prices[sealedType] : 0;
         const payout = parseFloat((price * SEALED_SELL_RATE).toFixed(2));
+
         if (sealedType === 'single') {
           sellSealedSinglePack();
           return;
         }
+
+        // bundle / booster / case live in sealedInventory
         const currentCount = (sealedInventory && sealedInventory[sealedType]) ? sealedInventory[sealedType] : 0;
         if (currentCount <= 0) return;
+
         mutateSealedInventory(prev => ({
           ...prev,
           [sealedType]: Math.max(0, (prev[sealedType] || 0) - 1)
         }));
+
         const newRations = parseFloat((rations + payout).toFixed(2));
         setRations(newRations);
         saveRations(newRations);
@@ -2155,17 +2507,29 @@
 
       const getCollectionCards = () => {
         let cards = [...ALL_CARDS];
-        if (collectionFilter !== 'all') { cards = cards.filter(c => c.rarity === collectionFilter); }
+
+        // Rarity filter (quick buttons)
+        if (collectionFilter !== 'all') {
+          cards = cards.filter(c => c.rarity === collectionFilter);
+        }
+
+        // Search filter (name)
         const q = (collectionSearch || '').trim().toLowerCase();
-        if (q) { cards = cards.filter(c => (c.name || '').toLowerCase().includes(q)); }
+        if (q) {
+          cards = cards.filter(c => (c.name || '').toLowerCase().includes(q));
+        }
+
+        // Enrich with ownership + market data
         let enriched = cards.map(card => {
           const entry = collection[card.id] || { normal: 0, holo: 0 };
           const ownedNormal = entry.normal || 0;
           const ownedHolo = entry.holo || 0;
           const owned = ownedNormal + ownedHolo;
+
           const marketValue = marketValues[card.id] || 1;
           const holoMult = getHoloMultiplier(card.id);
           const holoValue = marketValue * holoMult;
+
           const history = priceHistory[card.id] || [];
           let priceChange = 0;
           if (history.length >= 2) {
@@ -2173,37 +2537,88 @@
             const curr = history[history.length - 1].value || marketValue;
             priceChange = prev ? ((curr - prev) / prev) * 100 : 0;
           }
-          return { ...card, image: getImageUrl(card), owned, ownedNormal, ownedHolo, marketValue, holoMult, holoValue, priceChange };
+
+          return {
+            ...card,
+            image: getImageUrl(card),
+            owned,
+            ownedNormal,
+            ownedHolo,
+            marketValue,
+            holoMult,
+            holoValue,
+            priceChange
+          };
         });
-        if (hideUnknown) { enriched = enriched.filter(c => c.owned > 0); }
-        if (ownedFilter === 'owned') { enriched = enriched.filter(c => c.owned > 0); }
-        else if (ownedFilter === 'unowned') { enriched = enriched.filter(c => c.owned === 0); }
-        if (holoFilter === 'hasHolo') { enriched = enriched.filter(c => c.ownedHolo > 0); }
-        else if (holoFilter === 'noHolo') { enriched = enriched.filter(c => c.ownedHolo === 0); }
+
+        // Owned / unowned / hide unknown filters
+        if (hideUnknown) {
+          enriched = enriched.filter(c => c.owned > 0);
+        }
+
+        if (ownedFilter === 'owned') {
+          enriched = enriched.filter(c => c.owned > 0);
+        } else if (ownedFilter === 'unowned') {
+          enriched = enriched.filter(c => c.owned === 0);
+        }
+
+        if (holoFilter === 'hasHolo') {
+          enriched = enriched.filter(c => c.ownedHolo > 0);
+        } else if (holoFilter === 'noHolo') {
+          enriched = enriched.filter(c => c.ownedHolo === 0);
+        }
+
         const dir = sortDir === 'asc' ? 1 : -1;
-        const rarityIndex = (r) => { const i = RARITY_ORDER.indexOf(r); return i === -1 ? 999 : i; };
+        const rarityIndex = (r) => {
+          const i = RARITY_ORDER.indexOf(r);
+          return i === -1 ? 999 : i;
+        };
+
         enriched.sort((a, b) => {
+          // Always keep things stable by breaking ties on name
           const tieByName = () => a.name.localeCompare(b.name);
+
           switch (sortKey) {
-            case 'name': return a.name.localeCompare(b.name) * dir;
-            case 'rarity': { const d = (rarityIndex(a.rarity) - rarityIndex(b.rarity)) * dir; return d !== 0 ? d : tieByName(); }
-            case 'value': { const d = (a.marketValue - b.marketValue) * dir; return d !== 0 ? d : tieByName(); }
-            case 'holoValue': { const d = (a.holoValue - b.holoValue) * dir; return d !== 0 ? d : tieByName(); }
-            case 'change': { const d = (a.priceChange - b.priceChange) * dir; return d !== 0 ? d : tieByName(); }
-            case 'holoMult': { const d = (a.holoMult - b.holoMult) * dir; return d !== 0 ? d : tieByName(); }
+            case 'name':
+              return a.name.localeCompare(b.name) * dir;
+            case 'rarity': {
+              const d = (rarityIndex(a.rarity) - rarityIndex(b.rarity)) * dir;
+              return d !== 0 ? d : tieByName();
+            }
+            case 'value': {
+              const d = (a.marketValue - b.marketValue) * dir;
+              return d !== 0 ? d : tieByName();
+            }
+            case 'holoValue': {
+              const d = (a.holoValue - b.holoValue) * dir;
+              return d !== 0 ? d : tieByName();
+            }
+            case 'change': {
+              const d = (a.priceChange - b.priceChange) * dir;
+              return d !== 0 ? d : tieByName();
+            }
+            case 'holoMult': {
+              const d = (a.holoMult - b.holoMult) * dir;
+              return d !== 0 ? d : tieByName();
+            }
             case 'owned':
             default: {
               const d = (a.owned - b.owned) * dir;
+              // If owned counts are tied, keep owned cards above unknown by default
               if (d !== 0) return d;
               const d2 = (a.owned > 0 ? -1 : 1) - (b.owned > 0 ? -1 : 1);
               return d2 !== 0 ? d2 : tieByName();
             }
           }
         });
+
         return enriched;
       };
 
+      
+      
       const getShopSellCards = () => {
+        // Build cards with ownership + values, then filter/sort for the Shop Sell tab.
         let cards = ALL_CARDS.map((card) => {
           const entry = collection[card.id] || { normal: 0, holo: 0 };
           const ownedNormal = entry.normal || 0;
@@ -2213,37 +2628,71 @@
           const holoValue = getHoloMarketValue(card.id);
           const payout = marketValue * SELL_TO_SHOP_RATE;
           const holoPayout = holoValue * SELL_TO_SHOP_RATE;
-          return { ...card, image: getImageUrl(card), owned, ownedNormal, ownedHolo, marketValue, holoValue, payout, holoPayout };
+          return {
+            ...card,
+            image: getImageUrl(card),
+            owned,
+            ownedNormal,
+            ownedHolo,
+            marketValue,
+            holoValue,
+            payout,
+            holoPayout
+          };
         });
+
+        // Variant filter
         if (shopSellVariant === 'normal') cards = cards.filter(c => c.ownedNormal > 0);
         else if (shopSellVariant === 'holo') cards = cards.filter(c => c.ownedHolo > 0);
         else cards = cards.filter(c => c.owned > 0);
-        if (shopSellFilter !== 'all') { cards = cards.filter(c => c.rarity === shopSellFilter); }
+
+        // Rarity filter
+        if (shopSellFilter !== 'all') {
+          cards = cards.filter(c => c.rarity === shopSellFilter);
+        }
+
+        // Search filter
         const q = (shopSellSearch || '').trim().toLowerCase();
-        if (q) { cards = cards.filter(c => (c.name || '').toLowerCase().includes(q)); }
-        const rarityRank = (r) => { const idx = RARITY_ORDER.indexOf(r); return idx === -1 ? 999 : idx; };
+        if (q) {
+          cards = cards.filter(c => (c.name || '').toLowerCase().includes(q));
+        }
+
+        const rarityRank = (r) => {
+          const idx = RARITY_ORDER.indexOf(r);
+          return idx === -1 ? 999 : idx;
+        };
+
+        // Sort
         cards.sort((a, b) => {
           if (shopSellSort === 'name') return (a.name || '').localeCompare(b.name || '');
           if (shopSellSort === 'rarity') return rarityRank(a.rarity) - rarityRank(b.rarity);
           if (shopSellSort === 'owned') return b.owned - a.owned;
+
+          // payout (default): sort by best available payout given current variant filter
           const ap = shopSellVariant === 'holo' ? a.holoPayout : shopSellVariant === 'normal' ? a.payout : Math.max(a.payout, a.holoPayout);
           const bp = shopSellVariant === 'holo' ? b.holoPayout : shopSellVariant === 'normal' ? b.payout : Math.max(b.payout, b.holoPayout);
           return bp - ap;
         });
+
         return cards;
       };
 
-      const movers7d = useMemo(() => {
+
+const movers7d = useMemo(() => {
         const fromDay = Math.max(1, (gameDay || 1) - 7);
         const changes = [];
         if (!marketValues || !priceHistory) return { fromDay, gainers: [], losers: [] };
+
         for (let i = 0; i < ALL_CARDS.length; i++) {
           const card = ALL_CARDS[i];
           const arr = priceHistory[card.id];
           const curVal = marketValues[card.id];
+
           if (curVal === undefined || curVal === null) continue;
+
           let oldVal = null;
           if (Array.isArray(arr) && arr.length) {
+            // Prefer exact match, else last value at/before fromDay, else first.
             let candidate = arr[0];
             for (let j = 0; j < arr.length; j++) {
               const e = arr[j];
@@ -2253,12 +2702,16 @@
             }
             oldVal = candidate && typeof candidate.value === 'number' ? candidate.value : null;
           }
+
           if (oldVal === null || oldVal <= 0) continue;
+
           const pct = ((curVal - oldVal) / oldVal) * 100;
           changes.push({ card, pct, curVal, oldVal });
         }
+
         const gainers = changes.slice().sort((a, b) => b.pct - a.pct).slice(0, 10);
         const losers = changes.slice().sort((a, b) => a.pct - b.pct).slice(0, 10);
+
         return { fromDay, gainers, losers };
       }, [priceHistory, marketValues, gameDay]);
 
@@ -2277,160 +2730,2190 @@
         return parseFloat(sum.toFixed(2));
       }, [collection, marketValues, holoMultipliers]);
 
-      if (!isLoaded) return <div style={{ minHeight: '100vh', background: '#111827', display: 'flex', alignItems: 'center', justifyContent: 'center', color:'white' }}>Loading...</div>;
+if (!isLoaded) {
+        return (
+          <div style={{ minHeight: '100vh', background: '#111827', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 
-      const stats = getCollectionStats();      
+            {/* God Pack screen effect */}
+            {godPackActive && (
+              <div className="godpack-effect">
+                {godPackConfetti.map((p, i) => (
+                  <div
+                    key={i}
+                    className="confetti-piece"
+                    style={{
+                      '--left': p.left,
+                      '--dur': p.dur,
+                      '--delay': p.delay,
+                      '--w': p.w,
+                      '--h': p.h,
+                      '--c': p.c
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+            <div style={{ textAlign: 'center', color: 'white' }}>
+              <div style={{ width: 64, height: 64, border: '4px solid #a855f7', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }}></div>
+              <p style={{ fontSize: 20 }}>Loading...</p>
+            </div>
+          </div>
+        );
+      }
 
-      return (
+      const stats = getCollectionStats();      return (
         <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #111827 0%, #2e1065 50%, #111827 100%)' }}>
-          {godPackActive && <div className="godpack-effect">{godPackConfetti.map((p,i)=><div key={i} className="confetti-piece" style={{'--left':p.left,'--dur':p.dur,'--delay':p.delay,'--w':p.w,'--h':p.h,'--c':p.c}}/>)}</div>}
-          
-          {/* HEADER (Navigation) */}
-          <header style={{ background: 'rgba(0,0,0,0.4)', borderBottom: '1px solid rgba(168,85,247,0.3)', padding: '12px 16px', position: 'sticky', top: 0, zIndex: 50 }}>
-            <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h1 style={{ fontSize: 24, fontWeight: 'bold', background: 'linear-gradient(90deg, #a855f7, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>Through The Ages</h1>
-              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(168,85,247,0.2)', borderRadius: 8 }}>
-                  <img src="./rations.png" width="24" />
-                  <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>{rations.toFixed(2)}</span>
+          {/* God Pack screen effect */}
+          {godPackActive && (
+            <div className="godpack-effect">
+              {godPackConfetti.map((p, i) => (
+                <div
+                  key={i}
+                  className="confetti-piece"
+                  style={{
+                    '--left': p.left,
+                    '--dur': p.dur,
+                    '--delay': p.delay,
+                    '--w': p.w,
+                    '--h': p.h,
+                    '--c': p.c
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* God Pack confirmation gate */}
+          {showGodPackGate && (
+            <div className="godpack-gate">
+              <div className="godpack-gate-card" onClick={(e) => e.stopPropagation()}>
+                <div className="godpack-gate-content">
+                  <div className="godpack-gate-title">GOD PACK</div>
+                  <div className="godpack-gate-sub">All 15 cards in this pack are holo.</div>
+                  <div className="godpack-gate-note">Tap continue to start the reveal.</div>
+                  <div className="godpack-gate-actions">
+                    <button className="btn btn-primary" onClick={dismissGodPackGate}>Continue</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Milestone/Event details */}
+          {selectedEvent && (
+            <div className="modal-overlay" onClick={closeEventDetails}>
+              <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 760 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                  <h3 style={{ margin: 0 }}>{getEventLabel(selectedEvent)} · Day {selectedEvent.day || 1}</h3>
+                  <button className="btn btn-ghost" onClick={closeEventDetails}>Close</button>
+                </div>
+                <div style={{ marginTop: 10, color: 'rgba(255,255,255,0.85)' }}>
+                  {formatEventSummary(selectedEvent)}
+                </div>
+                {selectedEvent.type === 'godpack' && Array.isArray(selectedEvent.cards) && (
+                  <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10 }}>
+                    {selectedEvent.cards.slice(0, 15).map((c, idx) => {
+                      const card = getCardById(c.id);
+                      if (!card) return <div key={idx} style={{ height: 90, borderRadius: 8, background: 'rgba(255,255,255,0.06)' }} />;
+                      return (
+                        <div key={idx} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden' }}>
+                          <img src={card.image} alt={card.name} style={{ width: '100%', display: 'block' }} />
+                          <div className="holo-overlay" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <header style={{ background: 'rgba(0,0,0,0.4)', borderBottom: '1px solid rgba(168,85,247,0.3)', padding: '12px 16px', position: 'sticky', top: 0, zIndex: 50 }} className="topbar">
+            <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="topbar-inner">
+              <h1 className="topbar-title" style={{ fontSize: 24, fontWeight: 'bold', background: 'linear-gradient(90deg, #a855f7, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+                Through The Ages
+              </h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(168,85,247,0.2)', borderRadius: 8, border: '1px solid rgba(168,85,247,0.4)' }}>
+                  <img src="./rations.png" alt="Rations" style={{ width: 24, height: 24 }} />
+                  <span style={{ color: '#fbbf24', fontSize: 18, fontWeight: 'bold' }}>{rations.toFixed(2)}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ color: '#e5e7eb' }}>Day <b>{gameDay}</b></span>
-                  <button onClick={advanceDay} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)', background: '#10b981', color: 'white', cursor: 'pointer' }}>Next Day</button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'rgba(0,0,0,0.25)', borderRadius: 8, border: '1px solid rgba(168,85,247,0.25)' }}>
+                    <span style={{ color: '#e5e7eb', fontSize: 14 }}>Day</span>
+                    <span style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>{gameDay}</span>
+                  </div>
+                  <button onClick={advanceDay} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(34,197,94,0.20)', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>
+                    Advance Day
+                  </button>
                 </div>
                 <nav className="topbar-nav" style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={()=>navigate('home')}>Inv</button>
-                  <button onClick={()=>navigate('shop')}>Shop</button>
-                  <button onClick={()=>navigate('market')}>Market</button>
-                  <button onClick={()=>navigate('collection')}>Col</button>
-                  <button onClick={()=>navigate('settings')}>Set</button>
-                </nav>
+                <button onClick={() => navigate('home')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'home' || view === 'opening' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
+                  Inventory
+                </button>
+                <button onClick={() => navigate('shop')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'shop' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
+                  Shop
+                </button>
+                <button onClick={() => navigate('market')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'market' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
+                  Market
+                </button>
+                <button onClick={() => navigate('collection')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'collection' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
+                  Collection (N {stats.uniqueNormalOwned}/{stats.totalCards} • H {stats.uniqueHoloOwned}/{stats.totalCards})
+                </button>
+                <button onClick={() => navigate('settings')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'settings' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
+                  Settings
+                </button>
+              </nav>
+
+              <button
+                className="hamburger-btn"
+                onClick={() => setMenuOpen(v => !v)}
+                aria-label="Menu"
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 10,
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'rgba(0,0,0,0.25)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: 1
+                }}
+              >
+                ☰
+              </button>
+
+              {menuOpen && (
+                <div style={{ display: 'contents' }}>
+                  <div className="menu-overlay" onClick={() => setMenuOpen(false)} />
+                  <div className="menu-panel" role="menu" aria-label="Navigation menu">
+                    <button
+                      className="menu-item"
+                      onClick={() => navigate('home')}
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        borderRadius: 12,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: view === 'home' || view === 'opening' ? 'rgba(147,51,234,0.35)' : 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontWeight: 700,
+                        marginBottom: 8
+                      }}
+                    >
+                      Inventory
+                    </button>
+                    <button
+                      className="menu-item"
+                      onClick={() => navigate('shop')}
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        borderRadius: 12,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: view === 'shop' ? 'rgba(147,51,234,0.35)' : 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontWeight: 700,
+                        marginBottom: 8
+                      }}
+                    >
+                      Shop
+                    </button>
+                    <button
+                      className="menu-item"
+                      onClick={() => navigate('market')}
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        borderRadius: 12,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: view === 'market' ? 'rgba(147,51,234,0.35)' : 'rgba(0,0,0,0.2)',
+                        color: 'white',
+                        fontSize: 15,
+                        textAlign: 'left',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Market
+                    </button>
+                    <button
+                      className="menu-item"
+                      onClick={() => navigate('collection')}
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        borderRadius: 12,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: view === 'collection' ? 'rgba(147,51,234,0.35)' : 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontWeight: 700,
+                        marginBottom: 8
+                      }}
+                    >
+                      Collection
+                      <span style={{ display: 'block', marginTop: 4, color: 'rgba(255,255,255,0.75)', fontWeight: 600, fontSize: 12 }}>
+                        N {stats.uniqueNormalOwned}/{stats.totalCards} • H {stats.uniqueHoloOwned}/{stats.totalCards}
+                      </span>
+                    </button>
+                    <button
+                      className="menu-item"
+                      onClick={() => navigate('settings')}
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        borderRadius: 12,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: view === 'settings' ? 'rgba(147,51,234,0.35)' : 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontWeight: 700
+                      }}
+                    >
+                      Settings
+                    </button>
+                  </div>
+                </div>
+              )}
+
               </div>
             </div>
           </header>
 
           <main style={{ maxWidth: 1200, margin: '0 auto', padding: 32 }}>
-            
             {view === 'home' && (
               <div style={{ textAlign: 'center' }}>
-                <h2 style={{ fontSize: 28, marginBottom: 20 }}>Inventory</h2>
-                <div style={{ marginBottom: 30, color: '#9ca3af' }}>Packs: {packInventory.length} • Cards: {stats.totalOwned}</div>
-                {packInventory.length > 0 ? (
-                  <button onClick={openPack} style={{ padding: '16px 32px', fontSize: 20, fontWeight: 'bold', background: '#9333ea', color: 'white', border: 'none', borderRadius: 12, cursor: 'pointer', boxShadow: '0 4px 12px rgba(147,51,234,0.5)' }}>
-                    OPEN PACK (8 Cards)
+                <p style={{ color: '#9ca3af', marginBottom: 8 }}>Packs Opened: {packCount}</p>
+                <p style={{ color: '#9ca3af', marginBottom: 8 }}>Total Cards: {stats.totalOwned}</p>
+                <p style={{ color: '#fbbf24', fontSize: 20, fontWeight: 'bold', marginBottom: 32 }}>
+                  Packs Available: {packInventory.length}
+                </p>
+
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+                  <div style={{ color: '#d1d5db', fontSize: 13, padding: '6px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                    Bundles: {sealedInventory.bundle || 0}
+                  </div>
+                  <div style={{ color: '#d1d5db', fontSize: 13, padding: '6px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                    Booster Boxes: {sealedInventory.booster || 0}
+                  </div>
+                  <div style={{ color: '#d1d5db', fontSize: 13, padding: '6px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                    Cases: {sealedInventory.case || 0}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 28 }}>
+                  <button
+                    onClick={openBundleBox}
+                    disabled={(sealedInventory.bundle || 0) <= 0}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: 12,
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      background: (sealedInventory.bundle || 0) > 0 ? 'rgba(59,130,246,0.25)' : 'rgba(107,114,128,0.25)',
+                      color: 'white',
+                      cursor: (sealedInventory.bundle || 0) > 0 ? 'pointer' : 'not-allowed'
+                    }}
+                  >
+                    Open Bundle (+8 Packs)
                   </button>
+
+                  <button
+                    onClick={openBoosterBox}
+                    disabled={(sealedInventory.booster || 0) <= 0}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: 12,
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      background: (sealedInventory.booster || 0) > 0 ? 'rgba(16,185,129,0.25)' : 'rgba(107,114,128,0.25)',
+                      color: 'white',
+                      cursor: (sealedInventory.booster || 0) > 0 ? 'pointer' : 'not-allowed'
+                    }}
+                  >
+                    Open Booster Box (+24 Packs)
+                  </button>
+
+                  <button
+                    onClick={openBoosterCase}
+                    disabled={(sealedInventory.case || 0) <= 0}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: 12,
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      background: (sealedInventory.case || 0) > 0 ? 'rgba(244,63,94,0.25)' : 'rgba(107,114,128,0.25)',
+                      color: 'white',
+                      cursor: (sealedInventory.case || 0) > 0 ? 'pointer' : 'not-allowed'
+                    }}
+                  >
+                    Open Case (+144 Packs)
+                  </button>
+                </div>
+
+                {packInventory.length > 0 ? (
+                  <div onClick={openPack} style={{ width: 256, height: 384, margin: '0 auto', cursor: 'pointer', position: 'relative' }}>
+                    <img 
+                      src="./cardback.png" 
+                      alt="Booster Pack" 
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover', 
+                        borderRadius: 16, 
+                        border: '3px solid rgba(168,85,247,0.5)',
+                        boxShadow: '0 25px 50px -12px rgba(168,85,247,0.5)',
+                        transition: 'transform 0.2s, box-shadow 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.boxShadow = '0 30px 60px -12px rgba(168,85,247,0.7)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(168,85,247,0.5)';
+                      }}
+                    />
+                    <div style={{ position: 'absolute', bottom: 16, left: 0, right: 0, textAlign: 'center', pointerEvents: 'none' }}>
+                      <p style={{ color: 'white', fontSize: 14, margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>Click to Open</p>
+                    </div>
+                  </div>
                 ) : (
-                  <button onClick={()=>navigate('shop')} style={{ padding: '12px 24px', background: '#374151', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Go to Shop</button>
+                  <div style={{ width: 256, height: 384, margin: '0 auto', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(107,114,128,0.2)', borderRadius: 16, border: '3px dashed rgba(168,85,247,0.5)' }}>
+                    <p style={{ color: '#9ca3af', fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>No Packs Available</p>
+                    <button 
+                      onClick={() => navigate('shop')}
+                      style={{
+                        padding: '12px 24px',
+                        background: 'linear-gradient(90deg, #9333ea, #ec4899)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        fontSize: 16,
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Visit Shop
+                    </button>
+                  </div>
                 )}
+              </div>
+            )}
+
+            {view === 'shop' && (
+              <div>
+                <h2 style={{ color: 'white', fontSize: 28, fontWeight: 'bold', marginBottom: 32, textAlign: 'center' }}>
+                  Shop
+                </h2>
+
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setShopTab('buy')}
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: 999,
+                      border: shopTab === 'buy' ? '2px solid rgba(168,85,247,0.75)' : '1px solid rgba(255,255,255,0.12)',
+                      background: shopTab === 'buy' ? 'rgba(168,85,247,0.18)' : 'rgba(107,114,128,0.22)',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontWeight: 800
+                    }}
+                  >
+                    Buy
+                  </button>
+                  <button
+                    onClick={() => setShopTab('sell')}
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: 999,
+                      border: shopTab === 'sell' ? '2px solid rgba(168,85,247,0.75)' : '1px solid rgba(255,255,255,0.12)',
+                      background: shopTab === 'sell' ? 'rgba(168,85,247,0.18)' : 'rgba(107,114,128,0.22)',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontWeight: 800
+                    }}
+                  >
+                    Sell
+                  </button>
+                </div>
+
+                {shopTab === 'buy' && (
+                  <>
+
+
+                {/* Daily Singles */}
+                <div style={{ maxWidth: 1200, margin: '0 auto 28px', padding: 16, borderRadius: 16, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 10 }}>
+                    <h3 style={{ color: 'white', fontSize: 20, fontWeight: 'bold', margin: 0 }}>Daily Singles</h3>
+                    <div style={{ color: '#9ca3af', fontSize: 12 }}>Rotates daily • 25% markup • {dailyShopDate || ''}</div>
+                  </div>
+                  <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 14px' }}>Need a specific missing card? Buy it directly — but it costs more than pulling it from packs.</p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                    {DAILY_SHOP_RARITIES.map(rarity => {
+                      const cardId = dailyShopPicks[rarity];
+                      const card = getCardById(cardId);
+                      if (!card) return null;
+                      const price = getDailyShopPrice(card.id);
+                      const colors = RARITY_COLORS[card.rarity] || RARITY_COLORS.common;
+                      return (
+                        <div key={rarity} style={{
+                          background: 'rgba(31,41,55,0.75)',
+                          borderRadius: 14,
+                          padding: 12,
+                          border: `2px solid ${colors.border}55`,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 10
+                        }}>
+                          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                            <img
+                              src={card.image}
+                              alt={card.name}
+                              style={{ width: 64, height: 96, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(255,255,255,0.10)', cursor: 'pointer' }}
+                              onClick={() => setEnlargedCard(card)}
+                            />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ color: 'white', fontWeight: 800, fontSize: 14, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.name}</div>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 8px', borderRadius: 999, background: colors.bg, border: `1px solid ${colors.border}` }}>
+                                <span style={{ color: colors.text, fontSize: 11, fontWeight: 800, textTransform: 'capitalize' }}>{rarity}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}>
+                              <img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />
+                              <span style={{ color: '#fbbf24' }}>{price.toFixed(2)}</span>
+                            </div>
+                            <button
+                              onClick={() => setPurchaseConfirm({
+                                type: 'dailyCard',
+                                title: `Buy ${card.name}`,
+                                cost: price,
+                                cardId: card.id,
+                                details: `Daily single • 25% markup. Adds 1 copy of ${card.name} to your collection.`
+                              })}
+                              disabled={rations < price}
+                              style={{
+                                padding: '8px 10px',
+                                borderRadius: 10,
+                                border: 'none',
+                                cursor: rations < price ? 'not-allowed' : 'pointer',
+                                background: rations < price ? '#374151' : 'linear-gradient(90deg, #3b82f6, #6366f1)',
+                                color: 'white',
+                                fontWeight: 800,
+                                opacity: rations < price ? 0.55 : 1
+                              }}
+                            >
+                              Buy
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, maxWidth: 1200 }}>
+                                    {/* Free Starter Box */}
+                  <div style={{
+                    background: 'rgba(31,41,55,0.8)',
+                    borderRadius: 16,
+                    padding: 24,
+                    border: '2px solid rgba(245,158,11,0.55)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                  }}>
+                    <img
+                      src="./cardback.png"
+                      alt="Free Starter Box"
+                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
+                    />
+                    <h3 style={{ color: '#fbbf24', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Free Starter Box</h3>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>5 packs (free)</p>
+                    <p style={{ color: '#fbbf24', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
+                      One-time claim
+                    </p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                      <img src="./rations.png" alt="" style={{ width: 24, height: 24, opacity: 0.8 }} />
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>0</span>
+                    </div>
+
+                    <button
+                      onClick={() => setPurchaseConfirm({ type: 'freeStarter', title: 'Free Starter Box (5 Packs)', cost: 0, details: 'A one-time free claim. Adds 5 packs to your inventory.' })}
+                      disabled={freeStarterClaimed}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: freeStarterClaimed ? '#374151' : 'linear-gradient(90deg, #f59e0b, #f97316)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: freeStarterClaimed ? 'not-allowed' : 'pointer',
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        opacity: freeStarterClaimed ? 0.5 : 1
+                      }}
+                    >
+                      {freeStarterClaimed ? 'Claimed' : 'Claim Free Starter'}
+                    </button>
+                  </div>
+
+
+                  {/* God Pack (Testing) */}
+                  <div style={{
+                    background: 'rgba(31,41,55,0.8)',
+                    borderRadius: 16,
+                    padding: 24,
+                    border: '2px solid rgba(236,72,153,0.55)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                  }}>
+                    <img
+                      src="./cardback.png"
+                      alt="God Pack"
+                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16, boxShadow: '0 0 40px rgba(236,72,153,0.25)' }}
+                    />
+                    <h3 style={{ color: '#f472b6', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>God Pack (Test)</h3>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 6px', textAlign: 'center' }}>15 holo cards</p>
+                    <p style={{ color: '#f472b6', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
+                      4 Rare • 5 Legendary • 6 Ultra X Rare
+                    </p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                      <img src="./rations.png" alt="" style={{ width: 24, height: 24, opacity: 0.85 }} />
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>0</span>
+                    </div>
+
+                    <button
+                      onClick={() => setPurchaseConfirm({ type: 'godpack', title: 'God Pack (Test)', cost: 0, details: 'For testing. Adds 1 guaranteed God Pack to your inventory (all holo).' })}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: 'linear-gradient(90deg, #ec4899, #a855f7)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        fontSize: 16,
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Get God Pack
+                    </button>
+                  </div>
+
+{/* Single Pack */}
+                  <div style={{
+                    background: 'rgba(31,41,55,0.8)',
+                    borderRadius: 16,
+                    padding: 24,
+                    border: '2px solid rgba(168,85,247,0.3)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                  }}>
+                    <img 
+                      src="./cardback.png" 
+                      alt="Single Pack"
+                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
+                    />
+                    <h3 style={{ color: 'white', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Single Pack</h3>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 16px', textAlign: 'center' }}>15 cards</p>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                      <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>{sealedMarket.prices.single.toFixed(2)}</span>
+                    </div>
+                    
+                    <button
+                      onClick={() => setPurchaseConfirm({ type: 'single', title: 'Single Pack', cost: sealedMarket.prices.single, details: '15 cards: 7 Common, 5 Uncommon, 2 Rare+ (89% Rare / 10% Legendary / 1% Ultra X Rare), 1 Holo slot (47%C / 34%U / 13%R / 5%L / 1% UXR).' })}
+                      disabled={rations < sealedMarket.prices.single || ((shopStock && shopStock.single) ? shopStock.single.remaining <= 0 : false)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: rations >= sealedMarket.prices.single ? 'linear-gradient(90deg, #9333ea, #ec4899)' : '#374151',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: rations >= sealedMarket.prices.single ? 'pointer' : 'not-allowed',
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        opacity: rations >= sealedMarket.prices.single ? 1 : 0.5
+                      }}
+                    >
+                      {((shopStock && shopStock.single) ? (shopStock.single.remaining <= 0 ? 'Sold Out Today' : (rations >= sealedMarket.prices.single ? `Buy Pack (${shopStock.single.remaining}/${shopStock.single.limit})` : `Not Enough Rations (${shopStock.single.remaining}/${shopStock.single.limit})`)) : (rations >= sealedMarket.prices.single ? 'Buy Pack' : 'Not Enough Rations'))}
+                    </button>
+                  </div>
+
+                  {/* Bundle Box */}
+                  <div style={{
+                    background: 'rgba(31,41,55,0.8)',
+                    borderRadius: 16,
+                    padding: 24,
+                    border: '2px solid rgba(16,185,129,0.5)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                  }}>
+                    <img 
+                      src="./cardback.png" 
+                      alt="Bundle Box"
+                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
+                    />
+                    <h3 style={{ color: '#10b981', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Bundle Box</h3>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>8 packs (120 cards)</p>
+                    <p style={{ color: '#10b981', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
+                      ⭐ 1 Legendary Guaranteed
+                    </p>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                      <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>{sealedMarket.prices.bundle.toFixed(2)}</span>
+                    </div>
+                    
+                    <button
+                      onClick={() => setPurchaseConfirm({ type: 'bundle', title: 'Bundle Box (8 Packs)', cost: sealedMarket.prices.bundle, details: '8 packs. One pack is guaranteed a Legendary in a rare slot.' })}
+                      disabled={rations < sealedMarket.prices.bundle || ((shopStock && shopStock.bundle) ? shopStock.bundle.remaining <= 0 : false)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: rations >= sealedMarket.prices.bundle ? 'linear-gradient(90deg, #10b981, #059669)' : '#374151',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: rations >= sealedMarket.prices.bundle ? 'pointer' : 'not-allowed',
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        opacity: rations >= sealedMarket.prices.bundle ? 1 : 0.5
+                      }}
+                    >
+                      {((shopStock && shopStock.bundle) ? (shopStock.bundle.remaining <= 0 ? 'Sold Out Today' : (rations >= sealedMarket.prices.bundle ? `Buy Bundle (${shopStock.bundle.remaining}/${shopStock.bundle.limit})` : `Not Enough Rations (${shopStock.bundle.remaining}/${shopStock.bundle.limit})`)) : (rations >= sealedMarket.prices.bundle ? 'Buy Bundle' : 'Not Enough Rations'))}
+                    </button>
+                  </div>
+
+                  {/* Booster Box */}
+                  <div style={{
+                    background: 'rgba(31,41,55,0.8)',
+                    borderRadius: 16,
+                    padding: 24,
+                    border: '2px solid rgba(59,130,246,0.5)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                  }}>
+                    <img 
+                      src="./cardback.png" 
+                      alt="Booster Box"
+                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
+                    />
+                    <h3 style={{ color: '#3b82f6', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Booster Box</h3>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>24 packs (360 cards)</p>
+                    <p style={{ color: '#3b82f6', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
+                      ⭐ 4 Legendaries Guaranteed
+                    </p>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                      <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>{sealedMarket.prices.booster.toFixed(2)}</span>
+                    </div>
+                    
+                    <button
+                      onClick={() => setPurchaseConfirm({ type: 'booster', title: 'Booster Box (24 Packs)', cost: sealedMarket.prices.booster, details: '24 packs. One pack is guaranteed an Ultra X Rare in a rare slot.' })}
+                      disabled={rations < sealedMarket.prices.booster || ((shopStock && shopStock.booster) ? shopStock.booster.remaining <= 0 : false)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: (rations >= sealedMarket.prices.booster && ((shopStock && shopStock.booster) ? shopStock.booster.remaining > 0 : true)) ? 'linear-gradient(90deg, #3b82f6, #2563eb)' : '#374151',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: (rations >= sealedMarket.prices.booster && ((shopStock && shopStock.booster) ? shopStock.booster.remaining > 0 : true)) ? 'pointer' : 'not-allowed',
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        opacity: (rations >= sealedMarket.prices.booster && ((shopStock && shopStock.booster) ? shopStock.booster.remaining > 0 : true)) ? 1 : 0.5
+                      }}
+                    >
+                      {((shopStock && shopStock.booster) ? (shopStock.booster.remaining <= 0 ? 'Sold Out Today' : (rations >= sealedMarket.prices.booster ? `Buy Box (${shopStock.booster.remaining}/${shopStock.booster.limit})` : 'Not Enough Rations')) : (rations >= sealedMarket.prices.booster ? 'Buy Box' : 'Not Enough Rations'))}
+                    </button>
+                  </div>
+
+                  {/* Booster Box Case */}
+                  <div style={{
+                    background: 'rgba(31,41,55,0.8)',
+                    borderRadius: 16,
+                    padding: 24,
+                    border: '2px solid rgba(251,191,36,0.5)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                  }}>
+                    <img 
+                      src="./cardback.png" 
+                      alt="Booster Box Case"
+                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
+                    />
+                    <h3 style={{ color: '#fbbf24', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Booster Case</h3>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>144 packs (2160 cards)</p>
+                    <p style={{ color: '#fbbf24', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
+                      🌟 2 Ultra X Rares Guaranteed
+                    </p>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                      <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
+                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>{sealedMarket.prices.case.toFixed(2)}</span>
+                    </div>
+                    
+                    <button
+                      onClick={() => setPurchaseConfirm({ type: 'case', title: 'Booster Case (144 Packs)', cost: sealedMarket.prices.case, details: '144 packs (6 boxes). Two packs are guaranteed an Ultra X Rare in a rare slot.' })}
+                      disabled={rations < sealedMarket.prices.case || ((shopStock && shopStock.case) ? shopStock.case.remaining <= 0 : false)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: rations >= sealedMarket.prices.case ? 'linear-gradient(90deg, #fbbf24, #f59e0b)' : '#374151',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: rations >= sealedMarket.prices.case ? 'pointer' : 'not-allowed',
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        opacity: rations >= sealedMarket.prices.case ? 1 : 0.5
+                      }}
+                    >
+                      {((shopStock && shopStock.case) ? (shopStock.case.remaining <= 0 ? 'Sold Out Today' : (rations >= sealedMarket.prices.case ? `Buy Case (${shopStock.case.remaining}/${shopStock.case.limit})` : `Not Enough Rations (${shopStock.case.remaining}/${shopStock.case.limit})`)) : (rations >= sealedMarket.prices.case ? 'Buy Case' : 'Not Enough Rations'))}
+                    </button>
+                  </div>
+                </div>
+                  </>
+                )}
+
+
+                {shopTab === 'sell' && (
+                  <div style={{ maxWidth: 1200, margin: '0 auto', padding: 16, borderRadius: 16, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 10 }}>
+                      <h3 style={{ margin: 0, fontSize: 22, fontWeight: 900 }}>Sell to Shop</h3>
+                      <div style={{ color: '#9ca3af', fontSize: 12 }}>
+                        Shop buys at <b>{Math.round(SELL_TO_SHOP_RATE * 100)}%</b> market value (incl. holo)
+                      </div>
+                    </div>
+                    <div style={{ color: '#d1d5db', fontSize: 13, marginBottom: 14, lineHeight: 1.4 }}>
+                      Select a card below to sell. The shop pays <b>{Math.round(SELL_TO_SHOP_RATE * 100)}%</b> of the current market value (and <b>{Math.round(SELL_TO_SHOP_RATE * 100)}%</b> of holo value for foils).
+                    </div>
+
+
+                    <div style={{ marginBottom: 14, padding: '12px 12px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(0,0,0,0.18)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                        <div>
+                          <div style={{ fontSize: 16, fontWeight: 900 }}>Sealed Product</div>
+                          <div style={{ color: '#9ca3af', fontSize: 12, marginTop: 2 }}>
+                            Market = expected pack value (EV) × set age appreciation. Set age: <b>{sealedMarket.age}</b> • Appreciation: <b>{sealedMarket.appreciation}x</b>
+                          </div>
+                        </div>
+                        <div style={{ color: '#9ca3af', fontSize: 12 }}>
+                          Pack EV: <b>{sealedMarket.curEV.toFixed(2)}</b> (base {sealedMarket.baseEV.toFixed(2)})
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10, marginTop: 10 }}>
+                        <div style={{ padding: 12, borderRadius: 12, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                          <div style={{ fontWeight: 900, marginBottom: 4 }}>Single Pack</div>
+                          <div style={{ color: '#9ca3af', fontSize: 12 }}>You have: {(packInventory || []).filter(p => p && p.type === 'single').length}</div>
+                          <div style={{ color: '#d1d5db', fontSize: 12, marginTop: 6 }}>
+                            Market: <b>{sealedMarket.prices.single.toFixed(2)}</b> • Sell: <b>{(sealedMarket.prices.single * SEALED_SELL_RATE).toFixed(2)}</b>
+                          </div>
+                          <button
+                            onClick={() => sellSealedItem('single')}
+                            disabled={(packInventory || []).filter(p => p && p.type === 'single').length <= 0}
+                            style={{
+                              width: '100%',
+                              marginTop: 10,
+                              padding: '10px 12px',
+                              borderRadius: 10,
+                              border: '1px solid rgba(255,255,255,0.10)',
+                              background: 'rgba(168,85,247,0.22)',
+                              color: 'white',
+                              cursor: (packInventory || []).filter(p => p && p.type === 'single').length > 0 ? 'pointer' : 'not-allowed',
+                              fontWeight: 800
+                            }}
+                          >
+                            Sell Pack
+                          </button>
+                        </div>
+
+                        <div style={{ padding: 12, borderRadius: 12, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                          <div style={{ fontWeight: 900, marginBottom: 4 }}>Bundle (8 Packs)</div>
+                          <div style={{ color: '#9ca3af', fontSize: 12 }}>You have: {(sealedInventory && sealedInventory.bundle) ? sealedInventory.bundle : 0}</div>
+                          <div style={{ color: '#d1d5db', fontSize: 12, marginTop: 6 }}>
+                            Market: <b>{sealedMarket.prices.bundle.toFixed(2)}</b> • Sell: <b>{(sealedMarket.prices.bundle * SEALED_SELL_RATE).toFixed(2)}</b>
+                          </div>
+                          <button
+                            onClick={() => sellSealedItem('bundle')}
+                            disabled={!sealedInventory || (sealedInventory.bundle || 0) <= 0}
+                            style={{
+                              width: '100%',
+                              marginTop: 10,
+                              padding: '10px 12px',
+                              borderRadius: 10,
+                              border: '1px solid rgba(255,255,255,0.10)',
+                              background: 'rgba(168,85,247,0.22)',
+                              color: 'white',
+                              cursor: (sealedInventory && (sealedInventory.bundle || 0) > 0) ? 'pointer' : 'not-allowed',
+                              fontWeight: 800
+                            }}
+                          >
+                            Sell Bundle
+                          </button>
+                        </div>
+
+                        <div style={{ padding: 12, borderRadius: 12, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                          <div style={{ fontWeight: 900, marginBottom: 4 }}>Booster Box (24 Packs)</div>
+                          <div style={{ color: '#9ca3af', fontSize: 12 }}>You have: {(sealedInventory && sealedInventory.booster) ? sealedInventory.booster : 0}</div>
+                          <div style={{ color: '#d1d5db', fontSize: 12, marginTop: 6 }}>
+                            Market: <b>{sealedMarket.prices.booster.toFixed(2)}</b> • Sell: <b>{(sealedMarket.prices.booster * SEALED_SELL_RATE).toFixed(2)}</b>
+                          </div>
+                          <button
+                            onClick={() => sellSealedItem('booster')}
+                            disabled={!sealedInventory || (sealedInventory.booster || 0) <= 0}
+                            style={{
+                              width: '100%',
+                              marginTop: 10,
+                              padding: '10px 12px',
+                              borderRadius: 10,
+                              border: '1px solid rgba(255,255,255,0.10)',
+                              background: 'rgba(168,85,247,0.22)',
+                              color: 'white',
+                              cursor: (sealedInventory && (sealedInventory.booster || 0) > 0) ? 'pointer' : 'not-allowed',
+                              fontWeight: 800
+                            }}
+                          >
+                            Sell Box
+                          </button>
+                        </div>
+
+                        <div style={{ padding: 12, borderRadius: 12, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                          <div style={{ fontWeight: 900, marginBottom: 4 }}>Booster Case (144 Packs)</div>
+                          <div style={{ color: '#9ca3af', fontSize: 12 }}>You have: {(sealedInventory && sealedInventory.case) ? sealedInventory.case : 0}</div>
+                          <div style={{ color: '#d1d5db', fontSize: 12, marginTop: 6 }}>
+                            Market: <b>{sealedMarket.prices.case.toFixed(2)}</b> • Sell: <b>{(sealedMarket.prices.case * SEALED_SELL_RATE).toFixed(2)}</b>
+                          </div>
+                          <button
+                            onClick={() => sellSealedItem('case')}
+                            disabled={!sealedInventory || (sealedInventory.case || 0) <= 0}
+                            style={{
+                              width: '100%',
+                              marginTop: 10,
+                              padding: '10px 12px',
+                              borderRadius: 10,
+                              border: '1px solid rgba(255,255,255,0.10)',
+                              background: 'rgba(168,85,247,0.22)',
+                              color: 'white',
+                              cursor: (sealedInventory && (sealedInventory.case || 0) > 0) ? 'pointer' : 'not-allowed',
+                              fontWeight: 800
+                            }}
+                          >
+                            Sell Case
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ color: '#9ca3af', fontSize: 12, marginTop: 10 }}>
+                        Shop pays <b>{Math.round(SEALED_SELL_RATE * 100)}%</b> of sealed market value.
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 14, alignItems: 'center' }}>
+                      <input
+                        value={shopSellSearch}
+                        onChange={(e) => setShopSellSearch(e.target.value)}
+                        placeholder="Search owned cards..."
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: 12,
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          background: 'rgba(0,0,0,0.25)',
+                          color: 'white',
+                          outline: 'none'
+                        }}
+                      />
+
+                      <select
+                        value={shopSellFilter}
+                        onChange={(e) => setShopSellFilter(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: 12,
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          background: 'rgba(0,0,0,0.25)',
+                          color: 'white',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="all">All rarities</option>
+                        <option value="common">Common</option>
+                        <option value="uncommon">Uncommon</option>
+                        <option value="rare">Rare</option>
+                        <option value="legendary">Legendary</option>
+                        <option value="ultra x rare">Ultra X Rare</option>
+                      </select>
+
+                      <select
+                        value={shopSellVariant}
+                        onChange={(e) => setShopSellVariant(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: 12,
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          background: 'rgba(0,0,0,0.25)',
+                          color: 'white',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="any">Any owned</option>
+                        <option value="normal">Normal only</option>
+                        <option value="holo">Holo only</option>
+                      </select>
+
+                      <select
+                        value={shopSellSort}
+                        onChange={(e) => setShopSellSort(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: 12,
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          background: 'rgba(0,0,0,0.25)',
+                          color: 'white',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="payout">Best payout</option>
+                        <option value="owned">Most owned</option>
+                        <option value="name">Name (A-Z)</option>
+                        <option value="rarity">Rarity</option>
+                      </select>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                      {getShopSellCards().map(card => {
+                        const colors = RARITY_COLORS[card.rarity] || RARITY_COLORS.common;
+                        const canSellNormal = card.ownedNormal > 0;
+                        const canSellHolo = card.ownedHolo > 0;
+                        return (
+                          <div key={card.id} style={{ borderRadius: 16, padding: 12, background: 'rgba(31,41,55,0.72)', border: `2px solid ${colors.border}55`, boxShadow: '0 10px 30px rgba(0,0,0,0.25)' }}>
+                            <div style={{ display: 'flex', gap: 10 }}>
+                              <div style={{ position: 'relative', width: 90, flex: '0 0 auto' }}>
+                                <div style={{ width: 90, aspectRatio: '2.5/3.5', borderRadius: 12, overflow: 'hidden', border: `2px solid ${colors.border}` }}>
+                                  <img
+                                    src={card.image}
+                                    alt={card.name}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }}
+                                    onClick={() => setEnlargedCard({ ...card, marketValue: card.marketValue, priceChange: 0 })}
+                                    loading="lazy"
+                                  />
+                                </div>
+                                <div style={{ position: 'absolute', top: 6, right: 6, display: 'flex', gap: 6 }}>
+                                  {canSellNormal && (
+                                    <div style={{ background: 'rgba(0,0,0,0.55)', padding: '3px 7px', borderRadius: 12, border: `2px solid ${colors.border}`, color: 'white', fontWeight: 800, fontSize: 11, textShadow: '0 1px 2px rgba(0,0,0,0.85)' }}>
+                                      x{card.ownedNormal}
+                                    </div>
+                                  )}
+                                  {canSellHolo && (
+                                    <div className="holo-badge" style={{ padding: '3px 7px', borderRadius: 12, border: `2px solid ${colors.border}`, fontWeight: 800, fontSize: 11 }}>
+                                      x{card.ownedHolo}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: 900, fontSize: 14, color: 'white', lineHeight: 1.2, marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {card.name}
+                                </div>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 999, background: `${colors.bg}55`, border: `1px solid ${colors.border}55`, color: colors.text, fontWeight: 800, fontSize: 11, marginBottom: 8 }}>
+                                  {card.rarity}
+                                </div>
+
+                                <div style={{ display: 'grid', gap: 6 }}>
+                                  {canSellNormal && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#d1d5db', fontSize: 12 }}>
+                                      <span style={{ opacity: 0.85 }}>Normal payout:</span>
+                                      <img src="./rations.png" alt="" style={{ width: 14, height: 14 }} />
+                                      <b style={{ color: '#fbbf24' }}>{card.payout.toFixed(2)}</b>
+                                    </div>
+                                  )}
+                                  {canSellHolo && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#d1d5db', fontSize: 12 }}>
+                                      <span style={{ opacity: 0.85 }}>Holo payout:</span>
+                                      <img src="./rations.png" alt="" style={{ width: 14, height: 14, opacity: 0.9 }} />
+                                      <b className="rainbow-text">{card.holoPayout.toFixed(2)}</b>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <button
+                                  onClick={() => setSellConfirm({ id: card.id, name: card.name, rarity: card.rarity })}
+                                  style={{
+                                    marginTop: 10,
+                                    width: '100%',
+                                    padding: '10px 12px',
+                                    borderRadius: 12,
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontWeight: 900,
+                                    color: 'white',
+                                    background: 'linear-gradient(90deg, #dc2626, #b91c1c)',
+                                    boxShadow: '0 10px 22px rgba(0,0,0,0.35)'
+                                  }}
+                                >
+                                  Sell
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {getShopSellCards().length === 0 && (
+                      <div style={{ marginTop: 14, color: '#9ca3af', textAlign: 'center' }}>No cards match your filters.</div>
+                    )}
+                  </div>
+                )}
+
+
               </div>
             )}
 
             {view === 'opening' && (
               <div>
-                <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                  <h2 style={{ margin: 0, fontSize: 24 }}>Pack #{packCount}</h2>
-                  <div style={{ marginTop: 10, color: '#9ca3af' }}>{revealedCount}/{packCards.length} Revealed</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                  <h2 style={{ color: 'white', fontSize: 24, fontWeight: 'bold', margin: 0 }}>Pack #{packCount}</h2>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    {!allRevealed && (
+                      <button onClick={revealAll} style={{ padding: '8px 16px', background: '#9333ea', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
+                        Reveal All
+                      </button>
+                    )}
+                    {allRevealed && (
+                      <button onClick={openPack} style={{ padding: '8px 16px', background: 'linear-gradient(90deg, #9333ea, #ec4899)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
+                        Open Another Pack
+                      </button>
+                    )}
+                    <button onClick={() => setView('home')} style={{ padding: '8px 16px', background: '#374151', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
+                      Back
+                    </button>
+                  </div>
                 </div>
 
-                {/* STACK OPENING VIEW */}
-                <div className={`stack-container ${isPeeking ? 'peeking' : ''}`}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: 16, alignItems: 'start' }}>
                   {packCards.map((card, index) => {
-                    // Only render cards that are not fully revealed yet
-                    if (index < revealedCount) return null;
-                    const zIndex = 100 - index;
-                    const peekOffset = isPeeking ? (index - revealedCount) * 40 : 0;
+                    const isRevealed = revealedCards.includes(index);
                     const colors = RARITY_COLORS[card.rarity];
                     
                     return (
                       <div 
-                        key={card.slot}
-                        className="stack-card"
-                        style={{
-                          zIndex,
-                          transform: `translateX(${peekOffset}px) rotate(${(index % 3) - 1}deg)`,
-                          border: `3px solid ${colors.border}` // Border reveals rarity on peek
-                        }}
-                        onClick={() => { if(index === revealedCount) revealNextCardInStack(); }}
+                        key={`${card.id}-${index}`} 
+                        onClick={() => revealCard(index)} 
+                        className={card.isHolo ? 'foil-glow' : ''} style={{ aspectRatio: '2.5/3.5', cursor: 'pointer', perspective: 1000, position: 'relative', overflow: 'visible' }}
+                        title={isRevealed ? card.name : ''}
                       >
-                        <img src="./cardback.png" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <div className={`card-flip ${isRevealed ? 'flipped' : ''}`} style={{ width: '100%', height: '100%', position: 'relative' }}>
+                          <div className="card-face" style={{ width: '100%', height: '100%', borderRadius: 12, border: '3px solid #a855f7', overflow: 'hidden', position: 'relative' }}>
+                            <img 
+                              src="./cardback.png" 
+                              alt="Card Back"
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                            <div style={{ position: 'absolute', bottom: 8, left: 0, right: 0, textAlign: 'center' }}>
+                              <p style={{ color: 'white', fontSize: 11, margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>Click to reveal</p>
+                            </div>
+                          </div>
+                          
+                          <div 
+                            className="card-face card-back" 
+                            style={{ width: '100%', height: '100%', borderRadius: 12, border: `3px solid ${colors.border}`, overflow: 'hidden', background: '#1f2937', cursor: 'zoom-in' }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isRevealed) setEnlargedCard(card);
+                            }}
+                          >
+                            <img 
+                              src={card.image} 
+                              alt={card.name} 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              loading="lazy"
+                            />
+                          </div>
+                        </div>
                       </div>
-                    )
+                    );
                   })}
+                </div>
+              </div>
+            )}
 
-                  {revealedCount === packCards.length && (
-                    <div style={{ position: 'absolute', zIndex: 200, textAlign: 'center' }}>
-                      <h3 style={{ fontSize: 32, marginBottom: 20, textShadow: '0 2px 10px black' }}>Pack Complete!</h3>
-                      <button onClick={()=>navigate('home')} style={{ padding: '12px 24px', background: '#374151', color: 'white', border: 'none', borderRadius: 8, fontSize: 16, cursor: 'pointer' }}>Done</button>
-                      {packInventory.length > 0 && <button onClick={openPack} style={{ marginLeft: 10, padding: '12px 24px', background: '#9333ea', color: 'white', border: 'none', borderRadius: 8, fontSize: 16, cursor: 'pointer' }}>Next Pack</button>}
+            
+            {view === 'market' && (
+              <div>
+                <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 12, padding: 24, marginBottom: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                    <h2 style={{ margin: 0, fontSize: 22, color: 'white' }}>Market</h2>
+                    <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>
+                      7-day movers (Day {movers7d.fromDay} → Day {gameDay})
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 18 }}>
+                    <div style={{ flex: '1 1 320px', minWidth: 280 }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: 'white', marginBottom: 10 }}>Top Gainers</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {movers7d.gainers.map((row, idx) => (
+                          <button
+                            key={'g7-' + row.card.id}
+                            onClick={() => setEnlargedCard({
+                              ...row.card,
+                              image: getImageUrl(row.card),
+                              marketValue: row.curVal
+                            })}
+                            style={{
+                              width: '100%',
+                              textAlign: 'left',
+                              borderRadius: 12,
+                              padding: '10px 12px',
+                              border: '1px solid rgba(255,255,255,0.10)',
+                              background: 'rgba(0,0,0,0.25)',
+                              cursor: 'pointer',
+                              color: 'white'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                                <span style={{ fontWeight: 700, opacity: 0.9 }}>{idx + 1}.</span>
+                                <span style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.card.name}</span>
+                                <span style={{ fontSize: 12, opacity: 0.75 }}>({row.card.rarity})</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                                <span style={{ fontWeight: 800, color: '#34d399' }}>{row.pct >= 0 ? '+' : ''}{row.pct.toFixed(1)}%</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <img src="./rations.png" alt="Rations" style={{ width: 16, height: 16 }} />
+                                  <span style={{ fontWeight: 700, color: '#fbbf24' }}>{row.curVal.toFixed(2)}</span>
+                                </span>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                        {movers7d.gainers.length === 0 && (
+                          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>Not enough market history yet.</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ flex: '1 1 320px', minWidth: 280 }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: 'white', marginBottom: 10 }}>Top Losers</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {movers7d.losers.map((row, idx) => (
+                          <button
+                            key={'l7-' + row.card.id}
+                            onClick={() => setEnlargedCard({
+                              ...row.card,
+                              image: getImageUrl(row.card),
+                              marketValue: row.curVal
+                            })}
+                            style={{
+                              width: '100%',
+                              textAlign: 'left',
+                              borderRadius: 12,
+                              padding: '10px 12px',
+                              border: '1px solid rgba(255,255,255,0.10)',
+                              background: 'rgba(0,0,0,0.25)',
+                              cursor: 'pointer',
+                              color: 'white'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                                <span style={{ fontWeight: 700, opacity: 0.9 }}>{idx + 1}.</span>
+                                <span style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.card.name}</span>
+                                <span style={{ fontSize: 12, opacity: 0.75 }}>({row.card.rarity})</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                                <span style={{ fontWeight: 800, color: '#f87171' }}>{row.pct >= 0 ? '+' : ''}{row.pct.toFixed(1)}%</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <img src="./rations.png" alt="Rations" style={{ width: 16, height: 16 }} />
+                                  <span style={{ fontWeight: 700, color: '#fbbf24' }}>{row.curVal.toFixed(2)}</span>
+                                </span>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                        {movers7d.losers.length === 0 && (
+                          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>Not enough market history yet.</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+{view === 'collection' && (
+              <div>
+                <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 12, padding: 24, marginBottom: 24 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, textAlign: 'center' }}>
+                    <div>
+                      <p style={{ color: '#9ca3af', fontSize: 14, margin: 0 }}>Total Value</p>
+                      <p style={{ color: 'white', fontSize: 22, fontWeight: 'bold', margin: '6px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                        <img src="./rations.png" alt="Rations" style={{ width: 18, height: 18 }} />
+                        <span>{totalCollectionValue.toFixed(2)}</span>
+                      </p>
+                    </div>
+                    <div>
+                      <p style={{ color: '#9ca3af', fontSize: 14, margin: 0 }}>Collected</p>
+                      <p style={{ color: 'white', fontSize: 18, fontWeight: 'bold', margin: '6px 0 0' }}>
+                        N {stats.uniqueNormalOwned}/{stats.totalCards}
+                      </p>
+                      <p style={{ color: 'white', fontSize: 18, fontWeight: 'bold', margin: '2px 0 0' }}>
+                        H {stats.uniqueHoloOwned}/{stats.totalCards}
+                      </p>
+                    </div>
+                    {RARITY_ORDER.map(rarity => (
+                      <div key={rarity}>
+                        <p style={{ color: RARITY_COLORS[rarity].text, fontSize: 14, textTransform: 'capitalize', margin: 0 }}>{rarity}</p>
+                        <p style={{ color: 'white', fontSize: 20, fontWeight: 'bold', margin: '4px 0 0' }}>
+                          {stats.byRarity[rarity]?.owned || 0}/{stats.byRarity[rarity]?.total || 0}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                                <div style={{ background: 'rgba(0,0,0,0.28)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+                    <input
+                      value={collectionSearch}
+                      onChange={(e) => setCollectionSearch(e.target.value)}
+                      placeholder="Search cards…"
+                      style={{ 
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        outline: 'none'
+                      }}
+                    />
+
+                    <select
+                      value={ownedFilter}
+                      onChange={(e) => setOwnedFilter(e.target.value)}
+                      style={{ 
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="all">All cards</option>
+                      <option value="owned">Owned</option>
+                      <option value="unowned">Unowned</option>
+                    </select>
+
+                    <select
+                      value={holoFilter}
+                      onChange={(e) => setHoloFilter(e.target.value)}
+                      style={{ 
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="all">Holo: Any</option>
+                      <option value="hasHolo">Has holo</option>
+                      <option value="noHolo">No holo</option>
+                    </select>
+
+                    <select
+                      value={sortKey}
+                      onChange={(e) => setSortKey(e.target.value)}
+                      style={{ 
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="owned">Sort: Owned</option>
+                      <option value="name">Sort: Name</option>
+                      <option value="rarity">Sort: Rarity</option>
+                      <option value="value">Sort: Market Value</option>
+                      <option value="holoValue">Sort: Holo Value</option>
+                      <option value="change">Sort: 24h Change</option>
+                      <option value="holoMult">Sort: Holo Multiplier</option>
+                    </select>
+
+                    <button
+                      onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: 'rgba(55,65,81,0.85)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontWeight: 800,
+                        minWidth: 44
+                      }}
+                      title="Toggle sort direction"
+                    >
+                      {sortDir === 'asc' ? '↑' : '↓'}
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button onClick={() => setCollectionFilter('all')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === 'all' ? '#9333ea' : '#374151', color: 'white' }}>
+                        All
+                      </button>
+                      {RARITY_ORDER.map(rarity => (
+                        <button key={rarity} onClick={() => setCollectionFilter(rarity)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === rarity ? RARITY_COLORS[rarity].bg : '#374151', color: 'white', textTransform: 'capitalize' }}>
+                          {rarity}
+                        </button>
+                      ))}
+                    </div>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#e5e7eb', fontSize: 13, userSelect: 'none' }}>
+                      <input type="checkbox" checked={hideUnknown} onChange={(e) => setHideUnknown(e.target.checked)} />
+                      Hide unknown
+                    </label>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: 16 }}>
+                  {getCollectionCards().map(card => {
+                    const colors = RARITY_COLORS[card.rarity];
+                    const marketValue = (typeof card.marketValue === 'number') ? card.marketValue : (marketValues[card.id] || 1);
+                    const priceChange = (typeof card.priceChange === 'number') ? card.priceChange : 0;
+                    const holoMult = getHoloMultiplier(card.id);
+                    const holoValue = marketValue * holoMult;
+return (
+                      <div 
+                        key={card.id} 
+                        style={{ 
+                          aspectRatio: '2.5/3.5', 
+                          borderRadius: 12, 
+                          border: `3px solid ${colors.border}`, 
+                          overflow: 'visible', 
+                          background: '#1f2937', 
+                          position: 'relative', 
+                          opacity: card.owned === 0 ? 0.4 : 1,
+                        }}
+                        title={card.owned > 0 ? `${card.name} - ${marketValue.toFixed(2)}` : '???'}
+                      >
+                        <div 
+                          style={{ width: '100%', height: '100%', borderRadius: 12, overflow: 'hidden', cursor: card.owned > 0 ? 'zoom-in' : 'default' }}
+                          onClick={() => {
+                            if (card.owned > 0) setEnlargedCard({ ...card, marketValue, priceChange });
+                          }}
+                        >
+                          {card.owned > 0 ? (
+                            <img 
+                              src={card.image} 
+                              alt={card.name} 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111827' }}>
+                              <span style={{ fontSize: 48 }}>❓</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {card.owned > 0 && (
+                          <>
+                            {/* Count badges */}
+                            <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 6, zIndex: 5 }}>
+                              {card.ownedNormal > 0 && (
+                                <div style={{ 
+                                  background: 'rgba(0,0,0,0.55)', 
+                                  padding: '4px 8px', 
+                                  borderRadius: 12, 
+                                  border: `2px solid ${colors.border}`,
+                                  color: 'white',
+                                  fontWeight: 800,
+                                  fontSize: 12,
+                                  textShadow: '0 1px 2px rgba(0,0,0,0.85)'
+                                }}>
+                                  x{card.ownedNormal}
+                                </div>
+                              )}
+                              {card.ownedHolo > 0 && (
+                                <div className="holo-badge" style={{ 
+                                  padding: '4px 8px', 
+                                  borderRadius: 12,
+                                  border: `2px solid ${colors.border}`,
+                                  fontWeight: 800,
+                                  fontSize: 12
+                                }}>
+                                  x{card.ownedHolo}
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Market value + change */}
+                            <div style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.8)', padding: '4px 8px', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <img src="./rations.png" alt="R" style={{ width: 14, height: 14 }} />
+                                <span style={{ color: '#fbbf24', fontSize: 12, fontWeight: 'bold' }}>{marketValue.toFixed(2)}</span>
+                              </div>
+                              {card.ownedHolo > 0 && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <img src="./rations.png" alt="" style={{ width: 14, height: 14, opacity: 0.9 }} />
+                                  <span className="rainbow-text" style={{ fontSize: 12, fontWeight: 'bold' }}>{holoValue.toFixed(2)}</span>
+                                </div>
+                              )}
+                              {priceChange !== 0 && (
+                                <span style={{ fontSize: 10, fontWeight: 'bold', color: priceChange > 0 ? '#10b981' : '#ef4444' }}>
+                                  {priceChange > 0 ? '↑' : '↓'} {Math.abs(priceChange).toFixed(1)}%
+                                </span>
+                              )}
+                            </div>
+</>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          
+            {view === 'settings' && (
+              <div style={{ maxWidth: 980, margin: '0 auto' }}>
+                <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 12 }}>Settings</h2>
+
+                {settingsMsg && (
+                  <div style={{ marginBottom: 16, padding: '10px 12px', borderRadius: 10, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)', color: '#bbf7d0' }}>
+                    {settingsMsg}
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gap: 16 }}>
+                  <div style={{ padding: 16, borderRadius: 14, background: 'rgba(17,24,39,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <h3 style={{ margin: 0, marginBottom: 12, fontSize: 18 }}>Save Info</h3>
+                    <div style={{ display: 'grid', gap: 8, color: '#e5e7eb', fontSize: 14 }}>
+                      <div>Day: <b>{gameDay}</b></div>
+                      <div>Rations: <b>{rations.toFixed(2)}</b></div>
+                      <div>Packs Opened: <b>{packCount}</b></div>
+                      <div>Packs Owned: <b>{packInventory.length}</b></div>
+                      <div>Collection: <b>N {stats.uniqueNormalOwned}/{stats.totalCards}</b> • <b>H {stats.uniqueHoloOwned}/{stats.totalCards}</b></div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span>Save Seed:</span>
+                        <code style={{ padding: '3px 8px', borderRadius: 999, background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.10)', color: '#f3f4f6' }}>{saveSeed || '—'}</code>
+                        <button onClick={() => copyToClipboard(String(saveSeed || ''))} style={{ padding: '6px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', background: 'rgba(107,114,128,0.35)', color: 'white' }}>
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                    <p style={{ marginTop: 12, color: '#9ca3af', fontSize: 12, lineHeight: 1.4 }}>
+                      Note: Saves live in your browser's localStorage. GitHub Pages can't write back to your repo from the client — exporting/importing JSON is the reliable way to move saves between devices or restore progress.
+                    </p>
+                  </div>
+
+                  <div style={{ padding: 16, borderRadius: 14, background: 'rgba(17,24,39,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <h3 style={{ margin: 0, marginBottom: 12, fontSize: 18 }}>Deterministic Mode (for testing)</h3>
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#e5e7eb' }}>
+                        <input type="checkbox" checked={debugEnabled} onChange={(e) => setDebugEnabled(e.target.checked)} />
+                        Enable deterministic RNG (reproducible randomness)
+                      </label>
+
+                      <div style={{ display: 'grid', gap: 6 }}>
+                        <div style={{ color: '#9ca3af', fontSize: 12 }}>Optional seed override (leave blank to use Save Seed):</div>
+                        <input
+                          value={debugSeed}
+                          onChange={(e) => setDebugSeed(e.target.value)}
+                          placeholder="e.g. 123456789"
+                          style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.35)', color: 'white' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        <button onClick={applyDebugSettings} style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: '#9333ea', color: 'white', fontWeight: 700 }}>
+                          Save Debug Settings
+                        </button>
+                        <button onClick={resetDeterministicStream} style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'rgba(107,114,128,0.35)', color: 'white', fontWeight: 700 }}>
+                          Reset RNG Stream
+                        </button>
+                        <button onClick={() => copyToClipboard(String(getActiveSeed() || ''))} style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'rgba(107,114,128,0.35)', color: 'white', fontWeight: 700 }}>
+                          Copy Active Seed
+                        </button>
+                      </div>
+
+                      <div style={{ color: '#9ca3af', fontSize: 12, lineHeight: 1.4 }}>
+                        Deterministic mode only changes randomness when enabled. When it's off, everything behaves normally.
+                        If you want a fully reproducible run, export your save JSON (it includes day, market, picks, collection, and RNG stream state).
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: 16, borderRadius: 14, background: 'rgba(17,24,39,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <h3 style={{ margin: 0, marginBottom: 12, fontSize: 18 }}>Export / Import Save</h3>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
+                      <button onClick={exportSave} style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: '#10b981', color: 'white', fontWeight: 800 }}>
+                        Export Save JSON
+                      </button>
+                      <button onClick={() => copyToClipboard(exportText || buildSaveExport())} style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'rgba(107,114,128,0.35)', color: 'white', fontWeight: 700 }}>
+                        Copy Export JSON
+                      </button>
+                    </div>
+
+                    {exportText && (
+                      <textarea
+                        value={exportText}
+                        readOnly
+                        style={{ width: '100%', minHeight: 160, padding: 12, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(0,0,0,0.35)', color: '#e5e7eb', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: 12 }}
+                      />
+                    )}
+
+                    <div style={{ height: 12 }} />
+
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      <div style={{ color: '#9ca3af', fontSize: 12 }}>Import save JSON (paste or choose a file):</div>
+                      <input type="file" accept="application/json" onChange={(e) => handleImportFile(e.target.files && e.target.files[0])} style={{ color: '#e5e7eb' }} />
+                      <textarea
+                        value={importText}
+                        onChange={(e) => setImportText(e.target.value)}
+                        placeholder="Paste save JSON here…"
+                        style={{ width: '100%', minHeight: 140, padding: 12, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(0,0,0,0.35)', color: '#e5e7eb', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: 12 }}
+                      />
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        <button
+                          onClick={() => applyImportedSave(importText)}
+                          style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: '#9333ea', color: 'white', fontWeight: 800 }}
+                        >
+                          Import & Reload
+                        </button>
+                        <button
+                          onClick={() => setImportText('')}
+                          style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'rgba(107,114,128,0.35)', color: 'white', fontWeight: 700 }}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: 16, borderRadius: 14, background: 'rgba(17,24,39,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <h3 style={{ margin: 0, marginBottom: 12, fontSize: 18 }}>Milestones</h3>
+                    <div style={{ color: '#9ca3af', fontSize: 12, marginBottom: 12 }}>
+                      Major moments are logged here so you can review them later (even if you accidentally click away).
+                    </div>
+                    {eventLog.length === 0 ? (
+                      <div style={{ color: '#e5e7eb', opacity: 0.8 }}>No milestones yet.</div>
+                    ) : (
+                      <div style={{ display: 'grid', gap: 10 }}>
+                        {eventLog.slice(0, 20).map((evt) => (
+                          <div
+                            key={evt.id}
+                            onClick={() => openEventDetails(evt)}
+                            style={{
+                              cursor: 'pointer',
+                              padding: 12,
+                              borderRadius: 12,
+                              border: '1px solid rgba(255,255,255,0.10)',
+                              background: 'rgba(0,0,0,0.25)'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                              <div style={{ fontWeight: 800, color: '#e5e7eb' }}>{getEventLabel(evt)}</div>
+                              <div style={{ color: '#9ca3af', fontSize: 12 }}>{evt.day ? `Day ${evt.day}` : ''}</div>
+                            </div>
+                            <div style={{ marginTop: 6, color: 'rgba(255,255,255,0.82)', fontSize: 13 }}>
+                              {formatEventSummary(evt)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ padding: 16, borderRadius: 14, background: 'rgba(17,24,39,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <h3 style={{ margin: 0, marginBottom: 12, fontSize: 18 }}>Danger Zone</h3>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button
+                        onClick={resetAllSaveData}
+                        style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'rgba(239,68,68,0.22)', color: '#fecaca', fontWeight: 800 }}
+                      >
+                        Reset All Progress
+                      </button>
+                    </div>
+                    <div style={{ marginTop: 10, color: '#9ca3af', fontSize: 12 }}>
+                      This clears all <code style={{ background: 'rgba(0,0,0,0.35)', padding: '2px 6px', borderRadius: 8 }}>tcg-*</code> keys from localStorage.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </main>
+
+          {/* Enlarged Card Modal */}
+          {enlargedCard && (
+            <div 
+              onClick={() => setEnlargedCard(null)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.9)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000,
+                cursor: 'zoom-out',
+                padding: 32
+              }}
+            >
+              <div style={{ display: 'flex', gap: 24, alignItems: 'center', maxWidth: '95vw' }} onClick={(e) => e.stopPropagation()}>
+                {/* Card Image */}
+                <div style={{ position: 'relative' }}>
+                  <img 
+                    src={enlargedCard.image} 
+                    alt={enlargedCard.name}
+                    style={{
+                      maxWidth: '500px',
+                      maxHeight: '80vh',
+                      objectFit: 'contain',
+                      borderRadius: 16,
+                      border: `4px solid ${RARITY_COLORS[enlargedCard.rarity].border}`,
+                      boxShadow: `0 0 40px ${RARITY_COLORS[enlargedCard.rarity].border}`,
+                      cursor: 'default'
+                    }}
+                  />
+                </div>
+                
+                {/* Price Info Panel */}
+                <div style={{
+                  background: 'rgba(0,0,0,0.8)',
+                  padding: 24,
+                  borderRadius: 16,
+                  border: `2px solid ${RARITY_COLORS[enlargedCard.rarity].border}`,
+                  minWidth: 300,
+                  maxWidth: 400
+                }}>
+                  <h2 style={{ color: 'white', fontSize: 24, fontWeight: 'bold', margin: '0 0 8px' }}>{enlargedCard.name}</h2>
+                  <p style={{ color: RARITY_COLORS[enlargedCard.rarity].text, fontSize: 16, textTransform: 'capitalize', margin: '0 0 24px' }}>
+                    {enlargedCard.rarity}
+                  </p>
+                  {/* Market Values */}
+                  {(() => {
+                    const baseValue = (enlargedCard.marketValue || marketValues[enlargedCard.id] || 1);
+                    const holoMult = getHoloMultiplier(enlargedCard.id);
+                    const holoValue = baseValue * holoMult;
+            const normalPayout = baseValue * SELL_TO_SHOP_RATE;
+            const holoPayout = holoValue * SELL_TO_SHOP_RATE;
+                    const isHolo = !!enlargedCard.isHolo;
+
+                    const ownedEntry = collection[enlargedCard.id] || { normal: 0, holo: 0 };
+                    const ownedHolo = (typeof enlargedCard.ownedHolo === 'number') ? enlargedCard.ownedHolo : (ownedEntry.holo || 0);
+                    const showHoloRow = (view !== 'collection') || ownedHolo > 0 || isHolo;
+
+                    return (
+                      <div style={{ marginBottom: 24 }}>
+                        <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 10px' }}>Market Value</p>
+
+                        <div style={{ display: 'grid', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 12 }}>
+                            <div style={{ color: '#e5e7eb', fontSize: 13 }}>Non-Holo</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <img src="./rations.png" alt="" style={{ width: 22, height: 22 }} />
+                              <span style={{ color: '#fbbf24', fontSize: 22, fontWeight: 'bold' }}>{baseValue.toFixed(2)}</span>
+                            </div>
+                          </div>
+
+                          {showHoloRow && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 12 }}>
+                              <div style={{ color: '#e5e7eb', fontSize: 13 }}>
+                                Holo <span style={{ color: '#9ca3af', fontSize: 12 }}>({holoMult.toFixed(2)}×)</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <img src="./rations.png" alt="" style={{ width: 22, height: 22 }} />
+                                <span className="rainbow-text" style={{ fontSize: 22, fontWeight: 'bold' }}>{holoValue.toFixed(2)}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {isHolo && (
+                          <div style={{ marginTop: 10, fontSize: 12, color: '#d1d5db' }}>
+                            <span className="holo-badge" style={{ padding: '3px 8px', borderRadius: 999, marginRight: 8 }}>HOLO</span>
+                            This copy sells at the holo price.
+                          </div>
+                        )}
+
+                        {enlargedCard.priceChange !== 0 && enlargedCard.priceChange !== undefined && (
+                          <p style={{ 
+                            color: enlargedCard.priceChange > 0 ? '#10b981' : '#ef4444', 
+                            fontSize: 14, 
+                            fontWeight: 'bold',
+                            margin: '10px 0 0' 
+                          }}>
+                            {enlargedCard.priceChange > 0 ? '↑' : '↓'} {Math.abs(enlargedCard.priceChange).toFixed(2)}% vs yesterday
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+{/* Price History Graph */}
+                  {priceHistory[enlargedCard.id] && priceHistory[enlargedCard.id].length > 1 && (
+                    <div>
+                      <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 12px' }}>
+                        Price History (Last {Math.min(priceHistory[enlargedCard.id].length, 30)} Days)
+                      </p>
+                      <div style={{ background: '#1f2937', borderRadius: 8, padding: 16, height: 150, position: 'relative' }}>
+                        <svg width="100%" height="100%" viewBox="0 0 300 120" preserveAspectRatio="none">
+                          {(() => {
+                            const history = priceHistory[enlargedCard.id].slice(-30);
+                            const values = history.map(h => h.value);
+                            const min = Math.min(...values) * 0.95;
+                            const max = Math.max(...values) * 1.05;
+                            const range = max - min;
+                            
+                            const points = history.map((h, i) => {
+                              const x = (i / (history.length - 1)) * 300;
+                              const y = 120 - ((h.value - min) / range) * 120;
+                              return `${x},${y}`;
+                            }).join(' ');
+                            
+                            return (
+                              <>
+                                <polyline
+                                  points={points}
+                                  fill="none"
+                                  stroke="#10b981"
+                                  strokeWidth="2"
+                                />
+                                {history.map((h, i) => {
+                                  const x = (i / (history.length - 1)) * 300;
+                                  const y = 120 - ((h.value - min) / range) * 120;
+                                  return (
+                                    <circle
+                                      key={i}
+                                      cx={x}
+                                      cy={y}
+                                      r="3"
+                                      fill="#10b981"
+                                    />
+                                  );
+                                })}
+                              </>
+                            );
+                          })()}
+                        </svg>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+                        <span style={{ color: '#6b7280', fontSize: 12 }}>
+                          {priceHistory[enlargedCard.id][0]?.value.toFixed(2)}R
+                        </span>
+                        <span style={{ color: '#6b7280', fontSize: 12 }}>
+                          {priceHistory[enlargedCard.id][priceHistory[enlargedCard.id].length - 1]?.value.toFixed(2)}R
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  
+
+                  {/* Discard (delete) from collection */}
+                  {view === 'collection' && (() => {
+                    const ownedEntry = collection[enlargedCard.id] || { normal: 0, holo: 0 };
+                    const ownedNormal = (typeof enlargedCard.ownedNormal === 'number') ? enlargedCard.ownedNormal : (ownedEntry.normal || 0);
+                    const ownedHolo = (typeof enlargedCard.ownedHolo === 'number') ? enlargedCard.ownedHolo : (ownedEntry.holo || 0);
+
+                    if (ownedNormal === 0 && ownedHolo === 0) return null;
+
+                    return (
+                      <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
+                        {ownedNormal > 0 && (
+                          <button
+                            onClick={() => discardFromCollection(enlargedCard.id, 'normal')}
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              background: 'rgba(239,68,68,0.18)',
+                              color: 'white',
+                              border: '1px solid rgba(239,68,68,0.35)',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              fontSize: 14,
+                              fontWeight: 'bold'
+                            }}
+                            title="Discard a non-holo copy (no rations gained)"
+                          >
+                            Discard Non-Holo
+                          </button>
+                        )}
+                        {ownedHolo > 0 && (
+                          <button
+                            onClick={() => discardFromCollection(enlargedCard.id, 'holo')}
+                            className="holo-button"
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              fontSize: 14,
+                              fontWeight: 'bold',
+                              border: 'none'
+                            }}
+                            title="Discard a holo copy (no rations gained)"
+                          >
+                            Discard Holo
+                          </button>
+                        )}
+                        <div style={{ color: '#9ca3af', fontSize: 12, lineHeight: 1.3 }}>
+                          Discarding permanently removes the card from your collection and gives <b>no</b> rations.
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+<button
+                    onClick={() => setEnlargedCard(null)}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      marginTop: 24,
+                      background: '#374151',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          
+          
+          
+
+          {/* Purchase Confirmation Modal */}
+          {purchaseConfirm && (
+            <div
+              onClick={() => setPurchaseConfirm(null)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.85)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1100,
+                padding: 32
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  background: '#111827',
+                  border: '1px solid #374151',
+                  borderRadius: 16,
+                  padding: 24,
+                  maxWidth: 420,
+                  width: '100%'
+                }}
+              >
+                <h2 style={{ fontSize: 18, margin: '0 0 10px', textAlign: 'center' }}>
+                  Confirm Purchase
+                </h2>
+
+                <div style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 12,
+                  padding: 14,
+                  marginBottom: 14
+                }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: 6 }}>
+                    {purchaseConfirm.title}
+                  </div>
+                  {purchaseConfirm.details && (
+                    <div style={{ color: '#9ca3af', fontSize: 12, lineHeight: 1.4 }}>
+                      {purchaseConfirm.details}
                     </div>
                   )}
                 </div>
 
-                {revealedCount < packCards.length && (
-                  <div style={{ textAlign: 'center', marginTop: 20 }}>
-                    <button
-                      onMouseDown={() => setIsPeeking(true)}
-                      onMouseUp={() => setIsPeeking(false)}
-                      onTouchStart={() => setIsPeeking(true)}
-                      onTouchEnd={() => setIsPeeking(false)}
-                      style={{
-                        background: '#eab308', color: '#422006', fontWeight: 900,
-                        border: 'none', borderRadius: 99, padding: '14px 32px', fontSize: 16,
-                        boxShadow: '0 4px 0 #a16207', transform: isPeeking ? 'translateY(4px)' : 'none',
-                        transition: 'transform 0.1s', cursor: 'pointer'
-                      }}
-                    >
-                      HOLD TO PEEK
-                    </button>
-                    <p style={{ marginTop: 10, fontSize: 12, color: '#9ca3af' }}>Tap stack to reveal • Hold to see rarity borders</p>
-                  </div>
-                )}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 8
+                }}>
+                  <div style={{ color: '#9ca3af', fontSize: 12 }}>Cost</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}><img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />{(Number.isFinite(purchaseConfirm.cost) ? purchaseConfirm.cost.toFixed(2) : '—')}</div>
+                </div>
 
-                {/* History Grid */}
-                <div className="reveal-grid">
-                  {packCards.slice(0, revealedCount).map(card => {
-                    const colors = RARITY_COLORS[card.rarity];
-                    return (
-                      <div key={card.slot} onClick={() => setEnlargedCard(card)} className={card.isHolo ? 'foil-glow' : ''} style={{ aspectRatio: '2.5/3.5', borderRadius: 8, border: `2px solid ${colors.border}`, overflow: 'hidden', cursor: 'pointer' }}>
-                        <img src={card.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      </div>
-                    )
-                  })}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 18
+                }}>
+                  <div style={{ color: '#9ca3af', fontSize: 12 }}>Your balance</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}><img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />{rations.toFixed(2)}</div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button
+                    onClick={() => setPurchaseConfirm(null)}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      background: '#374151',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    onClick={confirmPurchase}
+                    disabled={(!Number.isFinite(purchaseConfirm.cost) || rations < purchaseConfirm.cost)}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      background: (!Number.isFinite(purchaseConfirm.cost) || rations < purchaseConfirm.cost) ? '#1f2937' : 'linear-gradient(90deg, #3b82f6, #6366f1)',
+                      color: (!Number.isFinite(purchaseConfirm.cost) || rations < purchaseConfirm.cost) ? '#6b7280' : 'white',
+                      border: (!Number.isFinite(purchaseConfirm.cost) || rations < purchaseConfirm.cost) ? '1px solid rgba(255,255,255,0.10)' : 'none',
+                      borderRadius: 8,
+                      cursor: (!Number.isFinite(purchaseConfirm.cost) || rations < purchaseConfirm.cost) ? 'not-allowed' : 'pointer',
+                      fontSize: 14,
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Confirm Purchase
+                  </button>
                 </div>
               </div>
-            )}
-
-            {/* Other views (Shop, Market, Collection, Settings) preserved from original file... */}
-            {view === 'shop' && (
-              /* ... (Shop logic with 8-card descriptions) ... */
-              <div>
-                <h2 style={{ textAlign: 'center' }}>Shop</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
-                   <div style={{ background: '#1f2937', padding: 20, borderRadius: 16, border: '1px solid #374151' }}>
-                      <h3>Single Pack</h3>
-                      <p style={{ color: '#9ca3af', fontSize: 12 }}>8 Cards (4 Common, 2 Uncommon, 1 Rare+, 1 Holo)</p>
-                      <button onClick={()=>setPurchaseConfirm({ type: 'single', cost: sealedMarket.prices.single, title: 'Single Pack' })} style={{ marginTop: 10, padding: '8px 16px', background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Buy {sealedMarket.prices.single.toFixed(0)} R</button>
-                   </div>
-                   {/* ... (Bundle/Booster preserved) ... */}
-                </div>
-              </div>
-            )}
-            
-            {/* Minimal placeholders for other preserved views to fit response limits - effectively they are unchanged from input */}
-            {view === 'market' && <div style={{textAlign:'center'}}>Market View (Unchanged)</div>}
-            {view === 'collection' && <div style={{textAlign:'center'}}>Collection View (Unchanged)</div>}
-            {view === 'settings' && <div style={{textAlign:'center'}}>Settings View (Unchanged)</div>}
-
-          </main>
-
-          {/* Modals (Enlarged, Confirm) preserved... */}
-          {enlargedCard && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setEnlargedCard(null)}>
-               <img src={getImageUrl(enlargedCard)} style={{ maxHeight: '80vh', maxWidth: '90vw', borderRadius: 16 }} />
             </div>
           )}
+{/* Sell Confirmation Modal */}
+          {sellConfirm && (() => {
+            const entry = collection[sellConfirm.id] || { normal: 0, holo: 0 };
+            const baseValue = getBaseMarketValue(sellConfirm.id);
+            const holoMult = getHoloMultiplier(sellConfirm.id);
+            const holoValue = baseValue * holoMult;
+            const normalPayout = baseValue * SELL_TO_SHOP_RATE;
+            const holoPayout = holoValue * SELL_TO_SHOP_RATE;
+            const hasNormal = (entry.normal || 0) > 0;
+            const hasHolo = (entry.holo || 0) > 0;
 
-        </div>
+            return (
+              <div
+                onClick={() => setSellConfirm(null)}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(0, 0, 0, 0.85)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1100,
+                  padding: 32
+                }}
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: '#111827',
+                    border: '1px solid #374151',
+                    borderRadius: 16,
+                    padding: 24,
+                    maxWidth: 420,
+                    width: '100%'
+                  }}
+                >
+                  <h2 style={{ fontSize: 18, margin: '0 0 8px', textAlign: 'center' }}>
+                    Sell Card
+                  </h2>
+
+                  <div style={{ margin: '0 0 14px', textAlign: 'center' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: 4 }}>{sellConfirm.name}</div>
+                    <div
+                      style={{
+                        display: 'inline-block',
+                        padding: '4px 10px',
+                        borderRadius: 999,
+                        background: 'rgba(255, 255, 255, 0.07)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        color: RARITY_COLORS[sellConfirm.rarity] || '#9ca3af',
+                        fontSize: 12,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em'
+                      }}
+                    >
+                      {sellConfirm.rarity}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+                    {(entry.normal || 0) > 0 && (
+                      <span style={{
+                        padding: '6px 10px',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        borderRadius: 10,
+                        fontSize: 12,
+                        color: '#e5e7eb'
+                      }}>
+                        Normal: x{entry.normal || 0}
+                      </span>
+                    )}
+                    {(entry.holo || 0) > 0 && (
+                      <span className="holo-badge" style={{
+                        padding: '6px 10px',
+                        borderRadius: 10,
+                        fontSize: 12,
+                        fontWeight: 'bold'
+                      }}>
+                        Holo: x{entry.holo || 0}
+                      </span>
+                    )}
+                    {(entry.normal || 0) === 0 && (entry.holo || 0) === 0 && (
+                      <span style={{ color: '#9ca3af', fontSize: 12 }}>You don’t own this card</span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'grid', gap: 10, marginBottom: 18 }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: 12,
+                      padding: 12
+                    }}>
+                      <div style={{ color: '#9ca3af', fontSize: 12 }}>Normal shop payout (60%)</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}><img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />{normalPayout.toFixed(2)}</div>
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: 12,
+                      padding: 12
+                    }}>
+                      <div style={{ color: '#9ca3af', fontSize: 12 }}>Holo shop payout (60%) <span style={{ opacity: 0.8 }}>({holoMult.toFixed(2)}×)</span></div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold' }}><img src="./rations.png" alt="" style={{ width: 16, height: 16 }} /><span className="rainbow-text">{holoPayout.toFixed(2)}</span></div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => setSellConfirm(null)}
+                      style={{
+                        flex: 1,
+                        minWidth: 110,
+                        padding: '12px',
+                        background: '#374151',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        fontSize: 14,
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      onClick={() => sellNormalCard(sellConfirm.id)}
+                      disabled={!hasNormal}
+                      style={{
+                        flex: 1,
+                        minWidth: 140,
+                        padding: '12px',
+                        background: hasNormal ? 'linear-gradient(90deg, #10b981, #059669)' : '#1f2937',
+                        color: hasNormal ? 'white' : '#6b7280',
+                        border: hasNormal ? 'none' : '1px solid rgba(255,255,255,0.10)',
+                        borderRadius: 8,
+                        cursor: hasNormal ? 'pointer' : 'not-allowed',
+                        fontSize: 14,
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Sell Normal
+                    </button>
+
+                    {hasHolo && (
+                      <button
+                        onClick={() => sellHoloCard(sellConfirm.id)}
+                        className="holo-button"
+                        style={{
+                          flex: 1,
+                          minWidth: 140,
+                          padding: '12px',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          fontWeight: 'bold',
+                          color: 'white',
+                          border: 'none'
+                        }}
+                      >
+                        Sell Holo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}</div>
       );
     }
 
