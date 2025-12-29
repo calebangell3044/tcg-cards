@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "currency": {
+    "name": "Rations",
+    "icon": "rations.png"
+  },
+  "games": [
+    {
+      "id": "tta",
+      "name": "Through The Ages",
+      "configPath": "games/tta/game.json",
+      "enabled": true
+    },
+    {
+      "id": "spiritual-possessions", 
+      "name": "Spiritual Possessions",
+      "configPath": "games/spiritual-possessions/game.json",
+      "enabled": true
+    }
+  ],
+  "defaultGame": "tta"
+}

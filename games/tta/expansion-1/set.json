@@ -1,0 +1,2277 @@
+{
+  "id": "expansion-1",
+  "name": "Expansion 1: Shadows of War",
+  "releaseDay": 30,
+  "packStructure": {
+    "size": 8,
+    "slots": [
+      {
+        "type": "guaranteed",
+        "rarity": "common",
+        "count": 4
+      },
+      {
+        "type": "guaranteed",
+        "rarity": "uncommon",
+        "count": 2
+      },
+      {
+        "type": "weighted",
+        "count": 1,
+        "odds": {
+          "rare": 89,
+          "legendary": 10,
+          "ultra-x-rare": 1
+        }
+      },
+      {
+        "type": "holo",
+        "count": 1,
+        "odds": {
+          "common": 47,
+          "uncommon": 34,
+          "rare": 13,
+          "legendary": 5,
+          "ultra-x-rare": 1
+        }
+      }
+    ]
+  },
+  "godPack": {
+    "chance": 0.001,
+    "size": 8,
+    "allHolo": true,
+    "distribution": [
+      {
+        "rarity": "rare",
+        "count": 1
+      },
+      {
+        "rarity": "legendary",
+        "count": 3
+      },
+      {
+        "rarity": "ultra-x-rare",
+        "count": 4
+      }
+    ]
+  },
+  "sealedProducts": {
+    "bundle": {
+      "packs": 8,
+      "guaranteed": [
+        {
+          "rarity": "legendary",
+          "count": 1
+        }
+      ]
+    },
+    "booster": {
+      "packs": 24,
+      "guaranteed": [
+        {
+          "rarity": "legendary",
+          "count": 4
+        }
+      ]
+    },
+    "case": {
+      "packs": 144,
+      "guaranteed": [
+        {
+          "rarity": "ultra-x-rare",
+          "count": 2
+        }
+      ]
+    }
+  },
+  "marketValueRanges": {
+    "common": {
+      "min": 0.5,
+      "max": 5.5,
+      "peak": 1.0
+    },
+    "uncommon": {
+      "min": 1.5,
+      "max": 8.0,
+      "peak": 3.0
+    },
+    "rare": {
+      "min": 3.5,
+      "max": 25.0,
+      "peak": 5.0
+    },
+    "legendary": {
+      "min": 9.25,
+      "max": 87.0,
+      "peak": 20.0
+    },
+    "ultra-x-rare": {
+      "min": 23.0,
+      "max": 820.0,
+      "peak": 100.0
+    }
+  },
+  "cards": [
+    {
+      "id": "tta-exp1-1",
+      "name": "Raven Risen",
+      "rarity": "common",
+      "file": "Raven Risen.png"
+    },
+    {
+      "id": "tta-exp1-2",
+      "name": "Wolf Awakened",
+      "rarity": "rare",
+      "file": "Wolf Awakened.png"
+    },
+    {
+      "id": "tta-exp1-3",
+      "name": "Raven Ascending",
+      "rarity": "common",
+      "file": "Raven Ascending.png"
+    },
+    {
+      "id": "tta-exp1-4",
+      "name": "Storm Temple of the Fallen",
+      "rarity": "common",
+      "file": "Storm Temple of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-5",
+      "name": "Throne Awakened",
+      "rarity": "common",
+      "file": "Throne Awakened.png"
+    },
+    {
+      "id": "tta-exp1-6",
+      "name": "Ritual the Lost",
+      "rarity": "common",
+      "file": "Ritual the Lost.png"
+    },
+    {
+      "id": "tta-exp1-7",
+      "name": "Iron Wolf",
+      "rarity": "legendary",
+      "file": "Iron Wolf.png"
+    },
+    {
+      "id": "tta-exp1-8",
+      "name": "Sacred Serpent Eternal",
+      "rarity": "common",
+      "file": "Sacred Serpent Eternal.png"
+    },
+    {
+      "id": "tta-exp1-9",
+      "name": "Azure Raven",
+      "rarity": "uncommon",
+      "file": "Azure Raven.png"
+    },
+    {
+      "id": "tta-exp1-10",
+      "name": "Azure Temple Risen",
+      "rarity": "common",
+      "file": "Azure Temple Risen.png"
+    },
+    {
+      "id": "tta-exp1-11",
+      "name": "Bone Oracle",
+      "rarity": "ultra-x-rare",
+      "file": "Bone Oracle.png"
+    },
+    {
+      "id": "tta-exp1-12",
+      "name": "Oracle Reborn",
+      "rarity": "common",
+      "file": "Oracle Reborn.png"
+    },
+    {
+      "id": "tta-exp1-13",
+      "name": "Ancient Throne of the Fallen",
+      "rarity": "uncommon",
+      "file": "Ancient Throne of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-14",
+      "name": "Silver Tome the Lost",
+      "rarity": "uncommon",
+      "file": "Silver Tome the Lost.png"
+    },
+    {
+      "id": "tta-exp1-15",
+      "name": "Azure Golem of Shadows",
+      "rarity": "uncommon",
+      "file": "Azure Golem of Shadows.png"
+    },
+    {
+      "id": "tta-exp1-16",
+      "name": "Ember Banner Eternal",
+      "rarity": "common",
+      "file": "Ember Banner Eternal.png"
+    },
+    {
+      "id": "tta-exp1-17",
+      "name": "Crimson Banner",
+      "rarity": "common",
+      "file": "Crimson Banner.png"
+    },
+    {
+      "id": "tta-exp1-18",
+      "name": "Void Wolf",
+      "rarity": "common",
+      "file": "Void Wolf.png"
+    },
+    {
+      "id": "tta-exp1-19",
+      "name": "Serpent Reborn",
+      "rarity": "uncommon",
+      "file": "Serpent Reborn.png"
+    },
+    {
+      "id": "tta-exp1-20",
+      "name": "Dark Tome the Mighty",
+      "rarity": "common",
+      "file": "Dark Tome the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-21",
+      "name": "Blade of Light",
+      "rarity": "legendary",
+      "file": "Blade of Light.png"
+    },
+    {
+      "id": "tta-exp1-22",
+      "name": "Silver Knight Awakened",
+      "rarity": "common",
+      "file": "Silver Knight Awakened.png"
+    },
+    {
+      "id": "tta-exp1-23",
+      "name": "Assassin Reborn",
+      "rarity": "common",
+      "file": "Assassin Reborn.png"
+    },
+    {
+      "id": "tta-exp1-24",
+      "name": "Ancient Legion",
+      "rarity": "rare",
+      "file": "Ancient Legion.png"
+    },
+    {
+      "id": "tta-exp1-25",
+      "name": "Cursed Serpent Awakened",
+      "rarity": "ultra-x-rare",
+      "file": "Cursed Serpent Awakened.png"
+    },
+    {
+      "id": "tta-exp1-26",
+      "name": "Crimson Raven",
+      "rarity": "uncommon",
+      "file": "Crimson Raven.png"
+    },
+    {
+      "id": "tta-exp1-27",
+      "name": "Banner Unleashed",
+      "rarity": "uncommon",
+      "file": "Banner Unleashed.png"
+    },
+    {
+      "id": "tta-exp1-28",
+      "name": "Blade of War",
+      "rarity": "legendary",
+      "file": "Blade of War.png"
+    },
+    {
+      "id": "tta-exp1-29",
+      "name": "Knight Risen",
+      "rarity": "common",
+      "file": "Knight Risen.png"
+    },
+    {
+      "id": "tta-exp1-30",
+      "name": "Bone Wraith the Mighty",
+      "rarity": "uncommon",
+      "file": "Bone Wraith the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-31",
+      "name": "Ember Mage",
+      "rarity": "uncommon",
+      "file": "Ember Mage.png"
+    },
+    {
+      "id": "tta-exp1-32",
+      "name": "Assassin of the Fallen",
+      "rarity": "common",
+      "file": "Assassin of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-33",
+      "name": "Crimson Champion",
+      "rarity": "uncommon",
+      "file": "Crimson Champion.png"
+    },
+    {
+      "id": "tta-exp1-34",
+      "name": "Horde Unleashed",
+      "rarity": "uncommon",
+      "file": "Horde Unleashed.png"
+    },
+    {
+      "id": "tta-exp1-35",
+      "name": "Crystal Champion",
+      "rarity": "uncommon",
+      "file": "Crystal Champion.png"
+    },
+    {
+      "id": "tta-exp1-36",
+      "name": "Storm Assassin",
+      "rarity": "common",
+      "file": "Storm Assassin.png"
+    },
+    {
+      "id": "tta-exp1-37",
+      "name": "Ember Tome Risen",
+      "rarity": "rare",
+      "file": "Ember Tome Risen.png"
+    },
+    {
+      "id": "tta-exp1-38",
+      "name": "Ember Knight Awakened",
+      "rarity": "common",
+      "file": "Ember Knight Awakened.png"
+    },
+    {
+      "id": "tta-exp1-39",
+      "name": "Thunder Wraith",
+      "rarity": "common",
+      "file": "Thunder Wraith.png"
+    },
+    {
+      "id": "tta-exp1-40",
+      "name": "Crimson Tome",
+      "rarity": "rare",
+      "file": "Crimson Tome.png"
+    },
+    {
+      "id": "tta-exp1-41",
+      "name": "Wild Temple Awakened",
+      "rarity": "common",
+      "file": "Wild Temple Awakened.png"
+    },
+    {
+      "id": "tta-exp1-42",
+      "name": "Spirit Prophecy",
+      "rarity": "common",
+      "file": "Spirit Prophecy.png"
+    },
+    {
+      "id": "tta-exp1-43",
+      "name": "Dark Dragon Ascending",
+      "rarity": "ultra-x-rare",
+      "file": "Dark Dragon Ascending.png"
+    },
+    {
+      "id": "tta-exp1-44",
+      "name": "Azure Banner",
+      "rarity": "ultra-x-rare",
+      "file": "Azure Banner.png"
+    },
+    {
+      "id": "tta-exp1-45",
+      "name": "Pact the Lost",
+      "rarity": "common",
+      "file": "Pact the Lost.png"
+    },
+    {
+      "id": "tta-exp1-46",
+      "name": "Iron Raven of the Fallen",
+      "rarity": "uncommon",
+      "file": "Iron Raven of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-47",
+      "name": "Arrow the Lost",
+      "rarity": "common",
+      "file": "Arrow the Lost.png"
+    },
+    {
+      "id": "tta-exp1-48",
+      "name": "Knight Eternal",
+      "rarity": "common",
+      "file": "Knight Eternal.png"
+    },
+    {
+      "id": "tta-exp1-49",
+      "name": "Ancient Sword Risen",
+      "rarity": "common",
+      "file": "Ancient Sword Risen.png"
+    },
+    {
+      "id": "tta-exp1-50",
+      "name": "Wraith the Lost",
+      "rarity": "common",
+      "file": "Wraith the Lost.png"
+    },
+    {
+      "id": "tta-exp1-51",
+      "name": "Prophecy of Light",
+      "rarity": "common",
+      "file": "Prophecy of Light.png"
+    },
+    {
+      "id": "tta-exp1-52",
+      "name": "Bone Throne",
+      "rarity": "common",
+      "file": "Bone Throne.png"
+    },
+    {
+      "id": "tta-exp1-53",
+      "name": "Fortress of Destiny",
+      "rarity": "rare",
+      "file": "Fortress of Destiny.png"
+    },
+    {
+      "id": "tta-exp1-54",
+      "name": "Horde the Lost",
+      "rarity": "rare",
+      "file": "Horde the Lost.png"
+    },
+    {
+      "id": "tta-exp1-55",
+      "name": "Spirit Fortress Risen",
+      "rarity": "rare",
+      "file": "Spirit Fortress Risen.png"
+    },
+    {
+      "id": "tta-exp1-56",
+      "name": "Temple of Peace",
+      "rarity": "common",
+      "file": "Temple of Peace.png"
+    },
+    {
+      "id": "tta-exp1-57",
+      "name": "Golden Throne",
+      "rarity": "common",
+      "file": "Golden Throne.png"
+    },
+    {
+      "id": "tta-exp1-58",
+      "name": "Silver Council Risen",
+      "rarity": "common",
+      "file": "Silver Council Risen.png"
+    },
+    {
+      "id": "tta-exp1-59",
+      "name": "Dark Knight Ascending",
+      "rarity": "common",
+      "file": "Dark Knight Ascending.png"
+    },
+    {
+      "id": "tta-exp1-60",
+      "name": "Ember Blade",
+      "rarity": "common",
+      "file": "Ember Blade.png"
+    },
+    {
+      "id": "tta-exp1-61",
+      "name": "Throne Triumphant",
+      "rarity": "rare",
+      "file": "Throne Triumphant.png"
+    },
+    {
+      "id": "tta-exp1-62",
+      "name": "Frost Shield",
+      "rarity": "common",
+      "file": "Frost Shield.png"
+    },
+    {
+      "id": "tta-exp1-63",
+      "name": "Oath of Light",
+      "rarity": "ultra-x-rare",
+      "file": "Oath of Light.png"
+    },
+    {
+      "id": "tta-exp1-64",
+      "name": "Blood Dragon Reborn",
+      "rarity": "common",
+      "file": "Blood Dragon Reborn.png"
+    },
+    {
+      "id": "tta-exp1-65",
+      "name": "Blood Wraith of War",
+      "rarity": "common",
+      "file": "Blood Wraith of War.png"
+    },
+    {
+      "id": "tta-exp1-66",
+      "name": "Ember Tome",
+      "rarity": "common",
+      "file": "Ember Tome.png"
+    },
+    {
+      "id": "tta-exp1-67",
+      "name": "Dark Golem",
+      "rarity": "common",
+      "file": "Dark Golem.png"
+    },
+    {
+      "id": "tta-exp1-68",
+      "name": "Iron Ritual Reborn",
+      "rarity": "uncommon",
+      "file": "Iron Ritual Reborn.png"
+    },
+    {
+      "id": "tta-exp1-69",
+      "name": "Golden Knight Ascending",
+      "rarity": "ultra-x-rare",
+      "file": "Golden Knight Ascending.png"
+    },
+    {
+      "id": "tta-exp1-70",
+      "name": "Council of Destiny",
+      "rarity": "common",
+      "file": "Council of Destiny.png"
+    },
+    {
+      "id": "tta-exp1-71",
+      "name": "Shadow Legion",
+      "rarity": "common",
+      "file": "Shadow Legion.png"
+    },
+    {
+      "id": "tta-exp1-72",
+      "name": "Wild Blade",
+      "rarity": "uncommon",
+      "file": "Wild Blade.png"
+    },
+    {
+      "id": "tta-exp1-73",
+      "name": "Storm Knight of the Fallen",
+      "rarity": "common",
+      "file": "Storm Knight of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-74",
+      "name": "Mage the Mighty",
+      "rarity": "uncommon",
+      "file": "Mage the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-75",
+      "name": "Cursed Dragon",
+      "rarity": "rare",
+      "file": "Cursed Dragon.png"
+    },
+    {
+      "id": "tta-exp1-76",
+      "name": "Thunder Tome the Lost",
+      "rarity": "uncommon",
+      "file": "Thunder Tome the Lost.png"
+    },
+    {
+      "id": "tta-exp1-77",
+      "name": "Mage Awakened",
+      "rarity": "common",
+      "file": "Mage Awakened.png"
+    },
+    {
+      "id": "tta-exp1-78",
+      "name": "Fortress Unleashed",
+      "rarity": "uncommon",
+      "file": "Fortress Unleashed.png"
+    },
+    {
+      "id": "tta-exp1-79",
+      "name": "Ancient Phoenix Reborn",
+      "rarity": "common",
+      "file": "Ancient Phoenix Reborn.png"
+    },
+    {
+      "id": "tta-exp1-80",
+      "name": "Dark Champion",
+      "rarity": "rare",
+      "file": "Dark Champion.png"
+    },
+    {
+      "id": "tta-exp1-81",
+      "name": "Ember Wolf the Lost",
+      "rarity": "common",
+      "file": "Ember Wolf the Lost.png"
+    },
+    {
+      "id": "tta-exp1-82",
+      "name": "Crown of Shadows",
+      "rarity": "uncommon",
+      "file": "Crown of Shadows.png"
+    },
+    {
+      "id": "tta-exp1-83",
+      "name": "Pact Ascending",
+      "rarity": "ultra-x-rare",
+      "file": "Pact Ascending.png"
+    },
+    {
+      "id": "tta-exp1-84",
+      "name": "Storm Wolf",
+      "rarity": "rare",
+      "file": "Storm Wolf.png"
+    },
+    {
+      "id": "tta-exp1-85",
+      "name": "Frost Crown of War",
+      "rarity": "uncommon",
+      "file": "Frost Crown of War.png"
+    },
+    {
+      "id": "tta-exp1-86",
+      "name": "Silver Fortress",
+      "rarity": "legendary",
+      "file": "Silver Fortress.png"
+    },
+    {
+      "id": "tta-exp1-87",
+      "name": "Ritual Risen",
+      "rarity": "common",
+      "file": "Ritual Risen.png"
+    },
+    {
+      "id": "tta-exp1-88",
+      "name": "Dragon of Destiny",
+      "rarity": "uncommon",
+      "file": "Dragon of Destiny.png"
+    },
+    {
+      "id": "tta-exp1-89",
+      "name": "Ember Assassin",
+      "rarity": "common",
+      "file": "Ember Assassin.png"
+    },
+    {
+      "id": "tta-exp1-90",
+      "name": "Frost Guardian",
+      "rarity": "legendary",
+      "file": "Frost Guardian.png"
+    },
+    {
+      "id": "tta-exp1-91",
+      "name": "Champion of Light",
+      "rarity": "ultra-x-rare",
+      "file": "Champion of Light.png"
+    },
+    {
+      "id": "tta-exp1-92",
+      "name": "Crystal Council Ascending",
+      "rarity": "common",
+      "file": "Crystal Council Ascending.png"
+    },
+    {
+      "id": "tta-exp1-93",
+      "name": "Oracle Awakened",
+      "rarity": "common",
+      "file": "Oracle Awakened.png"
+    },
+    {
+      "id": "tta-exp1-94",
+      "name": "Spirit Knight of Shadows",
+      "rarity": "rare",
+      "file": "Spirit Knight of Shadows.png"
+    },
+    {
+      "id": "tta-exp1-95",
+      "name": "Silver Pact",
+      "rarity": "common",
+      "file": "Silver Pact.png"
+    },
+    {
+      "id": "tta-exp1-96",
+      "name": "Silver Knight",
+      "rarity": "common",
+      "file": "Silver Knight.png"
+    },
+    {
+      "id": "tta-exp1-97",
+      "name": "Tome of Peace",
+      "rarity": "common",
+      "file": "Tome of Peace.png"
+    },
+    {
+      "id": "tta-exp1-98",
+      "name": "Oracle Ascending",
+      "rarity": "common",
+      "file": "Oracle Ascending.png"
+    },
+    {
+      "id": "tta-exp1-99",
+      "name": "Ancient Mage of War",
+      "rarity": "uncommon",
+      "file": "Ancient Mage of War.png"
+    },
+    {
+      "id": "tta-exp1-100",
+      "name": "Thunder Wraith the Mighty",
+      "rarity": "rare",
+      "file": "Thunder Wraith the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-101",
+      "name": "Bone Horde of the Fallen",
+      "rarity": "uncommon",
+      "file": "Bone Horde of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-102",
+      "name": "Wolf Eternal",
+      "rarity": "uncommon",
+      "file": "Wolf Eternal.png"
+    },
+    {
+      "id": "tta-exp1-103",
+      "name": "Temple Risen",
+      "rarity": "common",
+      "file": "Temple Risen.png"
+    },
+    {
+      "id": "tta-exp1-104",
+      "name": "Iron Golem Reborn",
+      "rarity": "common",
+      "file": "Iron Golem Reborn.png"
+    },
+    {
+      "id": "tta-exp1-105",
+      "name": "Blood Wraith",
+      "rarity": "rare",
+      "file": "Blood Wraith.png"
+    },
+    {
+      "id": "tta-exp1-106",
+      "name": "Sacred Oracle Reborn",
+      "rarity": "uncommon",
+      "file": "Sacred Oracle Reborn.png"
+    },
+    {
+      "id": "tta-exp1-107",
+      "name": "Champion Eternal",
+      "rarity": "legendary",
+      "file": "Champion Eternal.png"
+    },
+    {
+      "id": "tta-exp1-108",
+      "name": "Spirit Council",
+      "rarity": "common",
+      "file": "Spirit Council.png"
+    },
+    {
+      "id": "tta-exp1-109",
+      "name": "Crimson Guardian Reborn",
+      "rarity": "uncommon",
+      "file": "Crimson Guardian Reborn.png"
+    },
+    {
+      "id": "tta-exp1-110",
+      "name": "Void Blade",
+      "rarity": "common",
+      "file": "Void Blade.png"
+    },
+    {
+      "id": "tta-exp1-111",
+      "name": "Dark Banner",
+      "rarity": "uncommon",
+      "file": "Dark Banner.png"
+    },
+    {
+      "id": "tta-exp1-112",
+      "name": "Void Tome Reborn",
+      "rarity": "rare",
+      "file": "Void Tome Reborn.png"
+    },
+    {
+      "id": "tta-exp1-113",
+      "name": "Ember Shield Triumphant",
+      "rarity": "uncommon",
+      "file": "Ember Shield Triumphant.png"
+    },
+    {
+      "id": "tta-exp1-114",
+      "name": "Bone Blade of War",
+      "rarity": "common",
+      "file": "Bone Blade of War.png"
+    },
+    {
+      "id": "tta-exp1-115",
+      "name": "Crimson Council of the Fallen",
+      "rarity": "uncommon",
+      "file": "Crimson Council of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-116",
+      "name": "Mage Triumphant",
+      "rarity": "common",
+      "file": "Mage Triumphant.png"
+    },
+    {
+      "id": "tta-exp1-117",
+      "name": "Silver Council",
+      "rarity": "common",
+      "file": "Silver Council.png"
+    },
+    {
+      "id": "tta-exp1-118",
+      "name": "Bone Legion",
+      "rarity": "uncommon",
+      "file": "Bone Legion.png"
+    },
+    {
+      "id": "tta-exp1-119",
+      "name": "Blade Reborn",
+      "rarity": "rare",
+      "file": "Blade Reborn.png"
+    },
+    {
+      "id": "tta-exp1-120",
+      "name": "Frost Fortress",
+      "rarity": "legendary",
+      "file": "Frost Fortress.png"
+    },
+    {
+      "id": "tta-exp1-121",
+      "name": "Shadow Assassin Risen",
+      "rarity": "uncommon",
+      "file": "Shadow Assassin Risen.png"
+    },
+    {
+      "id": "tta-exp1-122",
+      "name": "Ember Shield",
+      "rarity": "legendary",
+      "file": "Ember Shield.png"
+    },
+    {
+      "id": "tta-exp1-123",
+      "name": "Legion of the Fallen",
+      "rarity": "common",
+      "file": "Legion of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-124",
+      "name": "Golden Serpent",
+      "rarity": "common",
+      "file": "Golden Serpent.png"
+    },
+    {
+      "id": "tta-exp1-125",
+      "name": "Sacred Assassin",
+      "rarity": "rare",
+      "file": "Sacred Assassin.png"
+    },
+    {
+      "id": "tta-exp1-126",
+      "name": "Horde Eternal",
+      "rarity": "common",
+      "file": "Horde Eternal.png"
+    },
+    {
+      "id": "tta-exp1-127",
+      "name": "Sword of Light",
+      "rarity": "common",
+      "file": "Sword of Light.png"
+    },
+    {
+      "id": "tta-exp1-128",
+      "name": "Void Champion",
+      "rarity": "rare",
+      "file": "Void Champion.png"
+    },
+    {
+      "id": "tta-exp1-129",
+      "name": "Frost Sword",
+      "rarity": "common",
+      "file": "Frost Sword.png"
+    },
+    {
+      "id": "tta-exp1-130",
+      "name": "Dark Serpent the Mighty",
+      "rarity": "uncommon",
+      "file": "Dark Serpent the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-131",
+      "name": "Storm Raven the Lost",
+      "rarity": "rare",
+      "file": "Storm Raven the Lost.png"
+    },
+    {
+      "id": "tta-exp1-132",
+      "name": "Ember Champion of the Fallen",
+      "rarity": "uncommon",
+      "file": "Ember Champion of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-133",
+      "name": "Golden Crown Awakened",
+      "rarity": "common",
+      "file": "Golden Crown Awakened.png"
+    },
+    {
+      "id": "tta-exp1-134",
+      "name": "Golden Throne Ascending",
+      "rarity": "common",
+      "file": "Golden Throne Ascending.png"
+    },
+    {
+      "id": "tta-exp1-135",
+      "name": "Wild Assassin",
+      "rarity": "common",
+      "file": "Wild Assassin.png"
+    },
+    {
+      "id": "tta-exp1-136",
+      "name": "Ritual of the Fallen",
+      "rarity": "uncommon",
+      "file": "Ritual of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-137",
+      "name": "Serpent of Destiny",
+      "rarity": "common",
+      "file": "Serpent of Destiny.png"
+    },
+    {
+      "id": "tta-exp1-138",
+      "name": "Frost Oath",
+      "rarity": "legendary",
+      "file": "Frost Oath.png"
+    },
+    {
+      "id": "tta-exp1-139",
+      "name": "Prophecy Risen",
+      "rarity": "common",
+      "file": "Prophecy Risen.png"
+    },
+    {
+      "id": "tta-exp1-140",
+      "name": "Prophecy of the Fallen",
+      "rarity": "common",
+      "file": "Prophecy of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-141",
+      "name": "Dark Raven",
+      "rarity": "uncommon",
+      "file": "Dark Raven.png"
+    },
+    {
+      "id": "tta-exp1-142",
+      "name": "Banner Awakened",
+      "rarity": "rare",
+      "file": "Banner Awakened.png"
+    },
+    {
+      "id": "tta-exp1-143",
+      "name": "Bone Shield",
+      "rarity": "common",
+      "file": "Bone Shield.png"
+    },
+    {
+      "id": "tta-exp1-144",
+      "name": "Dragon of Light",
+      "rarity": "common",
+      "file": "Dragon of Light.png"
+    },
+    {
+      "id": "tta-exp1-145",
+      "name": "Serpent the Lost",
+      "rarity": "common",
+      "file": "Serpent the Lost.png"
+    },
+    {
+      "id": "tta-exp1-146",
+      "name": "Golden Sword of Shadows",
+      "rarity": "common",
+      "file": "Golden Sword of Shadows.png"
+    },
+    {
+      "id": "tta-exp1-147",
+      "name": "Council of Light",
+      "rarity": "common",
+      "file": "Council of Light.png"
+    },
+    {
+      "id": "tta-exp1-148",
+      "name": "Phoenix of Light",
+      "rarity": "common",
+      "file": "Phoenix of Light.png"
+    },
+    {
+      "id": "tta-exp1-149",
+      "name": "Silver Crown",
+      "rarity": "common",
+      "file": "Silver Crown.png"
+    },
+    {
+      "id": "tta-exp1-150",
+      "name": "Council Eternal",
+      "rarity": "common",
+      "file": "Council Eternal.png"
+    },
+    {
+      "id": "tta-exp1-151",
+      "name": "Blood Phoenix",
+      "rarity": "uncommon",
+      "file": "Blood Phoenix.png"
+    },
+    {
+      "id": "tta-exp1-152",
+      "name": "Crimson Dragon the Mighty",
+      "rarity": "uncommon",
+      "file": "Crimson Dragon the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-153",
+      "name": "Bone Wraith the Lost",
+      "rarity": "rare",
+      "file": "Bone Wraith the Lost.png"
+    },
+    {
+      "id": "tta-exp1-154",
+      "name": "Wolf of Peace",
+      "rarity": "common",
+      "file": "Wolf of Peace.png"
+    },
+    {
+      "id": "tta-exp1-155",
+      "name": "Dark Arrow of the Fallen",
+      "rarity": "uncommon",
+      "file": "Dark Arrow of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-156",
+      "name": "Tome of Shadows",
+      "rarity": "common",
+      "file": "Tome of Shadows.png"
+    },
+    {
+      "id": "tta-exp1-157",
+      "name": "Spirit Ritual",
+      "rarity": "uncommon",
+      "file": "Spirit Ritual.png"
+    },
+    {
+      "id": "tta-exp1-158",
+      "name": "Sacred Blade Eternal",
+      "rarity": "uncommon",
+      "file": "Sacred Blade Eternal.png"
+    },
+    {
+      "id": "tta-exp1-159",
+      "name": "Storm Shield of Light",
+      "rarity": "legendary",
+      "file": "Storm Shield of Light.png"
+    },
+    {
+      "id": "tta-exp1-160",
+      "name": "Storm Dragon Risen",
+      "rarity": "common",
+      "file": "Storm Dragon Risen.png"
+    },
+    {
+      "id": "tta-exp1-161",
+      "name": "Spirit Assassin",
+      "rarity": "common",
+      "file": "Spirit Assassin.png"
+    },
+    {
+      "id": "tta-exp1-162",
+      "name": "Guardian Ascending",
+      "rarity": "common",
+      "file": "Guardian Ascending.png"
+    },
+    {
+      "id": "tta-exp1-163",
+      "name": "Frost Arrow",
+      "rarity": "common",
+      "file": "Frost Arrow.png"
+    },
+    {
+      "id": "tta-exp1-164",
+      "name": "Fortress Eternal",
+      "rarity": "common",
+      "file": "Fortress Eternal.png"
+    },
+    {
+      "id": "tta-exp1-165",
+      "name": "Sacred Mage Triumphant",
+      "rarity": "ultra-x-rare",
+      "file": "Sacred Mage Triumphant.png"
+    },
+    {
+      "id": "tta-exp1-166",
+      "name": "Storm Knight",
+      "rarity": "common",
+      "file": "Storm Knight.png"
+    },
+    {
+      "id": "tta-exp1-167",
+      "name": "Temple Awakened",
+      "rarity": "common",
+      "file": "Temple Awakened.png"
+    },
+    {
+      "id": "tta-exp1-168",
+      "name": "Golden Phoenix of Light",
+      "rarity": "uncommon",
+      "file": "Golden Phoenix of Light.png"
+    },
+    {
+      "id": "tta-exp1-169",
+      "name": "Pact Unleashed",
+      "rarity": "rare",
+      "file": "Pact Unleashed.png"
+    },
+    {
+      "id": "tta-exp1-170",
+      "name": "Crimson Arrow",
+      "rarity": "common",
+      "file": "Crimson Arrow.png"
+    },
+    {
+      "id": "tta-exp1-171",
+      "name": "Ember Guardian Risen",
+      "rarity": "legendary",
+      "file": "Ember Guardian Risen.png"
+    },
+    {
+      "id": "tta-exp1-172",
+      "name": "Ancient Blade Reborn",
+      "rarity": "common",
+      "file": "Ancient Blade Reborn.png"
+    },
+    {
+      "id": "tta-exp1-173",
+      "name": "Azure Phoenix",
+      "rarity": "uncommon",
+      "file": "Azure Phoenix.png"
+    },
+    {
+      "id": "tta-exp1-174",
+      "name": "Prophecy Eternal",
+      "rarity": "rare",
+      "file": "Prophecy Eternal.png"
+    },
+    {
+      "id": "tta-exp1-175",
+      "name": "Ember Serpent",
+      "rarity": "common",
+      "file": "Ember Serpent.png"
+    },
+    {
+      "id": "tta-exp1-176",
+      "name": "Iron Knight Awakened",
+      "rarity": "common",
+      "file": "Iron Knight Awakened.png"
+    },
+    {
+      "id": "tta-exp1-177",
+      "name": "Sacred Serpent Reborn",
+      "rarity": "rare",
+      "file": "Sacred Serpent Reborn.png"
+    },
+    {
+      "id": "tta-exp1-178",
+      "name": "Guardian of Shadows",
+      "rarity": "common",
+      "file": "Guardian of Shadows.png"
+    },
+    {
+      "id": "tta-exp1-179",
+      "name": "Blood Legion",
+      "rarity": "rare",
+      "file": "Blood Legion.png"
+    },
+    {
+      "id": "tta-exp1-180",
+      "name": "Arrow of Light",
+      "rarity": "uncommon",
+      "file": "Arrow of Light.png"
+    },
+    {
+      "id": "tta-exp1-181",
+      "name": "Thunder Knight of Destiny",
+      "rarity": "common",
+      "file": "Thunder Knight of Destiny.png"
+    },
+    {
+      "id": "tta-exp1-182",
+      "name": "Spirit Wolf",
+      "rarity": "common",
+      "file": "Spirit Wolf.png"
+    },
+    {
+      "id": "tta-exp1-183",
+      "name": "Frost Ritual",
+      "rarity": "common",
+      "file": "Frost Ritual.png"
+    },
+    {
+      "id": "tta-exp1-184",
+      "name": "Iron Blade Ascending",
+      "rarity": "uncommon",
+      "file": "Iron Blade Ascending.png"
+    },
+    {
+      "id": "tta-exp1-185",
+      "name": "Void Ritual Awakened",
+      "rarity": "uncommon",
+      "file": "Void Ritual Awakened.png"
+    },
+    {
+      "id": "tta-exp1-186",
+      "name": "Ember Fortress",
+      "rarity": "legendary",
+      "file": "Ember Fortress.png"
+    },
+    {
+      "id": "tta-exp1-187",
+      "name": "Bone Knight",
+      "rarity": "uncommon",
+      "file": "Bone Knight.png"
+    },
+    {
+      "id": "tta-exp1-188",
+      "name": "Dragon Ascending",
+      "rarity": "uncommon",
+      "file": "Dragon Ascending.png"
+    },
+    {
+      "id": "tta-exp1-189",
+      "name": "Crown Unleashed",
+      "rarity": "rare",
+      "file": "Crown Unleashed.png"
+    },
+    {
+      "id": "tta-exp1-190",
+      "name": "Golden Arrow Awakened",
+      "rarity": "common",
+      "file": "Golden Arrow Awakened.png"
+    },
+    {
+      "id": "tta-exp1-191",
+      "name": "Champion the Mighty",
+      "rarity": "rare",
+      "file": "Champion the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-192",
+      "name": "Sacred Mage",
+      "rarity": "uncommon",
+      "file": "Sacred Mage.png"
+    },
+    {
+      "id": "tta-exp1-193",
+      "name": "Bone Golem",
+      "rarity": "common",
+      "file": "Bone Golem.png"
+    },
+    {
+      "id": "tta-exp1-194",
+      "name": "Shadow Guardian the Lost",
+      "rarity": "uncommon",
+      "file": "Shadow Guardian the Lost.png"
+    },
+    {
+      "id": "tta-exp1-195",
+      "name": "Crystal Oracle Risen",
+      "rarity": "common",
+      "file": "Crystal Oracle Risen.png"
+    },
+    {
+      "id": "tta-exp1-196",
+      "name": "Banner of Peace",
+      "rarity": "common",
+      "file": "Banner of Peace.png"
+    },
+    {
+      "id": "tta-exp1-197",
+      "name": "Storm Raven",
+      "rarity": "common",
+      "file": "Storm Raven.png"
+    },
+    {
+      "id": "tta-exp1-198",
+      "name": "Golem of Peace",
+      "rarity": "common",
+      "file": "Golem of Peace.png"
+    },
+    {
+      "id": "tta-exp1-199",
+      "name": "Golden Golem",
+      "rarity": "common",
+      "file": "Golden Golem.png"
+    },
+    {
+      "id": "tta-exp1-200",
+      "name": "Raven Triumphant",
+      "rarity": "uncommon",
+      "file": "Raven Triumphant.png"
+    },
+    {
+      "id": "tta-exp1-201",
+      "name": "Storm Prophecy",
+      "rarity": "legendary",
+      "file": "Storm Prophecy.png"
+    },
+    {
+      "id": "tta-exp1-202",
+      "name": "Cursed Prophecy",
+      "rarity": "legendary",
+      "file": "Cursed Prophecy.png"
+    },
+    {
+      "id": "tta-exp1-203",
+      "name": "Spirit Fortress of Light",
+      "rarity": "rare",
+      "file": "Spirit Fortress of Light.png"
+    },
+    {
+      "id": "tta-exp1-204",
+      "name": "Dark Shield the Mighty",
+      "rarity": "rare",
+      "file": "Dark Shield the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-205",
+      "name": "Wild Blade of Shadows",
+      "rarity": "rare",
+      "file": "Wild Blade of Shadows.png"
+    },
+    {
+      "id": "tta-exp1-206",
+      "name": "Guardian of Peace",
+      "rarity": "common",
+      "file": "Guardian of Peace.png"
+    },
+    {
+      "id": "tta-exp1-207",
+      "name": "Knight Ascending",
+      "rarity": "rare",
+      "file": "Knight Ascending.png"
+    },
+    {
+      "id": "tta-exp1-208",
+      "name": "Golden Dragon of the Fallen",
+      "rarity": "uncommon",
+      "file": "Golden Dragon of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-209",
+      "name": "Crown of Destiny",
+      "rarity": "uncommon",
+      "file": "Crown of Destiny.png"
+    },
+    {
+      "id": "tta-exp1-210",
+      "name": "Storm Guardian",
+      "rarity": "rare",
+      "file": "Storm Guardian.png"
+    },
+    {
+      "id": "tta-exp1-211",
+      "name": "Crimson Dragon Risen",
+      "rarity": "common",
+      "file": "Crimson Dragon Risen.png"
+    },
+    {
+      "id": "tta-exp1-212",
+      "name": "Azure Pact",
+      "rarity": "rare",
+      "file": "Azure Pact.png"
+    },
+    {
+      "id": "tta-exp1-213",
+      "name": "Knight the Lost",
+      "rarity": "legendary",
+      "file": "Knight the Lost.png"
+    },
+    {
+      "id": "tta-exp1-214",
+      "name": "Crimson Serpent of War",
+      "rarity": "common",
+      "file": "Crimson Serpent of War.png"
+    },
+    {
+      "id": "tta-exp1-215",
+      "name": "Ritual Awakened",
+      "rarity": "common",
+      "file": "Ritual Awakened.png"
+    },
+    {
+      "id": "tta-exp1-216",
+      "name": "Ember Prophecy Ascending",
+      "rarity": "common",
+      "file": "Ember Prophecy Ascending.png"
+    },
+    {
+      "id": "tta-exp1-217",
+      "name": "Dark Fortress of the Fallen",
+      "rarity": "common",
+      "file": "Dark Fortress of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-218",
+      "name": "Phoenix of War",
+      "rarity": "common",
+      "file": "Phoenix of War.png"
+    },
+    {
+      "id": "tta-exp1-219",
+      "name": "Crystal Arrow of Peace",
+      "rarity": "common",
+      "file": "Crystal Arrow of Peace.png"
+    },
+    {
+      "id": "tta-exp1-220",
+      "name": "Shield the Mighty",
+      "rarity": "uncommon",
+      "file": "Shield the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-221",
+      "name": "Banner of War",
+      "rarity": "uncommon",
+      "file": "Banner of War.png"
+    },
+    {
+      "id": "tta-exp1-222",
+      "name": "Sacred Arrow",
+      "rarity": "uncommon",
+      "file": "Sacred Arrow.png"
+    },
+    {
+      "id": "tta-exp1-223",
+      "name": "Shadow Ritual of Shadows",
+      "rarity": "uncommon",
+      "file": "Shadow Ritual of Shadows.png"
+    },
+    {
+      "id": "tta-exp1-224",
+      "name": "Storm Arrow",
+      "rarity": "legendary",
+      "file": "Storm Arrow.png"
+    },
+    {
+      "id": "tta-exp1-225",
+      "name": "Spirit Oath Triumphant",
+      "rarity": "common",
+      "file": "Spirit Oath Triumphant.png"
+    },
+    {
+      "id": "tta-exp1-226",
+      "name": "Spirit Horde Risen",
+      "rarity": "uncommon",
+      "file": "Spirit Horde Risen.png"
+    },
+    {
+      "id": "tta-exp1-227",
+      "name": "Blood Shield",
+      "rarity": "rare",
+      "file": "Blood Shield.png"
+    },
+    {
+      "id": "tta-exp1-228",
+      "name": "Champion Unleashed",
+      "rarity": "legendary",
+      "file": "Champion Unleashed.png"
+    },
+    {
+      "id": "tta-exp1-229",
+      "name": "Spirit Horde Unleashed",
+      "rarity": "common",
+      "file": "Spirit Horde Unleashed.png"
+    },
+    {
+      "id": "tta-exp1-230",
+      "name": "Golden Dragon",
+      "rarity": "common",
+      "file": "Golden Dragon.png"
+    },
+    {
+      "id": "tta-exp1-231",
+      "name": "Ancient Shield of Peace",
+      "rarity": "rare",
+      "file": "Ancient Shield of Peace.png"
+    },
+    {
+      "id": "tta-exp1-232",
+      "name": "Void Temple of Shadows",
+      "rarity": "rare",
+      "file": "Void Temple of Shadows.png"
+    },
+    {
+      "id": "tta-exp1-233",
+      "name": "Shadow Raven of Destiny",
+      "rarity": "rare",
+      "file": "Shadow Raven of Destiny.png"
+    },
+    {
+      "id": "tta-exp1-234",
+      "name": "Ember Guardian",
+      "rarity": "legendary",
+      "file": "Ember Guardian.png"
+    },
+    {
+      "id": "tta-exp1-235",
+      "name": "Storm Tome",
+      "rarity": "uncommon",
+      "file": "Storm Tome.png"
+    },
+    {
+      "id": "tta-exp1-236",
+      "name": "Legion Unleashed",
+      "rarity": "common",
+      "file": "Legion Unleashed.png"
+    },
+    {
+      "id": "tta-exp1-237",
+      "name": "Assassin Risen",
+      "rarity": "uncommon",
+      "file": "Assassin Risen.png"
+    },
+    {
+      "id": "tta-exp1-238",
+      "name": "Assassin Awakened",
+      "rarity": "common",
+      "file": "Assassin Awakened.png"
+    },
+    {
+      "id": "tta-exp1-239",
+      "name": "Blood Shield the Mighty",
+      "rarity": "common",
+      "file": "Blood Shield the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-240",
+      "name": "Crimson Champion of the Fallen",
+      "rarity": "common",
+      "file": "Crimson Champion of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-241",
+      "name": "Storm Champion of Destiny",
+      "rarity": "uncommon",
+      "file": "Storm Champion of Destiny.png"
+    },
+    {
+      "id": "tta-exp1-242",
+      "name": "Spirit Shield",
+      "rarity": "rare",
+      "file": "Spirit Shield.png"
+    },
+    {
+      "id": "tta-exp1-243",
+      "name": "Blood Golem",
+      "rarity": "common",
+      "file": "Blood Golem.png"
+    },
+    {
+      "id": "tta-exp1-244",
+      "name": "Frost Wolf",
+      "rarity": "uncommon",
+      "file": "Frost Wolf.png"
+    },
+    {
+      "id": "tta-exp1-245",
+      "name": "Blood Fortress Reborn",
+      "rarity": "uncommon",
+      "file": "Blood Fortress Reborn.png"
+    },
+    {
+      "id": "tta-exp1-246",
+      "name": "Shadow Guardian Triumphant",
+      "rarity": "legendary",
+      "file": "Shadow Guardian Triumphant.png"
+    },
+    {
+      "id": "tta-exp1-247",
+      "name": "Council Triumphant",
+      "rarity": "uncommon",
+      "file": "Council Triumphant.png"
+    },
+    {
+      "id": "tta-exp1-248",
+      "name": "Storm Champion",
+      "rarity": "rare",
+      "file": "Storm Champion.png"
+    },
+    {
+      "id": "tta-exp1-249",
+      "name": "Blood Golem of Destiny",
+      "rarity": "common",
+      "file": "Blood Golem of Destiny.png"
+    },
+    {
+      "id": "tta-exp1-250",
+      "name": "Dark Horde",
+      "rarity": "uncommon",
+      "file": "Dark Horde.png"
+    },
+    {
+      "id": "tta-exp1-251",
+      "name": "Storm Ritual",
+      "rarity": "uncommon",
+      "file": "Storm Ritual.png"
+    },
+    {
+      "id": "tta-exp1-252",
+      "name": "Sword Unleashed",
+      "rarity": "uncommon",
+      "file": "Sword Unleashed.png"
+    },
+    {
+      "id": "tta-exp1-253",
+      "name": "Blood Tome",
+      "rarity": "common",
+      "file": "Blood Tome.png"
+    },
+    {
+      "id": "tta-exp1-254",
+      "name": "Thunder Crown Reborn",
+      "rarity": "common",
+      "file": "Thunder Crown Reborn.png"
+    },
+    {
+      "id": "tta-exp1-255",
+      "name": "Knight of Peace",
+      "rarity": "uncommon",
+      "file": "Knight of Peace.png"
+    },
+    {
+      "id": "tta-exp1-256",
+      "name": "Dragon Reborn",
+      "rarity": "common",
+      "file": "Dragon Reborn.png"
+    },
+    {
+      "id": "tta-exp1-257",
+      "name": "Sacred Assassin the Mighty",
+      "rarity": "ultra-x-rare",
+      "file": "Sacred Assassin the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-258",
+      "name": "Crimson Ritual",
+      "rarity": "rare",
+      "file": "Crimson Ritual.png"
+    },
+    {
+      "id": "tta-exp1-259",
+      "name": "Ember Knight",
+      "rarity": "common",
+      "file": "Ember Knight.png"
+    },
+    {
+      "id": "tta-exp1-260",
+      "name": "Sacred Wraith Unleashed",
+      "rarity": "common",
+      "file": "Sacred Wraith Unleashed.png"
+    },
+    {
+      "id": "tta-exp1-261",
+      "name": "Legion the Mighty",
+      "rarity": "common",
+      "file": "Legion the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-262",
+      "name": "Fortress the Mighty",
+      "rarity": "common",
+      "file": "Fortress the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-263",
+      "name": "Frost Shield Eternal",
+      "rarity": "common",
+      "file": "Frost Shield Eternal.png"
+    },
+    {
+      "id": "tta-exp1-264",
+      "name": "Ember Phoenix the Lost",
+      "rarity": "common",
+      "file": "Ember Phoenix the Lost.png"
+    },
+    {
+      "id": "tta-exp1-265",
+      "name": "Sword the Mighty",
+      "rarity": "common",
+      "file": "Sword the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-266",
+      "name": "Storm Mage Ascending",
+      "rarity": "rare",
+      "file": "Storm Mage Ascending.png"
+    },
+    {
+      "id": "tta-exp1-267",
+      "name": "Ember Champion Unleashed",
+      "rarity": "common",
+      "file": "Ember Champion Unleashed.png"
+    },
+    {
+      "id": "tta-exp1-268",
+      "name": "Golden Tome Ascending",
+      "rarity": "common",
+      "file": "Golden Tome Ascending.png"
+    },
+    {
+      "id": "tta-exp1-269",
+      "name": "Void Phoenix",
+      "rarity": "rare",
+      "file": "Void Phoenix.png"
+    },
+    {
+      "id": "tta-exp1-270",
+      "name": "Storm Serpent",
+      "rarity": "common",
+      "file": "Storm Serpent.png"
+    },
+    {
+      "id": "tta-exp1-271",
+      "name": "Crimson Golem",
+      "rarity": "uncommon",
+      "file": "Crimson Golem.png"
+    },
+    {
+      "id": "tta-exp1-272",
+      "name": "Storm Knight of Shadows",
+      "rarity": "common",
+      "file": "Storm Knight of Shadows.png"
+    },
+    {
+      "id": "tta-exp1-273",
+      "name": "Shadow Knight",
+      "rarity": "rare",
+      "file": "Shadow Knight.png"
+    },
+    {
+      "id": "tta-exp1-274",
+      "name": "Ember Wraith",
+      "rarity": "uncommon",
+      "file": "Ember Wraith.png"
+    },
+    {
+      "id": "tta-exp1-275",
+      "name": "Wild Mage",
+      "rarity": "legendary",
+      "file": "Wild Mage.png"
+    },
+    {
+      "id": "tta-exp1-276",
+      "name": "Oracle Eternal",
+      "rarity": "uncommon",
+      "file": "Oracle Eternal.png"
+    },
+    {
+      "id": "tta-exp1-277",
+      "name": "Iron Serpent",
+      "rarity": "legendary",
+      "file": "Iron Serpent.png"
+    },
+    {
+      "id": "tta-exp1-278",
+      "name": "Ancient Serpent of Light",
+      "rarity": "rare",
+      "file": "Ancient Serpent of Light.png"
+    },
+    {
+      "id": "tta-exp1-279",
+      "name": "Ember Legion Ascending",
+      "rarity": "common",
+      "file": "Ember Legion Ascending.png"
+    },
+    {
+      "id": "tta-exp1-280",
+      "name": "Frost Oracle",
+      "rarity": "common",
+      "file": "Frost Oracle.png"
+    },
+    {
+      "id": "tta-exp1-281",
+      "name": "Thunder Sword Awakened",
+      "rarity": "rare",
+      "file": "Thunder Sword Awakened.png"
+    },
+    {
+      "id": "tta-exp1-282",
+      "name": "Wolf the Lost",
+      "rarity": "uncommon",
+      "file": "Wolf the Lost.png"
+    },
+    {
+      "id": "tta-exp1-283",
+      "name": "Assassin Eternal",
+      "rarity": "common",
+      "file": "Assassin Eternal.png"
+    },
+    {
+      "id": "tta-exp1-284",
+      "name": "Shield Awakened",
+      "rarity": "common",
+      "file": "Shield Awakened.png"
+    },
+    {
+      "id": "tta-exp1-285",
+      "name": "Oath of Peace",
+      "rarity": "common",
+      "file": "Oath of Peace.png"
+    },
+    {
+      "id": "tta-exp1-286",
+      "name": "Council Awakened",
+      "rarity": "common",
+      "file": "Council Awakened.png"
+    },
+    {
+      "id": "tta-exp1-287",
+      "name": "Oracle of Light",
+      "rarity": "common",
+      "file": "Oracle of Light.png"
+    },
+    {
+      "id": "tta-exp1-288",
+      "name": "Ember Dragon",
+      "rarity": "common",
+      "file": "Ember Dragon.png"
+    },
+    {
+      "id": "tta-exp1-289",
+      "name": "Blood Wolf of Destiny",
+      "rarity": "common",
+      "file": "Blood Wolf of Destiny.png"
+    },
+    {
+      "id": "tta-exp1-290",
+      "name": "Assassin of War",
+      "rarity": "common",
+      "file": "Assassin of War.png"
+    },
+    {
+      "id": "tta-exp1-291",
+      "name": "Crown of War",
+      "rarity": "common",
+      "file": "Crown of War.png"
+    },
+    {
+      "id": "tta-exp1-292",
+      "name": "Dark Prophecy of Light",
+      "rarity": "rare",
+      "file": "Dark Prophecy of Light.png"
+    },
+    {
+      "id": "tta-exp1-293",
+      "name": "Bone Horde Ascending",
+      "rarity": "common",
+      "file": "Bone Horde Ascending.png"
+    },
+    {
+      "id": "tta-exp1-294",
+      "name": "Wild Legion Awakened",
+      "rarity": "rare",
+      "file": "Wild Legion Awakened.png"
+    },
+    {
+      "id": "tta-exp1-295",
+      "name": "Crimson Throne",
+      "rarity": "common",
+      "file": "Crimson Throne.png"
+    },
+    {
+      "id": "tta-exp1-296",
+      "name": "Crimson Legion",
+      "rarity": "rare",
+      "file": "Crimson Legion.png"
+    },
+    {
+      "id": "tta-exp1-297",
+      "name": "Crimson Phoenix Risen",
+      "rarity": "ultra-x-rare",
+      "file": "Crimson Phoenix Risen.png"
+    },
+    {
+      "id": "tta-exp1-298",
+      "name": "Wraith Ascending",
+      "rarity": "rare",
+      "file": "Wraith Ascending.png"
+    },
+    {
+      "id": "tta-exp1-299",
+      "name": "Ritual of Shadows",
+      "rarity": "uncommon",
+      "file": "Ritual of Shadows.png"
+    },
+    {
+      "id": "tta-exp1-300",
+      "name": "Frost Golem the Lost",
+      "rarity": "uncommon",
+      "file": "Frost Golem the Lost.png"
+    },
+    {
+      "id": "tta-exp1-301",
+      "name": "Crystal Serpent",
+      "rarity": "rare",
+      "file": "Crystal Serpent.png"
+    },
+    {
+      "id": "tta-exp1-302",
+      "name": "Crimson Council Unleashed",
+      "rarity": "uncommon",
+      "file": "Crimson Council Unleashed.png"
+    },
+    {
+      "id": "tta-exp1-303",
+      "name": "Spirit Oracle of War",
+      "rarity": "uncommon",
+      "file": "Spirit Oracle of War.png"
+    },
+    {
+      "id": "tta-exp1-304",
+      "name": "Blood Crown",
+      "rarity": "common",
+      "file": "Blood Crown.png"
+    },
+    {
+      "id": "tta-exp1-305",
+      "name": "Spirit Guardian",
+      "rarity": "rare",
+      "file": "Spirit Guardian.png"
+    },
+    {
+      "id": "tta-exp1-306",
+      "name": "Banner the Mighty",
+      "rarity": "rare",
+      "file": "Banner the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-307",
+      "name": "Shadow Horde of Light",
+      "rarity": "common",
+      "file": "Shadow Horde of Light.png"
+    },
+    {
+      "id": "tta-exp1-308",
+      "name": "Spirit Champion",
+      "rarity": "uncommon",
+      "file": "Spirit Champion.png"
+    },
+    {
+      "id": "tta-exp1-309",
+      "name": "Bone Champion Risen",
+      "rarity": "common",
+      "file": "Bone Champion Risen.png"
+    },
+    {
+      "id": "tta-exp1-310",
+      "name": "Ember Fortress the Mighty",
+      "rarity": "common",
+      "file": "Ember Fortress the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-311",
+      "name": "Crystal Legion",
+      "rarity": "common",
+      "file": "Crystal Legion.png"
+    },
+    {
+      "id": "tta-exp1-312",
+      "name": "Blood Assassin of War",
+      "rarity": "uncommon",
+      "file": "Blood Assassin of War.png"
+    },
+    {
+      "id": "tta-exp1-313",
+      "name": "Raven Awakened",
+      "rarity": "common",
+      "file": "Raven Awakened.png"
+    },
+    {
+      "id": "tta-exp1-314",
+      "name": "Golden Temple of the Fallen",
+      "rarity": "legendary",
+      "file": "Golden Temple of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-315",
+      "name": "Arrow of Peace",
+      "rarity": "common",
+      "file": "Arrow of Peace.png"
+    },
+    {
+      "id": "tta-exp1-316",
+      "name": "Blood Assassin",
+      "rarity": "common",
+      "file": "Blood Assassin.png"
+    },
+    {
+      "id": "tta-exp1-317",
+      "name": "Thunder Oath",
+      "rarity": "uncommon",
+      "file": "Thunder Oath.png"
+    },
+    {
+      "id": "tta-exp1-318",
+      "name": "Shield Reborn",
+      "rarity": "rare",
+      "file": "Shield Reborn.png"
+    },
+    {
+      "id": "tta-exp1-319",
+      "name": "Ancient Champion",
+      "rarity": "common",
+      "file": "Ancient Champion.png"
+    },
+    {
+      "id": "tta-exp1-320",
+      "name": "Throne of Light",
+      "rarity": "common",
+      "file": "Throne of Light.png"
+    },
+    {
+      "id": "tta-exp1-321",
+      "name": "Storm Tome of Destiny",
+      "rarity": "common",
+      "file": "Storm Tome of Destiny.png"
+    },
+    {
+      "id": "tta-exp1-322",
+      "name": "Cursed Mage of Peace",
+      "rarity": "common",
+      "file": "Cursed Mage of Peace.png"
+    },
+    {
+      "id": "tta-exp1-323",
+      "name": "Crystal Assassin of Peace",
+      "rarity": "common",
+      "file": "Crystal Assassin of Peace.png"
+    },
+    {
+      "id": "tta-exp1-324",
+      "name": "Dark Fortress Triumphant",
+      "rarity": "uncommon",
+      "file": "Dark Fortress Triumphant.png"
+    },
+    {
+      "id": "tta-exp1-325",
+      "name": "Cursed Wraith Reborn",
+      "rarity": "common",
+      "file": "Cursed Wraith Reborn.png"
+    },
+    {
+      "id": "tta-exp1-326",
+      "name": "Blood Dragon",
+      "rarity": "ultra-x-rare",
+      "file": "Blood Dragon.png"
+    },
+    {
+      "id": "tta-exp1-327",
+      "name": "Ancient Raven Eternal",
+      "rarity": "common",
+      "file": "Ancient Raven Eternal.png"
+    },
+    {
+      "id": "tta-exp1-328",
+      "name": "Shield of Peace",
+      "rarity": "common",
+      "file": "Shield of Peace.png"
+    },
+    {
+      "id": "tta-exp1-329",
+      "name": "Legion Triumphant",
+      "rarity": "uncommon",
+      "file": "Legion Triumphant.png"
+    },
+    {
+      "id": "tta-exp1-330",
+      "name": "Crystal Banner",
+      "rarity": "common",
+      "file": "Crystal Banner.png"
+    },
+    {
+      "id": "tta-exp1-331",
+      "name": "Golden Shield of Light",
+      "rarity": "uncommon",
+      "file": "Golden Shield of Light.png"
+    },
+    {
+      "id": "tta-exp1-332",
+      "name": "Spirit Champion of Destiny",
+      "rarity": "common",
+      "file": "Spirit Champion of Destiny.png"
+    },
+    {
+      "id": "tta-exp1-333",
+      "name": "Wild Sword",
+      "rarity": "common",
+      "file": "Wild Sword.png"
+    },
+    {
+      "id": "tta-exp1-334",
+      "name": "Crimson Phoenix of Destiny",
+      "rarity": "ultra-x-rare",
+      "file": "Crimson Phoenix of Destiny.png"
+    },
+    {
+      "id": "tta-exp1-335",
+      "name": "Sacred Champion",
+      "rarity": "common",
+      "file": "Sacred Champion.png"
+    },
+    {
+      "id": "tta-exp1-336",
+      "name": "Sacred Knight Risen",
+      "rarity": "rare",
+      "file": "Sacred Knight Risen.png"
+    },
+    {
+      "id": "tta-exp1-337",
+      "name": "Phoenix Awakened",
+      "rarity": "uncommon",
+      "file": "Phoenix Awakened.png"
+    },
+    {
+      "id": "tta-exp1-338",
+      "name": "Dark Throne",
+      "rarity": "uncommon",
+      "file": "Dark Throne.png"
+    },
+    {
+      "id": "tta-exp1-339",
+      "name": "Raven of Shadows",
+      "rarity": "common",
+      "file": "Raven of Shadows.png"
+    },
+    {
+      "id": "tta-exp1-340",
+      "name": "Void Blade of Peace",
+      "rarity": "rare",
+      "file": "Void Blade of Peace.png"
+    },
+    {
+      "id": "tta-exp1-341",
+      "name": "Dark Mage Reborn",
+      "rarity": "uncommon",
+      "file": "Dark Mage Reborn.png"
+    },
+    {
+      "id": "tta-exp1-342",
+      "name": "Bone Golem Triumphant",
+      "rarity": "common",
+      "file": "Bone Golem Triumphant.png"
+    },
+    {
+      "id": "tta-exp1-343",
+      "name": "Fortress of the Fallen",
+      "rarity": "common",
+      "file": "Fortress of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-344",
+      "name": "Champion Risen",
+      "rarity": "common",
+      "file": "Champion Risen.png"
+    },
+    {
+      "id": "tta-exp1-345",
+      "name": "Golem Eternal",
+      "rarity": "common",
+      "file": "Golem Eternal.png"
+    },
+    {
+      "id": "tta-exp1-346",
+      "name": "Silver Champion",
+      "rarity": "uncommon",
+      "file": "Silver Champion.png"
+    },
+    {
+      "id": "tta-exp1-347",
+      "name": "Iron Council",
+      "rarity": "uncommon",
+      "file": "Iron Council.png"
+    },
+    {
+      "id": "tta-exp1-348",
+      "name": "Council Reborn",
+      "rarity": "common",
+      "file": "Council Reborn.png"
+    },
+    {
+      "id": "tta-exp1-349",
+      "name": "Void Sword the Mighty",
+      "rarity": "common",
+      "file": "Void Sword the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-350",
+      "name": "Spirit Horde of Destiny",
+      "rarity": "common",
+      "file": "Spirit Horde of Destiny.png"
+    },
+    {
+      "id": "tta-exp1-351",
+      "name": "Cursed Fortress the Mighty",
+      "rarity": "uncommon",
+      "file": "Cursed Fortress the Mighty.png"
+    },
+    {
+      "id": "tta-exp1-352",
+      "name": "Dark Mage",
+      "rarity": "common",
+      "file": "Dark Mage.png"
+    },
+    {
+      "id": "tta-exp1-353",
+      "name": "Arrow of War",
+      "rarity": "uncommon",
+      "file": "Arrow of War.png"
+    },
+    {
+      "id": "tta-exp1-354",
+      "name": "Cursed Raven",
+      "rarity": "uncommon",
+      "file": "Cursed Raven.png"
+    },
+    {
+      "id": "tta-exp1-355",
+      "name": "Bone Blade",
+      "rarity": "common",
+      "file": "Bone Blade.png"
+    },
+    {
+      "id": "tta-exp1-356",
+      "name": "Spirit Dragon of Peace",
+      "rarity": "uncommon",
+      "file": "Spirit Dragon of Peace.png"
+    },
+    {
+      "id": "tta-exp1-357",
+      "name": "Shadow Pact of Shadows",
+      "rarity": "common",
+      "file": "Shadow Pact of Shadows.png"
+    },
+    {
+      "id": "tta-exp1-358",
+      "name": "Ember Shield of the Fallen",
+      "rarity": "common",
+      "file": "Ember Shield of the Fallen.png"
+    },
+    {
+      "id": "tta-exp1-359",
+      "name": "Ember Pact",
+      "rarity": "common",
+      "file": "Ember Pact.png"
+    },
+    {
+      "id": "tta-exp1-360",
+      "name": "Wild Legion the Lost",
+      "rarity": "common",
+      "file": "Wild Legion the Lost.png"
+    }
+  ]
+}

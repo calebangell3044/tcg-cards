@@ -1,0 +1,16 @@
+{
+  "id": "tta",
+  "name": "Through The Ages",
+  "description": "A dark fantasy trading card game set in a war-torn medieval world.",
+  "cardback": "games/tta/cardback.png",
+  "rarities": [
+    { "id": "common", "name": "Common", "color": "#d1d5db", "bgColor": "#4b5563", "borderColor": "#9ca3af" },
+    { "id": "uncommon", "name": "Uncommon", "color": "#86efac", "bgColor": "#15803d", "borderColor": "#4ade80" },
+    { "id": "rare", "name": "Rare", "color": "#93c5fd", "bgColor": "#1d4ed8", "borderColor": "#60a5fa" },
+    { "id": "legendary", "name": "Legendary", "color": "#c4b5fd", "bgColor": "#7e22ce", "borderColor": "#a855f7" },
+    { "id": "ultra-x-rare", "name": "Ultra X Rare", "color": "#fef08a", "bgColor": "#dc2626", "borderColor": "#fbbf24" }
+  ],
+  "rarityOrder": ["common", "uncommon", "rare", "legendary", "ultra-x-rare"],
+  "sets": ["base-set", "expansion-1"],
+  "holoMultiplierRange": { "min": 1.10, "max": 2.50, "peak": 1.50 }
+}

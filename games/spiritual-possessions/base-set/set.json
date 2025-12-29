@@ -1,0 +1,2115 @@
+{
+  "id": "base-set",
+  "name": "Base Set",
+  "releaseDay": 1,
+  "packStructure": {
+    "size": 7,
+    "slots": [
+      {
+        "type": "guaranteed",
+        "rarity": "common",
+        "count": 4
+      },
+      {
+        "type": "guaranteed",
+        "rarity": "uncommon",
+        "count": 2
+      },
+      {
+        "type": "rare-slot",
+        "count": 1,
+        "holoChance": 0.25,
+        "odds": {
+          "common": 40,
+          "uncommon": 32,
+          "rare": 18,
+          "legendary": 6,
+          "x-rare": 3,
+          "ghost-rare": 0.9,
+          "x-special-rare": 0.1
+        }
+      }
+    ]
+  },
+  "godPack": {
+    "chance": 0.001,
+    "size": 7,
+    "allHolo": true,
+    "distribution": [
+      {
+        "rarity": "legendary",
+        "count": 2
+      },
+      {
+        "rarity": "x-rare",
+        "count": 2
+      },
+      {
+        "rarity": "ghost-rare",
+        "count": 2
+      },
+      {
+        "rarity": "x-special-rare",
+        "count": 1
+      }
+    ]
+  },
+  "sealedProducts": {
+    "bundle": {
+      "packs": 8,
+      "guaranteed": [
+        {
+          "rarity": "legendary",
+          "count": 1
+        }
+      ]
+    },
+    "booster": {
+      "packs": 24,
+      "guaranteed": [
+        {
+          "rarity": "x-rare",
+          "count": 2
+        }
+      ]
+    },
+    "case": {
+      "packs": 144,
+      "guaranteed": [
+        {
+          "rarity": "ghost-rare",
+          "count": 1
+        }
+      ]
+    }
+  },
+  "marketValueRanges": {
+    "common": {
+      "min": 0.25,
+      "max": 4.0,
+      "peak": 0.75
+    },
+    "uncommon": {
+      "min": 1.0,
+      "max": 7.0,
+      "peak": 2.5
+    },
+    "rare": {
+      "min": 3.0,
+      "max": 20.0,
+      "peak": 6.0
+    },
+    "legendary": {
+      "min": 12.0,
+      "max": 75.0,
+      "peak": 25.0
+    },
+    "x-rare": {
+      "min": 35.0,
+      "max": 250.0,
+      "peak": 80.0
+    },
+    "ghost-rare": {
+      "min": 100.0,
+      "max": 800.0,
+      "peak": 250.0
+    },
+    "x-special-rare": {
+      "min": 500.0,
+      "max": 5000.0,
+      "peak": 1200.0
+    }
+  },
+  "cards": [
+    {
+      "id": "sp-base-1",
+      "name": "Aluminum Can Pufferfish",
+      "description": "Crushed soda cans welded into aquatic fish with pull-tab fins",
+      "faction": "Sea Monsters",
+      "power": 335,
+      "defense": 365,
+      "rarity": "common",
+      "file": "Aluminum Can Pufferfish.png"
+    },
+    {
+      "id": "sp-base-2",
+      "name": "Aluminum Foil Serpent",
+      "description": "Crinkled metallic sheet coiled into reflective snake",
+      "faction": "Serpents",
+      "power": 125,
+      "defense": 130,
+      "rarity": "common",
+      "file": "Aluminum Foil Serpent.png"
+    },
+    {
+      "id": "sp-base-3",
+      "name": "Ancestral Samurai Armor Beetle",
+      "description": "Lacquered plates and silk cords forming honored insect warrior of ancient lineage",
+      "faction": "Insects",
+      "power": 1150,
+      "defense": 1100,
+      "rarity": "rare",
+      "file": "Ancestral Samurai Armor Beetle.png"
+    },
+    {
+      "id": "sp-base-4",
+      "name": "Ancestral Samurai Armor Beetle S",
+      "description": "Lacquered plates and silk cords forming honored insect warrior of ancient lineage",
+      "faction": "Insects",
+      "power": 1150,
+      "defense": 1100,
+      "rarity": "legendary",
+      "file": "Ancestral Samurai Armor Beetle S.png"
+    },
+    {
+      "id": "sp-base-5",
+      "name": "Ancestral Samurai Armor Beetle X",
+      "description": "Lacquered plates and silk cords forming honored insect warrior of ancient lineage",
+      "faction": "Insects",
+      "power": 1150,
+      "defense": 1100,
+      "rarity": "x-rare",
+      "file": "Ancestral Samurai Armor Beetle X.png"
+    },
+    {
+      "id": "sp-base-6",
+      "name": "Band-Aid Mummy",
+      "description": "Adhesive bandages wrapped forming tiny wrapped guardian",
+      "faction": "Spirits",
+      "power": 505,
+      "defense": 370,
+      "rarity": "uncommon",
+      "file": "Band-Aid Mummy.png"
+    },
+    {
+      "id": "sp-base-7",
+      "name": "Bandage Mummy Cat",
+      "description": "Medical gauze wrapped around stuffing forming feline",
+      "faction": "Chimera",
+      "power": 190,
+      "defense": 200,
+      "rarity": "common",
+      "file": "Bandage Mummy Cat.png"
+    },
+    {
+      "id": "sp-base-8",
+      "name": "Baseball Cap Turtle",
+      "description": "Curved brim forming shell with adjustable strap tail",
+      "faction": "Serpents",
+      "power": 220,
+      "defense": 195,
+      "rarity": "common",
+      "file": "Baseball Cap Turtle.png"
+    },
+    {
+      "id": "sp-base-9",
+      "name": "Bath Towel Manta Ray",
+      "description": "Terrycloth fabric spread forming aquatic glider",
+      "faction": "Sea Monsters",
+      "power": 200,
+      "defense": 155,
+      "rarity": "common",
+      "file": "Bath Towel Manta Ray.png"
+    },
+    {
+      "id": "sp-base-10",
+      "name": "Battery Pack Golem",
+      "description": "AA batteries bundled together forming cylindrical warrior",
+      "faction": "Golems",
+      "power": 185,
+      "defense": 200,
+      "rarity": "common",
+      "file": "Battery Pack Golem.png"
+    },
+    {
+      "id": "sp-base-11",
+      "name": "Bead Lizard",
+      "description": "Strung beads forming flexible reptile with fishing line skeleton",
+      "faction": "Serpents",
+      "power": 195,
+      "defense": 405,
+      "rarity": "common",
+      "file": "Bead Lizard.png"
+    },
+    {
+      "id": "sp-base-12",
+      "name": "Bedsheet Phantom",
+      "description": "Queen-sized linen billowing into massive ghostly presence",
+      "faction": "Spirits",
+      "power": 900,
+      "defense": 485,
+      "rarity": "rare",
+      "file": "Bedsheet Phantom.png"
+    },
+    {
+      "id": "sp-base-13",
+      "name": "Belt Serpent",
+      "description": "Leather strap with buckle head coiling into snake",
+      "faction": "Serpents",
+      "power": 215,
+      "defense": 160,
+      "rarity": "common",
+      "file": "Belt Serpent.png"
+    },
+    {
+      "id": "sp-base-14",
+      "name": "Birthday Candle Dragon",
+      "description": "Wax sticks melted together forming serpent that re-lights",
+      "faction": "Serpents",
+      "power": 805,
+      "defense": 345,
+      "rarity": "rare",
+      "file": "Birthday Candle Dragon.png"
+    },
+    {
+      "id": "sp-base-15",
+      "name": "Bookmark Dragon",
+      "description": "Laminated paper markers forming scaled serpentine body",
+      "faction": "Serpents",
+      "power": 160,
+      "defense": 105,
+      "rarity": "common",
+      "file": "Bookmark Dragon.png"
+    },
+    {
+      "id": "sp-base-16",
+      "name": "Bottle Cap Crab",
+      "description": "Metal caps for shell with bendy straw legs",
+      "faction": "Sea Monsters",
+      "power": 235,
+      "defense": 560,
+      "rarity": "common",
+      "file": "Bottle Cap Crab.png"
+    },
+    {
+      "id": "sp-base-17",
+      "name": "Bottlecap Beetle",
+      "description": "Soda caps forming armored carapace",
+      "faction": "Insects",
+      "power": 300,
+      "defense": 670,
+      "rarity": "common",
+      "file": "Bottlecap Beetle.png"
+    },
+    {
+      "id": "sp-base-18",
+      "name": "Broom Witch Familiar",
+      "description": "Bundled bristles with wooden handle forming sweeping spirit",
+      "faction": "Spirits",
+      "power": 295,
+      "defense": 190,
+      "rarity": "uncommon",
+      "file": "Broom Witch Familiar.png"
+    },
+    {
+      "id": "sp-base-19",
+      "name": "Bubblewrap Jellyfish",
+      "description": "Packing material tentacles that pop when touched",
+      "faction": "Sea Monsters",
+      "power": 625,
+      "defense": 335,
+      "rarity": "uncommon",
+      "file": "Bubblewrap Jellyfish.png"
+    },
+    {
+      "id": "sp-base-20",
+      "name": "Burlap Sack Basilisk",
+      "description": "Rough fabric serpent with drawstring fangs and coffee bean eyes",
+      "faction": "Serpents",
+      "power": 475,
+      "defense": 300,
+      "rarity": "uncommon",
+      "file": "Burlap Sack Basilisk.png"
+    },
+    {
+      "id": "sp-base-21",
+      "name": "Button Eye Spider",
+      "description": "Sewing buttons with thread legs forming eight-limbed crawler",
+      "faction": "Insects",
+      "power": 190,
+      "defense": 145,
+      "rarity": "common",
+      "file": "Button Eye Spider.png"
+    },
+    {
+      "id": "sp-base-22",
+      "name": "Calendar Page Phoenix",
+      "description": "Monthly sheets tearing away and reforming into cycling bird",
+      "faction": "Spirits",
+      "power": 310,
+      "defense": 175,
+      "rarity": "uncommon",
+      "file": "Calendar Page Phoenix.png"
+    },
+    {
+      "id": "sp-base-23",
+      "name": "Candy Wrapper Hummingbird",
+      "description": "Shiny foil formed into iridescent flyer",
+      "faction": "Spirits",
+      "power": 155,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Candy Wrapper Hummingbird.png"
+    },
+    {
+      "id": "sp-base-24",
+      "name": "Car Key Beetle",
+      "description": "Metal keys with rubber grips forming armored insect",
+      "faction": "Insects",
+      "power": 115,
+      "defense": 155,
+      "rarity": "common",
+      "file": "Car Key Beetle.png"
+    },
+    {
+      "id": "sp-base-25",
+      "name": "Cardboard Knight",
+      "description": "Corrugated armor warrior with box-cutter sword and shipping tape shield",
+      "faction": "Golems",
+      "power": 650,
+      "defense": 400,
+      "rarity": "uncommon",
+      "file": "Cardboard Knight.png"
+    },
+    {
+      "id": "sp-base-26",
+      "name": "Cardstock Dragon",
+      "description": "Heavy paper folded into geometric serpent",
+      "faction": "Serpents",
+      "power": 825,
+      "defense": 490,
+      "rarity": "rare",
+      "file": "Cardstock Dragon.png"
+    },
+    {
+      "id": "sp-base-27",
+      "name": "Cellophane Koi",
+      "description": "Clear wrap layered with colored tissue forming translucent fish",
+      "faction": "Sea Monsters",
+      "power": 160,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Cellophane Koi.png"
+    },
+    {
+      "id": "sp-base-28",
+      "name": "Ceramic Turtle",
+      "description": "Hand-painted pottery with glaze drips and kiln cracks as battle scars",
+      "faction": "Serpents",
+      "power": 505,
+      "defense": 395,
+      "rarity": "uncommon",
+      "file": "Ceramic Turtle.png"
+    },
+    {
+      "id": "sp-base-29",
+      "name": "Chalk Dust Phantom",
+      "description": "Powdered chalk held in ghostly form leaving colored trails",
+      "faction": "Spirits",
+      "power": 335,
+      "defense": 145,
+      "rarity": "common",
+      "file": "Chalk Dust Phantom.png"
+    },
+    {
+      "id": "sp-base-30",
+      "name": "Champion's Trophy Chimera",
+      "description": "Gold-plated cups and medals fused into glorious beast of victory and glory",
+      "faction": "Chimera",
+      "power": 1100,
+      "defense": 1050,
+      "rarity": "rare",
+      "file": "Champion's Trophy Chimera.png"
+    },
+    {
+      "id": "sp-base-31",
+      "name": "Champion's Trophy Chimera S",
+      "description": "Gold-plated cups and medals fused into glorious beast of victory and glory",
+      "faction": "Chimera",
+      "power": 1100,
+      "defense": 1050,
+      "rarity": "legendary",
+      "file": "Champion's Trophy Chimera S.png"
+    },
+    {
+      "id": "sp-base-32",
+      "name": "Champion's Trophy Chimera X",
+      "description": "Gold-plated cups and medals fused into glorious beast of victory and glory",
+      "faction": "Chimera",
+      "power": 1100,
+      "defense": 1050,
+      "rarity": "x-rare",
+      "file": "Champion's Trophy Chimera X.png"
+    },
+    {
+      "id": "sp-base-33",
+      "name": "Chess Piece Knight",
+      "description": "Carved wooden horse with base forming mounted warrior",
+      "faction": "Golems",
+      "power": 270,
+      "defense": 240,
+      "rarity": "uncommon",
+      "file": "Chess Piece Knight.png"
+    },
+    {
+      "id": "sp-base-34",
+      "name": "Clay Golem",
+      "description": "Chunky pottery creature with fingerprint textures and kiln-fired glaze",
+      "faction": "Golems",
+      "power": 700,
+      "defense": 900,
+      "rarity": "rare",
+      "file": "Clay Golem.png"
+    },
+    {
+      "id": "sp-base-35",
+      "name": "Clothespin Crab",
+      "description": "Wooden spring-loaded clips forming pinching crustacean",
+      "faction": "Sea Monsters",
+      "power": 140,
+      "defense": 175,
+      "rarity": "common",
+      "file": "Clothespin Crab.png"
+    },
+    {
+      "id": "sp-base-36",
+      "name": "Clothespin Dragonfly",
+      "description": "Wooden clothespins forming wings and body with spring joints",
+      "faction": "Insects",
+      "power": 415,
+      "defense": 315,
+      "rarity": "uncommon",
+      "file": "Clothespin Dragonfly.png"
+    },
+    {
+      "id": "sp-base-37",
+      "name": "Coaster Stack Golem",
+      "description": "Cork and cardboard drink mats piled into squat defender",
+      "faction": "Golems",
+      "power": 340,
+      "defense": 310,
+      "rarity": "uncommon",
+      "file": "Coaster Stack Golem.png"
+    },
+    {
+      "id": "sp-base-38",
+      "name": "Coffee Filter Lotus Dragon",
+      "description": "Dyed filters arranged into blooming serpent",
+      "faction": "Serpents",
+      "power": 715,
+      "defense": 370,
+      "rarity": "rare",
+      "file": "Coffee Filter Lotus Dragon.png"
+    },
+    {
+      "id": "sp-base-39",
+      "name": "Coffee Mug Golem",
+      "description": "Ceramic mug with handle arm and chipped rim battle scars",
+      "faction": "Golems",
+      "power": 155,
+      "defense": 190,
+      "rarity": "common",
+      "file": "Coffee Mug Golem.png"
+    },
+    {
+      "id": "sp-base-40",
+      "name": "Coin Roll Serpent",
+      "description": "Paper-wrapped quarters forming heavy metallic snake",
+      "faction": "Serpents",
+      "power": 325,
+      "defense": 290,
+      "rarity": "uncommon",
+      "file": "Coin Roll Serpent.png"
+    },
+    {
+      "id": "sp-base-41",
+      "name": "Construction Paper Cobra",
+      "description": "Layered colored paper with accordion-fold hood",
+      "faction": "Serpents",
+      "power": 690,
+      "defense": 270,
+      "rarity": "rare",
+      "file": "Construction Paper Cobra.png"
+    },
+    {
+      "id": "sp-base-42",
+      "name": "Cookbook Golem",
+      "description": "Recipe pages bound together forming culinary construct",
+      "faction": "Golems",
+      "power": 400,
+      "defense": 350,
+      "rarity": "uncommon",
+      "file": "Cookbook Golem.png"
+    },
+    {
+      "id": "sp-base-43",
+      "name": "Cork Beetle",
+      "description": "Wine cork body with toothpick legs and bottle cap shell",
+      "faction": "Insects",
+      "power": 175,
+      "defense": 350,
+      "rarity": "common",
+      "file": "Cork Beetle.png"
+    },
+    {
+      "id": "sp-base-44",
+      "name": "Cotton Ball Cloud Fox",
+      "description": "White puffs arranged into ethereal canine spirit",
+      "faction": "Spirits",
+      "power": 200,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Cotton Ball Cloud Fox.png"
+    },
+    {
+      "id": "sp-base-45",
+      "name": "Cotton Swab Skeleton",
+      "description": "Q-tips arranged into tiny skeletal warrior",
+      "faction": "Spirits",
+      "power": 710,
+      "defense": 465,
+      "rarity": "rare",
+      "file": "Cotton Swab Skeleton.png"
+    },
+    {
+      "id": "sp-base-46",
+      "name": "Crayon Construct",
+      "description": "Melted crayons shaped into small elemental being in rainbow colors",
+      "faction": "Spirits",
+      "power": 145,
+      "defense": 190,
+      "rarity": "common",
+      "file": "Crayon Construct.png"
+    },
+    {
+      "id": "sp-base-47",
+      "name": "Credit Card Dragon",
+      "description": "Plastic payment cards layered forming armored serpent with chip scale",
+      "faction": "Serpents",
+      "power": 825,
+      "defense": 720,
+      "rarity": "rare",
+      "file": "Credit Card Dragon.png"
+    },
+    {
+      "id": "sp-base-48",
+      "name": "Cupcake Liner Jellyfish",
+      "description": "Colorful paper cups forming frilled drifter",
+      "faction": "Sea Monsters",
+      "power": 190,
+      "defense": 120,
+      "rarity": "common",
+      "file": "Cupcake Liner Jellyfish.png"
+    },
+    {
+      "id": "sp-base-49",
+      "name": "Denim Ox",
+      "description": "Recycled jeans stitched into sturdy beast with copper rivet horns",
+      "faction": "Chimera",
+      "power": 910,
+      "defense": 715,
+      "rarity": "rare",
+      "file": "Denim Ox.png"
+    },
+    {
+      "id": "sp-base-50",
+      "name": "Dish Sponge Blob",
+      "description": "Scrubbing side and soft side forming dual-textured ooze",
+      "faction": "Golems",
+      "power": 385,
+      "defense": 305,
+      "rarity": "uncommon",
+      "file": "Dish Sponge Blob.png"
+    },
+    {
+      "id": "sp-base-51",
+      "name": "Dish Towel Ghost",
+      "description": "Checkered kitchen cloth billowing into floating specter",
+      "faction": "Spirits",
+      "power": 105,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Dish Towel Ghost.png"
+    },
+    {
+      "id": "sp-base-52",
+      "name": "Dollar Bill Crane",
+      "description": "Folded currency forming origami bird with visible presidential portraits",
+      "faction": "Spirits",
+      "power": 110,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Dollar Bill Crane.png"
+    },
+    {
+      "id": "sp-base-53",
+      "name": "Domino Dragon",
+      "description": "Black tiles with white dots forming segmented serpent",
+      "faction": "Serpents",
+      "power": 280,
+      "defense": 220,
+      "rarity": "uncommon",
+      "file": "Domino Dragon.png"
+    },
+    {
+      "id": "sp-base-54",
+      "name": "Driftwood Kraken",
+      "description": "Weathered wood pieces forming tentacled horror",
+      "faction": "Sea Monsters",
+      "power": 990,
+      "defense": 675,
+      "rarity": "rare",
+      "file": "Driftwood Kraken.png"
+    },
+    {
+      "id": "sp-base-55",
+      "name": "Dryer Lint Yeti",
+      "description": "Collected lint pressed into fuzzy beast",
+      "faction": "Chimera",
+      "power": 780,
+      "defense": 305,
+      "rarity": "rare",
+      "file": "Dryer Lint Yeti.png"
+    },
+    {
+      "id": "sp-base-56",
+      "name": "Dryer Sheet Phantom",
+      "description": "Fabric softener sheets floating as ethereal spirit",
+      "faction": "Spirits",
+      "power": 295,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Dryer Sheet Phantom.png"
+    },
+    {
+      "id": "sp-base-57",
+      "name": "Duct Tape Gargoyle",
+      "description": "Silver tape wound into angular guardian",
+      "faction": "Golems",
+      "power": 335,
+      "defense": 540,
+      "rarity": "common",
+      "file": "Duct Tape Gargoyle.png"
+    },
+    {
+      "id": "sp-base-58",
+      "name": "Dustpan Turtle",
+      "description": "Metal scoop with rubber edge forming protective shell",
+      "faction": "Serpents",
+      "power": 280,
+      "defense": 255,
+      "rarity": "uncommon",
+      "file": "Dustpan Turtle.png"
+    },
+    {
+      "id": "sp-base-59",
+      "name": "Egg Carton Caterpillar",
+      "description": "Foam or cardboard cups linked in segmented body",
+      "faction": "Insects",
+      "power": 200,
+      "defense": 175,
+      "rarity": "common",
+      "file": "Egg Carton Caterpillar.png"
+    },
+    {
+      "id": "sp-base-60",
+      "name": "Envelope Bat",
+      "description": "Paper mailing envelopes folded into winged flyer",
+      "faction": "Chimera",
+      "power": 235,
+      "defense": 150,
+      "rarity": "common",
+      "file": "Envelope Bat.png"
+    },
+    {
+      "id": "sp-base-61",
+      "name": "Eraser Golem",
+      "description": "Pink rubber blocks stacked into lumbering giant",
+      "faction": "Golems",
+      "power": 275,
+      "defense": 130,
+      "rarity": "common",
+      "file": "Eraser Golem.png"
+    },
+    {
+      "id": "sp-base-62",
+      "name": "Extension Cord Hydra",
+      "description": "Multi-outlet power strip with plugged cords forming electrical monstrosity",
+      "faction": "Serpents",
+      "power": 970,
+      "defense": 760,
+      "rarity": "rare",
+      "file": "Extension Cord Hydra.png"
+    },
+    {
+      "id": "sp-base-63",
+      "name": "Extension Ladder Dragon",
+      "description": "Aluminum rungs extending into mechanical serpent",
+      "faction": "Serpents",
+      "power": 340,
+      "defense": 305,
+      "rarity": "uncommon",
+      "file": "Extension Ladder Dragon.png"
+    },
+    {
+      "id": "sp-base-64",
+      "name": "Feather Duster Phoenix",
+      "description": "Cleaning supplies repurposed into majestic bird",
+      "faction": "Spirits",
+      "power": 235,
+      "defense": 185,
+      "rarity": "common",
+      "file": "Feather Duster Phoenix.png"
+    },
+    {
+      "id": "sp-base-65",
+      "name": "Felt Phoenix",
+      "description": "Soft fabric bird with stitched feathers and stuffing leaking like embers",
+      "faction": "Spirits",
+      "power": 350,
+      "defense": 175,
+      "rarity": "common",
+      "file": "Felt Phoenix.png"
+    },
+    {
+      "id": "sp-base-66",
+      "name": "Fleece Blanket Bear",
+      "description": "Soft fleece material folded and stitched into huggable beast",
+      "faction": "Chimera",
+      "power": 105,
+      "defense": 140,
+      "rarity": "common",
+      "file": "Fleece Blanket Bear.png"
+    },
+    {
+      "id": "sp-base-67",
+      "name": "Foam Cup Turtle",
+      "description": "Stacked disposable cups forming segmented shell",
+      "faction": "Serpents",
+      "power": 220,
+      "defense": 175,
+      "rarity": "common",
+      "file": "Foam Cup Turtle.png"
+    },
+    {
+      "id": "sp-base-68",
+      "name": "Foam Frog",
+      "description": "Craft foam amphibian in bright colors with googly eyes",
+      "faction": "Chimera",
+      "power": 420,
+      "defense": 120,
+      "rarity": "uncommon",
+      "file": "Foam Frog.png"
+    },
+    {
+      "id": "sp-base-69",
+      "name": "Foil Wrapper Moth",
+      "description": "Chocolate wrapper wings in metallic shimmer",
+      "faction": "Insects",
+      "power": 450,
+      "defense": 155,
+      "rarity": "uncommon",
+      "file": "Foil Wrapper Moth.png"
+    },
+    {
+      "id": "sp-base-70",
+      "name": "Fork Trident Guardian",
+      "description": "Silverware utensil with prongs forming three-pointed weapon spirit",
+      "faction": "Spirits",
+      "power": 150,
+      "defense": 165,
+      "rarity": "common",
+      "file": "Fork Trident Guardian.png"
+    },
+    {
+      "id": "sp-base-71",
+      "name": "Fridge Magnet Swarm",
+      "description": "Colorful magnets clustering together forming shifting mass",
+      "faction": "Spirits",
+      "power": 225,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Fridge Magnet Swarm.png"
+    },
+    {
+      "id": "sp-base-72",
+      "name": "Game Controller Golem",
+      "description": "Plastic gamepad with button eyes and joystick joints",
+      "faction": "Golems",
+      "power": 125,
+      "defense": 160,
+      "rarity": "common",
+      "file": "Game Controller Golem.png"
+    },
+    {
+      "id": "sp-base-73",
+      "name": "Garden Hose Hydra",
+      "description": "Coiled rubber tube with multiple spray nozzle heads",
+      "faction": "Serpents",
+      "power": 355,
+      "defense": 265,
+      "rarity": "uncommon",
+      "file": "Garden Hose Hydra.png"
+    },
+    {
+      "id": "sp-base-74",
+      "name": "Glitter Wisp",
+      "description": "Loose sparkles held together by static forming floating orb",
+      "faction": "Spirits",
+      "power": 240,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Glitter Wisp.png"
+    },
+    {
+      "id": "sp-base-75",
+      "name": "Greeting Card Butterfly",
+      "description": "Folded cardstock with written messages visible",
+      "faction": "Insects",
+      "power": 115,
+      "defense": 105,
+      "rarity": "common",
+      "file": "Greeting Card Butterfly.png"
+    },
+    {
+      "id": "sp-base-76",
+      "name": "Gum Wrapper Fairy",
+      "description": "Foil candy wrappers twisted into winged sprite",
+      "faction": "Spirits",
+      "power": 280,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Gum Wrapper Fairy.png"
+    },
+    {
+      "id": "sp-base-77",
+      "name": "Headphone Hydra",
+      "description": "Tangled earbuds with multiple jack heads forming many-headed beast",
+      "faction": "Serpents",
+      "power": 430,
+      "defense": 275,
+      "rarity": "uncommon",
+      "file": "Headphone Hydra.png"
+    },
+    {
+      "id": "sp-base-78",
+      "name": "Heirloom Grandfather Clock Titan",
+      "description": "Ancient timepiece with pendulum heart and chiming soul forming eternal guardian",
+      "faction": "Golems",
+      "power": 1050,
+      "defense": 1200,
+      "rarity": "rare",
+      "file": "Heirloom Grandfather Clock Titan.png"
+    },
+    {
+      "id": "sp-base-79",
+      "name": "Heirloom Grandfather Clock Titan S",
+      "description": "Ancient timepiece with pendulum heart and chiming soul forming eternal guardian",
+      "faction": "Golems",
+      "power": 1050,
+      "defense": 1200,
+      "rarity": "legendary",
+      "file": "Heirloom Grandfather Clock Titan S.png"
+    },
+    {
+      "id": "sp-base-80",
+      "name": "Heirloom Grandfather Clock Titan X",
+      "description": "Ancient timepiece with pendulum heart and chiming soul forming eternal guardian",
+      "faction": "Golems",
+      "power": 1050,
+      "defense": 1200,
+      "rarity": "x-rare",
+      "file": "Heirloom Grandfather Clock Titan X.png"
+    },
+    {
+      "id": "sp-base-81",
+      "name": "Ice Cube Tray Golem",
+      "description": "Plastic molds stacked forming frozen block warrior",
+      "faction": "Golems",
+      "power": 130,
+      "defense": 170,
+      "rarity": "common",
+      "file": "Ice Cube Tray Golem.png"
+    },
+    {
+      "id": "sp-base-82",
+      "name": "Ice Pop Stickasaurus",
+      "description": "Flat wooden sticks with plates along spine",
+      "faction": "Serpents",
+      "power": 590,
+      "defense": 215,
+      "rarity": "uncommon",
+      "file": "Ice Pop Stickasaurus.png"
+    },
+    {
+      "id": "sp-base-83",
+      "name": "Inverted Ancestral Samurai Armor Beetle",
+      "description": "Lacquered plates and silk cords forming honored insect warrior of ancient lineage",
+      "faction": "Insects",
+      "power": 1150,
+      "defense": 1100,
+      "rarity": "ghost-rare",
+      "file": "Inverted Ancestral Samurai Armor Beetle.png"
+    },
+    {
+      "id": "sp-base-84",
+      "name": "Inverted Champion's Trophy Chimera",
+      "description": "Gold-plated cups and medals fused into glorious beast of victory and glory",
+      "faction": "Chimera",
+      "power": 1100,
+      "defense": 1050,
+      "rarity": "ghost-rare",
+      "file": "Inverted Champion's Trophy Chimera.png"
+    },
+    {
+      "id": "sp-base-85",
+      "name": "Inverted Heirloom Grandfather Clock Titan",
+      "description": "Ancient timepiece with pendulum heart and chiming soul forming eternal guardian",
+      "faction": "Golems",
+      "power": 1050,
+      "defense": 1200,
+      "rarity": "ghost-rare",
+      "file": "Inverted Heirloom Grandfather Clock Titan.png"
+    },
+    {
+      "id": "sp-base-86",
+      "name": "Inverted Mythic Persian Rug Basilisk",
+      "description": "Hand-woven tapestry with intricate patterns forming legendary serpent of prosperity",
+      "faction": "Serpents",
+      "power": 1175,
+      "defense": 1125,
+      "rarity": "ghost-rare",
+      "file": "Inverted Mythic Persian Rug Basilisk.png"
+    },
+    {
+      "id": "sp-base-87",
+      "name": "Inverted Sacred Family Bible Leviathan",
+      "description": "Leather-bound scripture with gilded pages forming divine aquatic titan of faith",
+      "faction": "Sea Monsters",
+      "power": 1125,
+      "defense": 1075,
+      "rarity": "ghost-rare",
+      "file": "Inverted Sacred Family Bible Leviathan.png"
+    },
+    {
+      "id": "sp-base-88",
+      "name": "Inverted Wedding Gown Seraph",
+      "description": "Pristine white lace and silk forming angelic matrimonial spirit of eternal devotion",
+      "faction": "Spirits",
+      "power": 1075,
+      "defense": 925,
+      "rarity": "ghost-rare",
+      "file": "Inverted Wedding Gown Seraph.png"
+    },
+    {
+      "id": "sp-base-89",
+      "name": "Jute Rope Kraken",
+      "description": "Thick nautical rope forming tentacled beast",
+      "faction": "Sea Monsters",
+      "power": 905,
+      "defense": 595,
+      "rarity": "rare",
+      "file": "Jute Rope Kraken.png"
+    },
+    {
+      "id": "sp-base-90",
+      "name": "Keychain Chimera",
+      "description": "Metal rings with trinkets dangling forming jangling beast",
+      "faction": "Chimera",
+      "power": 935,
+      "defense": 695,
+      "rarity": "rare",
+      "file": "Keychain Chimera.png"
+    },
+    {
+      "id": "sp-base-91",
+      "name": "Lamp Shade Jellyfish",
+      "description": "Fabric cone with fringe forming bell-shaped drifter",
+      "faction": "Sea Monsters",
+      "power": 175,
+      "defense": 120,
+      "rarity": "common",
+      "file": "Lamp Shade Jellyfish.png"
+    },
+    {
+      "id": "sp-base-92",
+      "name": "Laptop Golem",
+      "description": "Folding computer with screen face and keyboard body forming tech titan",
+      "faction": "Golems",
+      "power": 865,
+      "defense": 880,
+      "rarity": "rare",
+      "file": "Laptop Golem.png"
+    },
+    {
+      "id": "sp-base-93",
+      "name": "Laundry Basket Crab",
+      "description": "Woven plastic hamper with handle claws forming domestic crustacean",
+      "faction": "Sea Monsters",
+      "power": 385,
+      "defense": 295,
+      "rarity": "uncommon",
+      "file": "Laundry Basket Crab.png"
+    },
+    {
+      "id": "sp-base-94",
+      "name": "Leather Bat",
+      "description": "Tooled leather wings with rivets and stitching",
+      "faction": "Chimera",
+      "power": 270,
+      "defense": 295,
+      "rarity": "common",
+      "file": "Leather Bat.png"
+    },
+    {
+      "id": "sp-base-95",
+      "name": "Lego Brick Dragon",
+      "description": "Multicolored building blocks snapped together forming serpent",
+      "faction": "Serpents",
+      "power": 860,
+      "defense": 995,
+      "rarity": "rare",
+      "file": "Lego Brick Dragon.png"
+    },
+    {
+      "id": "sp-base-96",
+      "name": "Lightbulb Wisp",
+      "description": "Glass bulb with glowing filament forming electric spirit",
+      "faction": "Spirits",
+      "power": 520,
+      "defense": 210,
+      "rarity": "uncommon",
+      "file": "Lightbulb Wisp.png"
+    },
+    {
+      "id": "sp-base-97",
+      "name": "Macram\u00e9 Spider",
+      "description": "Knotted rope creating eight-legged creature",
+      "faction": "Insects",
+      "power": 635,
+      "defense": 295,
+      "rarity": "uncommon",
+      "file": "Macram\u00e9 Spider.png"
+    },
+    {
+      "id": "sp-base-98",
+      "name": "Magazine Collage Phoenix",
+      "description": "Cut-out images layered to create colorful bird",
+      "faction": "Spirits",
+      "power": 490,
+      "defense": 195,
+      "rarity": "uncommon",
+      "file": "Magazine Collage Phoenix.png"
+    },
+    {
+      "id": "sp-base-99",
+      "name": "Marble Golem",
+      "description": "Glass marbles fused together forming stocky warrior",
+      "faction": "Golems",
+      "power": 465,
+      "defense": 500,
+      "rarity": "uncommon",
+      "file": "Marble Golem.png"
+    },
+    {
+      "id": "sp-base-100",
+      "name": "Measuring Tape Serpent",
+      "description": "Retractable metal tape forming coiled constructor",
+      "faction": "Serpents",
+      "power": 185,
+      "defense": 195,
+      "rarity": "common",
+      "file": "Measuring Tape Serpent.png"
+    },
+    {
+      "id": "sp-base-101",
+      "name": "Mesh Bag Jellyfish",
+      "description": "Produce bag netting forming translucent drifter",
+      "faction": "Sea Monsters",
+      "power": 150,
+      "defense": 115,
+      "rarity": "common",
+      "file": "Mesh Bag Jellyfish.png"
+    },
+    {
+      "id": "sp-base-102",
+      "name": "Milk Jug Golem",
+      "description": "Plastic jugs stacked into hulking figure",
+      "faction": "Golems",
+      "power": 515,
+      "defense": 430,
+      "rarity": "uncommon",
+      "file": "Milk Jug Golem.png"
+    },
+    {
+      "id": "sp-base-103",
+      "name": "Mirror Shard Sprite",
+      "description": "Broken glass pieces reflecting light forming jagged fairy",
+      "faction": "Spirits",
+      "power": 170,
+      "defense": 130,
+      "rarity": "common",
+      "file": "Mirror Shard Sprite.png"
+    },
+    {
+      "id": "sp-base-104",
+      "name": "Mousepad Dragon",
+      "description": "Rubber-backed fabric forming low-profile serpent",
+      "faction": "Serpents",
+      "power": 415,
+      "defense": 320,
+      "rarity": "uncommon",
+      "file": "Mousepad Dragon.png"
+    },
+    {
+      "id": "sp-base-105",
+      "name": "Mythic Persian Rug Basilisk",
+      "description": "Hand-woven tapestry with intricate patterns forming legendary serpent of prosperity",
+      "faction": "Serpents",
+      "power": 1175,
+      "defense": 1125,
+      "rarity": "rare",
+      "file": "Mythic Persian Rug Basilisk.png"
+    },
+    {
+      "id": "sp-base-106",
+      "name": "Mythic Persian Rug Basilisk S",
+      "description": "Hand-woven tapestry with intricate patterns forming legendary serpent of prosperity",
+      "faction": "Serpents",
+      "power": 1175,
+      "defense": 1125,
+      "rarity": "legendary",
+      "file": "Mythic Persian Rug Basilisk S.png"
+    },
+    {
+      "id": "sp-base-107",
+      "name": "Mythic Persian Rug Basilisk X",
+      "description": "Hand-woven tapestry with intricate patterns forming legendary serpent of prosperity",
+      "faction": "Serpents",
+      "power": 1175,
+      "defense": 1125,
+      "rarity": "x-rare",
+      "file": "Mythic Persian Rug Basilisk X.png"
+    },
+    {
+      "id": "sp-base-108",
+      "name": "Nail Clipper Beetle",
+      "description": "Metal clippers with file attachment forming armored bug",
+      "faction": "Insects",
+      "power": 110,
+      "defense": 140,
+      "rarity": "common",
+      "file": "Nail Clipper Beetle.png"
+    },
+    {
+      "id": "sp-base-109",
+      "name": "Necktie Serpent",
+      "description": "Silk tie with Windsor knot head coiling elegantly",
+      "faction": "Serpents",
+      "power": 460,
+      "defense": 295,
+      "rarity": "uncommon",
+      "file": "Necktie Serpent.png"
+    },
+    {
+      "id": "sp-base-110",
+      "name": "Newspaper Wraith",
+      "description": "Crumpled news pages forming ghostly translucent spirit",
+      "faction": "Spirits",
+      "power": 380,
+      "defense": 230,
+      "rarity": "uncommon",
+      "file": "Newspaper Wraith.png"
+    },
+    {
+      "id": "sp-base-111",
+      "name": "Notebook Golem",
+      "description": "Spiral-bound pages forming rectangular giant with metal coil spine",
+      "faction": "Golems",
+      "power": 295,
+      "defense": 265,
+      "rarity": "uncommon",
+      "file": "Notebook Golem.png"
+    },
+    {
+      "id": "sp-base-112",
+      "name": "Origami Dragon",
+      "description": "Folded paper dragon with crisp creases breathes confetti",
+      "faction": "Serpents",
+      "power": 850,
+      "defense": 700,
+      "rarity": "rare",
+      "file": "Origami Dragon.png"
+    },
+    {
+      "id": "sp-base-113",
+      "name": "Oven Mitt Crab",
+      "description": "Quilted heat-resistant fabric with thumb claw forming protective crustacean",
+      "faction": "Sea Monsters",
+      "power": 100,
+      "defense": 155,
+      "rarity": "common",
+      "file": "Oven Mitt Crab.png"
+    },
+    {
+      "id": "sp-base-114",
+      "name": "Packing Peanut Blob",
+      "description": "Styrofoam pieces clumped into amorphous creature",
+      "faction": "Golems",
+      "power": 325,
+      "defense": 250,
+      "rarity": "common",
+      "file": "Packing Peanut Blob.png"
+    },
+    {
+      "id": "sp-base-115",
+      "name": "Packing Peanut Pufferfish",
+      "description": "Packing material forming defensive fish",
+      "faction": "Sea Monsters",
+      "power": 385,
+      "defense": 240,
+      "rarity": "uncommon",
+      "file": "Packing Peanut Pufferfish.png"
+    },
+    {
+      "id": "sp-base-116",
+      "name": "Paint Chip Phoenix",
+      "description": "Hardware store samples arranged in gradient plumage",
+      "faction": "Spirits",
+      "power": 510,
+      "defense": 205,
+      "rarity": "uncommon",
+      "file": "Paint Chip Phoenix.png"
+    },
+    {
+      "id": "sp-base-117",
+      "name": "Paper Bag Golem",
+      "description": "Brown lunch bags stuffed and stacked",
+      "faction": "Golems",
+      "power": 120,
+      "defense": 120,
+      "rarity": "common",
+      "file": "Paper Bag Golem.png"
+    },
+    {
+      "id": "sp-base-118",
+      "name": "Paperclip Chain Wyrm",
+      "description": "Linked metal clips forming flexible serpent",
+      "faction": "Serpents",
+      "power": 615,
+      "defense": 475,
+      "rarity": "uncommon",
+      "file": "Paperclip Chain Wyrm.png"
+    },
+    {
+      "id": "sp-base-119",
+      "name": "Papier-m\u00e2ch\u00e9 Troll",
+      "description": "Newspaper and paste monster with headlines visible on skin",
+      "faction": "Golems",
+      "power": 940,
+      "defense": 250,
+      "rarity": "rare",
+      "file": "Papier-m\u00e2ch\u00e9 Troll.png"
+    },
+    {
+      "id": "sp-base-120",
+      "name": "Patchwork Bear",
+      "description": "Quilted teddy bear with mismatched fabric squares and button eyes",
+      "faction": "Chimera",
+      "power": 500,
+      "defense": 200,
+      "rarity": "uncommon",
+      "file": "Patchwork Bear.png"
+    },
+    {
+      "id": "sp-base-121",
+      "name": "Pencil Dragonfly",
+      "description": "School pencils forming delicate flyer with pencil shavings for wings",
+      "faction": "Insects",
+      "power": 350,
+      "defense": 385,
+      "rarity": "common",
+      "file": "Pencil Dragonfly.png"
+    },
+    {
+      "id": "sp-base-122",
+      "name": "Phone Charger Serpent",
+      "description": "Coiled cable with USB head and charging brick tail",
+      "faction": "Serpents",
+      "power": 180,
+      "defense": 140,
+      "rarity": "common",
+      "file": "Phone Charger Serpent.png"
+    },
+    {
+      "id": "sp-base-123",
+      "name": "Photograph Ghost",
+      "description": "Printed images overlapping to form translucent memory spirit",
+      "faction": "Spirits",
+      "power": 165,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Photograph Ghost.png"
+    },
+    {
+      "id": "sp-base-124",
+      "name": "Pillow Cloud Wisp",
+      "description": "Stuffed cushion material forming soft floating spirit",
+      "faction": "Spirits",
+      "power": 145,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Pillow Cloud Wisp.png"
+    },
+    {
+      "id": "sp-base-125",
+      "name": "Pipe Cleaner Mantis",
+      "description": "Fuzzy wires bent into predatory insect with posable limbs",
+      "faction": "Insects",
+      "power": 295,
+      "defense": 155,
+      "rarity": "common",
+      "file": "Pipe Cleaner Mantis.png"
+    },
+    {
+      "id": "sp-base-126",
+      "name": "Plastic Bag Ghost",
+      "description": "Grocery bag inflated into floating specter",
+      "faction": "Spirits",
+      "power": 125,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Plastic Bag Ghost.png"
+    },
+    {
+      "id": "sp-base-127",
+      "name": "Playdough Blob",
+      "description": "Moldable clay creature in bright primary colors with visible fingerprints",
+      "faction": "Golems",
+      "power": 130,
+      "defense": 235,
+      "rarity": "common",
+      "file": "Playdough Blob.png"
+    },
+    {
+      "id": "sp-base-128",
+      "name": "Plunger Golem",
+      "description": "Rubber suction cup warrior with wooden handle body",
+      "faction": "Golems",
+      "power": 310,
+      "defense": 285,
+      "rarity": "uncommon",
+      "file": "Plunger Golem.png"
+    },
+    {
+      "id": "sp-base-129",
+      "name": "Poker Chip Dragon",
+      "description": "Casino chips stacked and glued into scaled serpent",
+      "faction": "Serpents",
+      "power": 845,
+      "defense": 800,
+      "rarity": "rare",
+      "file": "Poker Chip Dragon.png"
+    },
+    {
+      "id": "sp-base-130",
+      "name": "Pompom Sheep",
+      "description": "Fluffy yarn balls connected to form woolly creature",
+      "faction": "Chimera",
+      "power": 345,
+      "defense": 105,
+      "rarity": "common",
+      "file": "Pompom Sheep.png"
+    },
+    {
+      "id": "sp-base-131",
+      "name": "Popsicle Stick Griffin",
+      "description": "Craft stick construction with glue joints visible",
+      "faction": "Chimera",
+      "power": 650,
+      "defense": 300,
+      "rarity": "uncommon",
+      "file": "Popsicle Stick Griffin.png"
+    },
+    {
+      "id": "sp-base-132",
+      "name": "Postage Stamp Butterfly",
+      "description": "Adhesive stamps with perforated edges forming patchwork wings",
+      "faction": "Insects",
+      "power": 230,
+      "defense": 125,
+      "rarity": "common",
+      "file": "Postage Stamp Butterfly.png"
+    },
+    {
+      "id": "sp-base-133",
+      "name": "Pushpin Hedgehog",
+      "description": "Thumbtacks bristling from cork body",
+      "faction": "Chimera",
+      "power": 690,
+      "defense": 265,
+      "rarity": "uncommon",
+      "file": "Pushpin Hedgehog.png"
+    },
+    {
+      "id": "sp-base-134",
+      "name": "Puzzle Piece Phoenix",
+      "description": "Interlocking cardboard forming reconstructing bird",
+      "faction": "Spirits",
+      "power": 605,
+      "defense": 255,
+      "rarity": "uncommon",
+      "file": "Puzzle Piece Phoenix.png"
+    },
+    {
+      "id": "sp-base-135",
+      "name": "Reading Glasses Mantis",
+      "description": "Spectacles with folding temples forming insectoid scholar",
+      "faction": "Insects",
+      "power": 490,
+      "defense": 340,
+      "rarity": "uncommon",
+      "file": "Reading Glasses Mantis.png"
+    },
+    {
+      "id": "sp-base-136",
+      "name": "Receipt Snake",
+      "description": "Thermal paper strips linked forming curling serpent with faded text",
+      "faction": "Serpents",
+      "power": 240,
+      "defense": 165,
+      "rarity": "common",
+      "file": "Receipt Snake.png"
+    },
+    {
+      "id": "sp-base-137",
+      "name": "Ribbon Candy Serpent",
+      "description": "Twisted cellophane forming coiled translucent snake",
+      "faction": "Serpents",
+      "power": 300,
+      "defense": 110,
+      "rarity": "common",
+      "file": "Ribbon Candy Serpent.png"
+    },
+    {
+      "id": "sp-base-138",
+      "name": "Ribbon Eel",
+      "description": "Flowing satin ribbons forming a serpentine creature",
+      "faction": "Sea Monsters",
+      "power": 135,
+      "defense": 140,
+      "rarity": "common",
+      "file": "Ribbon Eel.png"
+    },
+    {
+      "id": "sp-base-139",
+      "name": "Ribbon Spool Snail",
+      "description": "Wooden spool shell with ribbon trail",
+      "faction": "Insects",
+      "power": 180,
+      "defense": 150,
+      "rarity": "common",
+      "file": "Ribbon Spool Snail.png"
+    },
+    {
+      "id": "sp-base-140",
+      "name": "Rubber Band Ball Elemental",
+      "description": "Thousands of bands wrapped into bouncing sphere",
+      "faction": "Golems",
+      "power": 395,
+      "defense": 465,
+      "rarity": "uncommon",
+      "file": "Rubber Band Ball Elemental.png"
+    },
+    {
+      "id": "sp-base-141",
+      "name": "Rubber Glove Octopus",
+      "description": "Inflated glove with finger tentacles",
+      "faction": "Sea Monsters",
+      "power": 400,
+      "defense": 145,
+      "rarity": "uncommon",
+      "file": "Rubber Glove Octopus.png"
+    },
+    {
+      "id": "sp-base-142",
+      "name": "Sacred Family Bible Leviathan",
+      "description": "Leather-bound scripture with gilded pages forming divine aquatic titan of faith",
+      "faction": "Sea Monsters",
+      "power": 1125,
+      "defense": 1075,
+      "rarity": "rare",
+      "file": "Sacred Family Bible Leviathan.png"
+    },
+    {
+      "id": "sp-base-143",
+      "name": "Sacred Family Bible Leviathan S",
+      "description": "Leather-bound scripture with gilded pages forming divine aquatic titan of faith",
+      "faction": "Sea Monsters",
+      "power": 1125,
+      "defense": 1075,
+      "rarity": "legendary",
+      "file": "Sacred Family Bible Leviathan S.png"
+    },
+    {
+      "id": "sp-base-144",
+      "name": "Sacred Family Bible Leviathan X",
+      "description": "Leather-bound scripture with gilded pages forming divine aquatic titan of faith",
+      "faction": "Sea Monsters",
+      "power": 1125,
+      "defense": 1075,
+      "rarity": "x-rare",
+      "file": "Sacred Family Bible Leviathan X.png"
+    },
+    {
+      "id": "sp-base-145",
+      "name": "Sandpaper Rhino",
+      "description": "Rough textured beast with gritty hide in various grits",
+      "faction": "Chimera",
+      "power": 875,
+      "defense": 920,
+      "rarity": "rare",
+      "file": "Sandpaper Rhino.png"
+    },
+    {
+      "id": "sp-base-146",
+      "name": "Seashell Hermit",
+      "description": "Real shells housing crafted crab body made from driftwood",
+      "faction": "Sea Monsters",
+      "power": 170,
+      "defense": 340,
+      "rarity": "common",
+      "file": "Seashell Hermit.png"
+    },
+    {
+      "id": "sp-base-147",
+      "name": "Shower Curtain Ghost",
+      "description": "Plastic liner with ring holes forming translucent specter",
+      "faction": "Spirits",
+      "power": 195,
+      "defense": 115,
+      "rarity": "common",
+      "file": "Shower Curtain Ghost.png"
+    },
+    {
+      "id": "sp-base-148",
+      "name": "Six-Sided Dice Golem",
+      "description": "Gaming cubes stacked forming numbered warrior",
+      "faction": "Golems",
+      "power": 250,
+      "defense": 205,
+      "rarity": "common",
+      "file": "Six-Sided Dice Golem.png"
+    },
+    {
+      "id": "sp-base-149",
+      "name": "Sneaker Hermit Crab",
+      "description": "Athletic shoe with laces forming tentacle legs",
+      "faction": "Chimera",
+      "power": 210,
+      "defense": 185,
+      "rarity": "common",
+      "file": "Sneaker Hermit Crab.png"
+    },
+    {
+      "id": "sp-base-150",
+      "name": "Soap Bar Whale",
+      "description": "Carved glycerin whale that leaves bubble trails",
+      "faction": "Sea Monsters",
+      "power": 745,
+      "defense": 655,
+      "rarity": "rare",
+      "file": "Soap Bar Whale.png"
+    },
+    {
+      "id": "sp-base-151",
+      "name": "Sock Monkey Chimera",
+      "description": "Classic sock monkey with extra limbs and mismatched socks",
+      "faction": "Chimera",
+      "power": 230,
+      "defense": 150,
+      "rarity": "common",
+      "file": "Sock Monkey Chimera.png"
+    },
+    {
+      "id": "sp-base-152",
+      "name": "Spatula Golem",
+      "description": "Multiple kitchen flippers stacked forming culinary warrior",
+      "faction": "Golems",
+      "power": 120,
+      "defense": 165,
+      "rarity": "common",
+      "file": "Spatula Golem.png"
+    },
+    {
+      "id": "sp-base-153",
+      "name": "Spatula Mantis",
+      "description": "Kitchen flipper with slotted blade forming predatory insect",
+      "faction": "Insects",
+      "power": 370,
+      "defense": 285,
+      "rarity": "uncommon",
+      "file": "Spatula Mantis.png"
+    },
+    {
+      "id": "sp-base-154",
+      "name": "Sponge Kraken",
+      "description": "Kitchen sponge tentacles that absorb and spray water",
+      "faction": "Sea Monsters",
+      "power": 930,
+      "defense": 350,
+      "rarity": "rare",
+      "file": "Sponge Kraken.png"
+    },
+    {
+      "id": "sp-base-155",
+      "name": "Sponge Paint Blob",
+      "description": "Paint-soaked sponge creature leaving artistic trails",
+      "faction": "Golems",
+      "power": 185,
+      "defense": 205,
+      "rarity": "common",
+      "file": "Sponge Paint Blob.png"
+    },
+    {
+      "id": "sp-base-156",
+      "name": "Staple Scorpion",
+      "description": "Metal staples linked together with spring-loaded tail",
+      "faction": "Insects",
+      "power": 930,
+      "defense": 600,
+      "rarity": "rare",
+      "file": "Staple Scorpion.png"
+    },
+    {
+      "id": "sp-base-157",
+      "name": "Steel Wool Lion",
+      "description": "Metal fibers shaped into maned predator",
+      "faction": "Chimera",
+      "power": 900,
+      "defense": 840,
+      "rarity": "rare",
+      "file": "Steel Wool Lion.png"
+    },
+    {
+      "id": "sp-base-158",
+      "name": "Sticky Note Swarm",
+      "description": "Post-its that peel off and reattach forming shifting mass",
+      "faction": "Spirits",
+      "power": 220,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Sticky Note Swarm.png"
+    },
+    {
+      "id": "sp-base-159",
+      "name": "Straw Mantis",
+      "description": "Bendy straws articulated into angular predator",
+      "faction": "Insects",
+      "power": 650,
+      "defense": 430,
+      "rarity": "uncommon",
+      "file": "Straw Mantis.png"
+    },
+    {
+      "id": "sp-base-160",
+      "name": "String Mummy",
+      "description": "Wrapped twine forming ancient guardian with fraying bandages",
+      "faction": "Spirits",
+      "power": 595,
+      "defense": 300,
+      "rarity": "uncommon",
+      "file": "String Mummy.png"
+    },
+    {
+      "id": "sp-base-161",
+      "name": "Sunglasses Mantis",
+      "description": "Folding shades with hinged arms forming predatory insect",
+      "faction": "Insects",
+      "power": 205,
+      "defense": 170,
+      "rarity": "common",
+      "file": "Sunglasses Mantis.png"
+    },
+    {
+      "id": "sp-base-162",
+      "name": "Tea Bag Ghost",
+      "description": "Steeped paper pouches with string tails forming aromatic specter",
+      "faction": "Spirits",
+      "power": 150,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Tea Bag Ghost.png"
+    },
+    {
+      "id": "sp-base-163",
+      "name": "Thread Spool Spider",
+      "description": "Wooden spools for body with thread web-spinning",
+      "faction": "Insects",
+      "power": 265,
+      "defense": 225,
+      "rarity": "common",
+      "file": "Thread Spool Spider.png"
+    },
+    {
+      "id": "sp-base-164",
+      "name": "Throw Pillow Golem",
+      "description": "Decorative cushions stacked forming soft giant",
+      "faction": "Golems",
+      "power": 475,
+      "defense": 385,
+      "rarity": "uncommon",
+      "file": "Throw Pillow Golem.png"
+    },
+    {
+      "id": "sp-base-165",
+      "name": "Thumbtack Warrior",
+      "description": "Metal pins forming tiny armored golem",
+      "faction": "Golems",
+      "power": 735,
+      "defense": 555,
+      "rarity": "rare",
+      "file": "Thumbtack Warrior.png"
+    },
+    {
+      "id": "sp-base-166",
+      "name": "Ticket Stub Phoenix",
+      "description": "Torn admission tickets layered forming rising bird",
+      "faction": "Spirits",
+      "power": 245,
+      "defense": 140,
+      "rarity": "common",
+      "file": "Ticket Stub Phoenix.png"
+    },
+    {
+      "id": "sp-base-167",
+      "name": "Tin Can Golem",
+      "description": "Preserved food tins stacked and riveted together",
+      "faction": "Golems",
+      "power": 645,
+      "defense": 560,
+      "rarity": "uncommon",
+      "file": "Tin Can Golem.png"
+    },
+    {
+      "id": "sp-base-168",
+      "name": "Tin Foil Swan",
+      "description": "Sculpted aluminum forming elegant bird spirit",
+      "faction": "Spirits",
+      "power": 265,
+      "defense": 195,
+      "rarity": "common",
+      "file": "Tin Foil Swan.png"
+    },
+    {
+      "id": "sp-base-169",
+      "name": "Tinfoil Gargoyle",
+      "description": "Crumpled aluminum foil shaped into winged guardian",
+      "faction": "Golems",
+      "power": 980,
+      "defense": 590,
+      "rarity": "rare",
+      "file": "Tinfoil Gargoyle.png"
+    },
+    {
+      "id": "sp-base-170",
+      "name": "Tissue Box Kraken",
+      "description": "Cardboard box with pulled tissues forming tentacles",
+      "faction": "Sea Monsters",
+      "power": 355,
+      "defense": 245,
+      "rarity": "uncommon",
+      "file": "Tissue Box Kraken.png"
+    },
+    {
+      "id": "sp-base-171",
+      "name": "Tissue Box Monster",
+      "description": "Empty box with tissue-strip tentacles",
+      "faction": "Golems",
+      "power": 105,
+      "defense": 190,
+      "rarity": "common",
+      "file": "Tissue Box Monster.png"
+    },
+    {
+      "id": "sp-base-172",
+      "name": "Tissue Paper Butterfly",
+      "description": "Delicate crepe paper wings with pipe cleaner antennae",
+      "faction": "Insects",
+      "power": 185,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Tissue Paper Butterfly.png"
+    },
+    {
+      "id": "sp-base-173",
+      "name": "Toolbox Golem",
+      "description": "Metal case with compartments forming organized warrior",
+      "faction": "Golems",
+      "power": 370,
+      "defense": 340,
+      "rarity": "uncommon",
+      "file": "Toolbox Golem.png"
+    },
+    {
+      "id": "sp-base-174",
+      "name": "Toothbrush Dragon",
+      "description": "Bristled heads linked together forming scrubbing serpent",
+      "faction": "Serpents",
+      "power": 115,
+      "defense": 125,
+      "rarity": "common",
+      "file": "Toothbrush Dragon.png"
+    },
+    {
+      "id": "sp-base-175",
+      "name": "Toothpick Porcupine",
+      "description": "Wooden picks bristling from foam body",
+      "faction": "Chimera",
+      "power": 495,
+      "defense": 190,
+      "rarity": "uncommon",
+      "file": "Toothpick Porcupine.png"
+    },
+    {
+      "id": "sp-base-176",
+      "name": "Trading Card Chimera",
+      "description": "Collectible cards layered and fanned forming hybrid creature",
+      "faction": "Chimera",
+      "power": 120,
+      "defense": 110,
+      "rarity": "common",
+      "file": "Trading Card Chimera.png"
+    },
+    {
+      "id": "sp-base-177",
+      "name": "Trash Bag Blob",
+      "description": "Heavy-duty plastic sack inflated into amorphous mass",
+      "faction": "Golems",
+      "power": 325,
+      "defense": 240,
+      "rarity": "uncommon",
+      "file": "Trash Bag Blob.png"
+    },
+    {
+      "id": "sp-base-178",
+      "name": "TV Remote Warrior",
+      "description": "Rectangle controller with button armor and battery pack core",
+      "faction": "Golems",
+      "power": 130,
+      "defense": 145,
+      "rarity": "common",
+      "file": "TV Remote Warrior.png"
+    },
+    {
+      "id": "sp-base-179",
+      "name": "Twist Tie Centipede",
+      "description": "Bread bag ties forming segmented crawler",
+      "faction": "Insects",
+      "power": 195,
+      "defense": 165,
+      "rarity": "common",
+      "file": "Twist Tie Centipede.png"
+    },
+    {
+      "id": "sp-base-180",
+      "name": "USB Drive Beetle",
+      "description": "Flash storage with cap forming armored tech bug",
+      "faction": "Insects",
+      "power": 445,
+      "defense": 360,
+      "rarity": "uncommon",
+      "file": "USB Drive Beetle.png"
+    },
+    {
+      "id": "sp-base-181",
+      "name": "Velcro Slime",
+      "description": "Fuzzy hook-and-loop material that can split and reform",
+      "faction": "Golems",
+      "power": 100,
+      "defense": 100,
+      "rarity": "common",
+      "file": "Velcro Slime.png"
+    },
+    {
+      "id": "sp-base-182",
+      "name": "Velvet Moth",
+      "description": "Plush fabric wings in deep burgundy with embroidered patterns",
+      "faction": "Insects",
+      "power": 625,
+      "defense": 180,
+      "rarity": "uncommon",
+      "file": "Velvet Moth.png"
+    },
+    {
+      "id": "sp-base-183",
+      "name": "Wallet Crab",
+      "description": "Leather bifold with card slots forming shell and bill compartments as claws",
+      "faction": "Sea Monsters",
+      "power": 135,
+      "defense": 170,
+      "rarity": "common",
+      "file": "Wallet Crab.png"
+    },
+    {
+      "id": "sp-base-184",
+      "name": "Washi Tape Koi",
+      "description": "Decorative tape strips forming layered fish",
+      "faction": "Sea Monsters",
+      "power": 360,
+      "defense": 200,
+      "rarity": "common",
+      "file": "Washi Tape Koi.png"
+    },
+    {
+      "id": "sp-base-185",
+      "name": "Wax Candle Worm",
+      "description": "Dripping wax creature with wick tail constantly melting and reforming",
+      "faction": "Insects",
+      "power": 230,
+      "defense": 220,
+      "rarity": "common",
+      "file": "Wax Candle Worm.png"
+    },
+    {
+      "id": "sp-base-186",
+      "name": "Wax Paper Ghost",
+      "description": "Translucent sheets forming floating specter",
+      "faction": "Spirits",
+      "power": 300,
+      "defense": 115,
+      "rarity": "common",
+      "file": "Wax Paper Ghost.png"
+    },
+    {
+      "id": "sp-base-187",
+      "name": "Wedding Gown Seraph",
+      "description": "Pristine white lace and silk forming angelic matrimonial spirit of eternal devotion",
+      "faction": "Spirits",
+      "power": 1075,
+      "defense": 925,
+      "rarity": "rare",
+      "file": "Wedding Gown Seraph.png"
+    },
+    {
+      "id": "sp-base-188",
+      "name": "Wedding Gown Seraph S",
+      "description": "Pristine white lace and silk forming angelic matrimonial spirit of eternal devotion",
+      "faction": "Spirits",
+      "power": 1075,
+      "defense": 925,
+      "rarity": "legendary",
+      "file": "Wedding Gown Seraph S.png"
+    },
+    {
+      "id": "sp-base-189",
+      "name": "Wedding Gown Seraph X",
+      "description": "Pristine white lace and silk forming angelic matrimonial spirit of eternal devotion",
+      "faction": "Spirits",
+      "power": 1075,
+      "defense": 925,
+      "rarity": "x-rare",
+      "file": "Wedding Gown Seraph X.png"
+    },
+    {
+      "id": "sp-base-190",
+      "name": "Whisk Insect",
+      "description": "Wire loops forming spherical flying bug",
+      "faction": "Insects",
+      "power": 145,
+      "defense": 135,
+      "rarity": "common",
+      "file": "Whisk Insect.png"
+    },
+    {
+      "id": "sp-base-191",
+      "name": "Wine Cork Beetle",
+      "description": "Natural cork segments forming armored bug",
+      "faction": "Insects",
+      "power": 725,
+      "defense": 605,
+      "rarity": "rare",
+      "file": "Wine Cork Beetle.png"
+    },
+    {
+      "id": "sp-base-192",
+      "name": "Wire Sprite",
+      "description": "Twisted copper wire fairy with bead joints",
+      "faction": "Spirits",
+      "power": 100,
+      "defense": 160,
+      "rarity": "common",
+      "file": "Wire Sprite.png"
+    },
+    {
+      "id": "sp-base-193",
+      "name": "Wooden Puppet Wolf",
+      "description": "Carved marionette with visible joints and strings",
+      "faction": "Chimera",
+      "power": 675,
+      "defense": 800,
+      "rarity": "uncommon",
+      "file": "Wooden Puppet Wolf.png"
+    },
+    {
+      "id": "sp-base-194",
+      "name": "Wristwatch Scarab",
+      "description": "Analog timepiece with metal band legs and crystal face shield",
+      "faction": "Insects",
+      "power": 140,
+      "defense": 180,
+      "rarity": "common",
+      "file": "Wristwatch Scarab.png"
+    },
+    {
+      "id": "sp-base-195",
+      "name": "Yarn Ball Caterpillar",
+      "description": "Wound yarn spheres in rainbow progression",
+      "faction": "Insects",
+      "power": 565,
+      "defense": 200,
+      "rarity": "uncommon",
+      "file": "Yarn Ball Caterpillar.png"
+    },
+    {
+      "id": "sp-base-196",
+      "name": "Yarn Serpent",
+      "description": "Long knitted snake that unravels and re-knits itself",
+      "faction": "Serpents",
+      "power": 280,
+      "defense": 125,
+      "rarity": "common",
+      "file": "Yarn Serpent.png"
+    },
+    {
+      "id": "sp-base-197",
+      "name": "Ziplock Bag Jellyfish",
+      "description": "Sealed plastic pouch inflated forming transparent drifter",
+      "faction": "Sea Monsters",
+      "power": 135,
+      "defense": 110,
+      "rarity": "common",
+      "file": "Ziplock Bag Jellyfish.png"
+    },
+    {
+      "id": "sp-base-198",
+      "name": "Zipper Serpent",
+      "description": "Metal zipper that slithers and opens/closes as it moves",
+      "faction": "Serpents",
+      "power": 460,
+      "defense": 380,
+      "rarity": "uncommon",
+      "file": "Zipper Serpent.png"
+    },
+    {
+      "id": "sp-base-199",
+      "name": "Dream Warden",
+      "description": "Plush stuffed cat sewn from childhood pajamas standing guard over nighttime slumber",
+      "faction": "Spirits",
+      "power": 1200,
+      "defense": 1200,
+      "rarity": "x-special-rare",
+      "file": "Dream Warden.png"
+    }
+  ]
+}

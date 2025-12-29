@@ -1,0 +1,2463 @@
+{
+  "id": "base-set",
+  "name": "Base Set",
+  "releaseDay": 1,
+  "packStructure": {
+    "size": 8,
+    "slots": [
+      {
+        "type": "guaranteed",
+        "rarity": "common",
+        "count": 4
+      },
+      {
+        "type": "guaranteed",
+        "rarity": "uncommon",
+        "count": 2
+      },
+      {
+        "type": "weighted",
+        "count": 1,
+        "odds": {
+          "rare": 89,
+          "legendary": 10,
+          "ultra-x-rare": 1
+        }
+      },
+      {
+        "type": "holo",
+        "count": 1,
+        "odds": {
+          "common": 47,
+          "uncommon": 34,
+          "rare": 13,
+          "legendary": 5,
+          "ultra-x-rare": 1
+        }
+      }
+    ]
+  },
+  "godPack": {
+    "chance": 0.001,
+    "size": 8,
+    "allHolo": true,
+    "distribution": [
+      {
+        "rarity": "rare",
+        "count": 1
+      },
+      {
+        "rarity": "legendary",
+        "count": 3
+      },
+      {
+        "rarity": "ultra-x-rare",
+        "count": 4
+      }
+    ]
+  },
+  "sealedProducts": {
+    "bundle": {
+      "packs": 8,
+      "guaranteed": [
+        {
+          "rarity": "legendary",
+          "count": 1
+        }
+      ]
+    },
+    "booster": {
+      "packs": 24,
+      "guaranteed": [
+        {
+          "rarity": "legendary",
+          "count": 4
+        }
+      ]
+    },
+    "case": {
+      "packs": 144,
+      "guaranteed": [
+        {
+          "rarity": "ultra-x-rare",
+          "count": 2
+        }
+      ]
+    }
+  },
+  "marketValueRanges": {
+    "common": {
+      "min": 0.5,
+      "max": 5.5,
+      "peak": 1.0
+    },
+    "uncommon": {
+      "min": 1.5,
+      "max": 8.0,
+      "peak": 3.0
+    },
+    "rare": {
+      "min": 3.5,
+      "max": 25.0,
+      "peak": 5.0
+    },
+    "legendary": {
+      "min": 9.25,
+      "max": 87.0,
+      "peak": 20.0
+    },
+    "ultra-x-rare": {
+      "min": 23.0,
+      "max": 820.0,
+      "peak": 100.0
+    }
+  },
+  "cards": [
+    {
+      "id": "tta-base-1",
+      "name": "A Big Stick",
+      "rarity": "common",
+      "file": "A Big Stick.png"
+    },
+    {
+      "id": "tta-base-2",
+      "name": "A Chill on the Wind",
+      "rarity": "uncommon",
+      "file": "A Chill on the Wind.png"
+    },
+    {
+      "id": "tta-base-3",
+      "name": "Adaptability",
+      "rarity": "common",
+      "file": "Adaptability.png"
+    },
+    {
+      "id": "tta-base-4",
+      "name": "Adrias",
+      "rarity": "legendary",
+      "file": "Adrias.png"
+    },
+    {
+      "id": "tta-base-5",
+      "name": "All Eyes On You",
+      "rarity": "common",
+      "file": "All Eyes On You.png"
+    },
+    {
+      "id": "tta-base-6",
+      "name": "All In",
+      "rarity": "rare",
+      "file": "All In.png"
+    },
+    {
+      "id": "tta-base-7",
+      "name": "Animal Experiments",
+      "rarity": "rare",
+      "file": "Animal Experiments.png"
+    },
+    {
+      "id": "tta-base-8",
+      "name": "Ante Up",
+      "rarity": "common",
+      "file": "Ante Up.png"
+    },
+    {
+      "id": "tta-base-9",
+      "name": "Arbeleatrier",
+      "rarity": "common",
+      "file": "Arbeleatrier.png"
+    },
+    {
+      "id": "tta-base-10",
+      "name": "Archer Legion",
+      "rarity": "common",
+      "file": "Archer Legion.png"
+    },
+    {
+      "id": "tta-base-11",
+      "name": "Archer's Greaves",
+      "rarity": "common",
+      "file": "Archer's Greaves.png"
+    },
+    {
+      "id": "tta-base-12",
+      "name": "Armistice",
+      "rarity": "uncommon",
+      "file": "Armistice.png"
+    },
+    {
+      "id": "tta-base-13",
+      "name": "Armor Fitter Herc",
+      "rarity": "common",
+      "file": "Armor Fitter Herc.png"
+    },
+    {
+      "id": "tta-base-14",
+      "name": "Armored Elephants",
+      "rarity": "common",
+      "file": "Armored Elephants.png"
+    },
+    {
+      "id": "tta-base-15",
+      "name": "Assassinate",
+      "rarity": "rare",
+      "file": "Assassinate.png"
+    },
+    {
+      "id": "tta-base-16",
+      "name": "Attempt at Re-Creation",
+      "rarity": "rare",
+      "file": "Attempt at Re-Creation.png"
+    },
+    {
+      "id": "tta-base-17",
+      "name": "Azure Guard",
+      "rarity": "common",
+      "file": "Azure Guard.png"
+    },
+    {
+      "id": "tta-base-18",
+      "name": "Azure, Star Seeker",
+      "rarity": "rare",
+      "file": "Azure, Star Seeker.png"
+    },
+    {
+      "id": "tta-base-19",
+      "name": "Azure's Assistant",
+      "rarity": "common",
+      "file": "Azure's Assistant.png"
+    },
+    {
+      "id": "tta-base-20",
+      "name": "Azure's Backup",
+      "rarity": "common",
+      "file": "Azure's Backup.png"
+    },
+    {
+      "id": "tta-base-21",
+      "name": "Azure's Feral Cats",
+      "rarity": "common",
+      "file": "Azure's Feral Cats.png"
+    },
+    {
+      "id": "tta-base-22",
+      "name": "Azure's Razor, Opus Dei",
+      "rarity": "legendary",
+      "file": "Azure's Razor, Opus Dei.png"
+    },
+    {
+      "id": "tta-base-23",
+      "name": "Azure's Razor, Opus Dei X",
+      "rarity": "ultra-x-rare",
+      "file": "Azure's Razor, Opus Dei X.png"
+    },
+    {
+      "id": "tta-base-24",
+      "name": "Azure's Stars Aligned",
+      "rarity": "rare",
+      "file": "Azure's Stars Aligned.png"
+    },
+    {
+      "id": "tta-base-25",
+      "name": "Azure's Stars Aligned X",
+      "rarity": "ultra-x-rare",
+      "file": "Azure's Stars Aligned X.png"
+    },
+    {
+      "id": "tta-base-26",
+      "name": "Banner of Death",
+      "rarity": "uncommon",
+      "file": "Banner of Death.png"
+    },
+    {
+      "id": "tta-base-27",
+      "name": "Banner of Pride",
+      "rarity": "uncommon",
+      "file": "Banner of Pride.png"
+    },
+    {
+      "id": "tta-base-28",
+      "name": "Banner of Unity",
+      "rarity": "rare",
+      "file": "Banner of Unity.png"
+    },
+    {
+      "id": "tta-base-29",
+      "name": "Banner of War",
+      "rarity": "uncommon",
+      "file": "Banner of War.png"
+    },
+    {
+      "id": "tta-base-30",
+      "name": "Barbaric Shout",
+      "rarity": "uncommon",
+      "file": "Barbaric Shout.png"
+    },
+    {
+      "id": "tta-base-31",
+      "name": "Basterd of Blades",
+      "rarity": "common",
+      "file": "Basterd of Blades.png"
+    },
+    {
+      "id": "tta-base-32",
+      "name": "Battle of Champions",
+      "rarity": "rare",
+      "file": "Battle of Champions.png"
+    },
+    {
+      "id": "tta-base-33",
+      "name": "Battle Owl",
+      "rarity": "uncommon",
+      "file": "Battle Owl.png"
+    },
+    {
+      "id": "tta-base-34",
+      "name": "Beard Tokens",
+      "rarity": "uncommon",
+      "file": "Beard Tokens.png"
+    },
+    {
+      "id": "tta-base-35",
+      "name": "Beastly Leather Gown",
+      "rarity": "uncommon",
+      "file": "Beastly Leather Gown.png"
+    },
+    {
+      "id": "tta-base-36",
+      "name": "Behind Enemy Lines",
+      "rarity": "common",
+      "file": "Behind Enemy Lines.png"
+    },
+    {
+      "id": "tta-base-37",
+      "name": "Belt of the Bold",
+      "rarity": "common",
+      "file": "Belt of the Bold.png"
+    },
+    {
+      "id": "tta-base-38",
+      "name": "Benne, Indric's Only Friend",
+      "rarity": "common",
+      "file": "Benne, Indric's Only Friend.png"
+    },
+    {
+      "id": "tta-base-39",
+      "name": "Berserker Mushroom",
+      "rarity": "common",
+      "file": "Berserker Mushroom.png"
+    },
+    {
+      "id": "tta-base-40",
+      "name": "Biting Bats",
+      "rarity": "common",
+      "file": "Biting Bats.png"
+    },
+    {
+      "id": "tta-base-41",
+      "name": "Blacksmith's Daughter",
+      "rarity": "uncommon",
+      "file": "Blacksmith's Daughter.png"
+    },
+    {
+      "id": "tta-base-42",
+      "name": "Blade of Beginnings",
+      "rarity": "legendary",
+      "file": "Blade of Beginnings.png"
+    },
+    {
+      "id": "tta-base-43",
+      "name": "Blade Sharpener Ansil",
+      "rarity": "uncommon",
+      "file": "Blade Sharpener Ansil.png"
+    },
+    {
+      "id": "tta-base-44",
+      "name": "Blade-Winged Eagles",
+      "rarity": "uncommon",
+      "file": "Blade-Winged Eagles.png"
+    },
+    {
+      "id": "tta-base-45",
+      "name": "Blinded Jalio, the One Who Takes",
+      "rarity": "common",
+      "file": "Blinded Jalio, the One Who Takes.png"
+    },
+    {
+      "id": "tta-base-46",
+      "name": "Blizzerd",
+      "rarity": "common",
+      "file": "Blizzerd.png"
+    },
+    {
+      "id": "tta-base-47",
+      "name": "Bloodlust",
+      "rarity": "common",
+      "file": "Bloodlust.png"
+    },
+    {
+      "id": "tta-base-48",
+      "name": "Bloodmorn",
+      "rarity": "uncommon",
+      "file": "Bloodmorn.png"
+    },
+    {
+      "id": "tta-base-49",
+      "name": "Bloodthirsty Mice",
+      "rarity": "common",
+      "file": "Bloodthirsty Mice.png"
+    },
+    {
+      "id": "tta-base-50",
+      "name": "Bloody Bear",
+      "rarity": "common",
+      "file": "Bloody Bear.png"
+    },
+    {
+      "id": "tta-base-51",
+      "name": "Bloody Scream",
+      "rarity": "uncommon",
+      "file": "Bloody Scream.png"
+    },
+    {
+      "id": "tta-base-52",
+      "name": "Bluff",
+      "rarity": "common",
+      "file": "Bluff.png"
+    },
+    {
+      "id": "tta-base-53",
+      "name": "Bonfire",
+      "rarity": "rare",
+      "file": "Bonfire.png"
+    },
+    {
+      "id": "tta-base-54",
+      "name": "Bookkeeper Terrin",
+      "rarity": "uncommon",
+      "file": "Bookkeeper Terrin.png"
+    },
+    {
+      "id": "tta-base-55",
+      "name": "Bounty Collectors",
+      "rarity": "common",
+      "file": "Bounty Collectors.png"
+    },
+    {
+      "id": "tta-base-56",
+      "name": "Breaker Captain",
+      "rarity": "common",
+      "file": "Breaker Captain.png"
+    },
+    {
+      "id": "tta-base-57",
+      "name": "Breaker Guard",
+      "rarity": "common",
+      "file": "Breaker Guard.png"
+    },
+    {
+      "id": "tta-base-58",
+      "name": "Breaker's Focus",
+      "rarity": "common",
+      "file": "Breaker's Focus.png"
+    },
+    {
+      "id": "tta-base-59",
+      "name": "Brew of the Dawn",
+      "rarity": "uncommon",
+      "file": "Brew of the Dawn.png"
+    },
+    {
+      "id": "tta-base-60",
+      "name": "Bribe the Guards",
+      "rarity": "common",
+      "file": "Bribe the Guards.png"
+    },
+    {
+      "id": "tta-base-61",
+      "name": "Burn the Tents",
+      "rarity": "uncommon",
+      "file": "Burn the Tents.png"
+    },
+    {
+      "id": "tta-base-62",
+      "name": "Burned Into Memory",
+      "rarity": "common",
+      "file": "Burned Into Memory.png"
+    },
+    {
+      "id": "tta-base-63",
+      "name": "Burning Soul",
+      "rarity": "uncommon",
+      "file": "Burning Soul.png"
+    },
+    {
+      "id": "tta-base-64",
+      "name": "Call of Beasts",
+      "rarity": "uncommon",
+      "file": "Call of Beasts.png"
+    },
+    {
+      "id": "tta-base-65",
+      "name": "Called It",
+      "rarity": "uncommon",
+      "file": "Called It.png"
+    },
+    {
+      "id": "tta-base-66",
+      "name": "Cascade of Darkness",
+      "rarity": "common",
+      "file": "Cascade of Darkness.png"
+    },
+    {
+      "id": "tta-base-67",
+      "name": "Castle Walls",
+      "rarity": "uncommon",
+      "file": "Castle Walls.png"
+    },
+    {
+      "id": "tta-base-68",
+      "name": "Cerberus",
+      "rarity": "legendary",
+      "file": "Cerberus.png"
+    },
+    {
+      "id": "tta-base-69",
+      "name": "Chain of the Gravetender",
+      "rarity": "rare",
+      "file": "Chain of the Gravetender.png"
+    },
+    {
+      "id": "tta-base-70",
+      "name": "Chainmail Hood",
+      "rarity": "uncommon",
+      "file": "Chainmail Hood.png"
+    },
+    {
+      "id": "tta-base-71",
+      "name": "Chalice of God",
+      "rarity": "uncommon",
+      "file": "Chalice of God.png"
+    },
+    {
+      "id": "tta-base-72",
+      "name": "Change of the Seasons",
+      "rarity": "common",
+      "file": "Change of the Seasons.png"
+    },
+    {
+      "id": "tta-base-73",
+      "name": "Charge",
+      "rarity": "legendary",
+      "file": "Charge.png"
+    },
+    {
+      "id": "tta-base-74",
+      "name": "Chivalry",
+      "rarity": "uncommon",
+      "file": "Chivalry.png"
+    },
+    {
+      "id": "tta-base-75",
+      "name": "Cleric",
+      "rarity": "rare",
+      "file": "Cleric.png"
+    },
+    {
+      "id": "tta-base-76",
+      "name": "Combusting Mushroom",
+      "rarity": "common",
+      "file": "Combusting Mushroom.png"
+    },
+    {
+      "id": "tta-base-77",
+      "name": "Commander Hew's Helm of Command",
+      "rarity": "uncommon",
+      "file": "Commander Hew's Helm of Command.png"
+    },
+    {
+      "id": "tta-base-78",
+      "name": "Commander's Decree",
+      "rarity": "uncommon",
+      "file": "Commander's Decree.png"
+    },
+    {
+      "id": "tta-base-79",
+      "name": "Cooked in Armor",
+      "rarity": "uncommon",
+      "file": "Cooked in Armor.png"
+    },
+    {
+      "id": "tta-base-80",
+      "name": "Counterintelligence",
+      "rarity": "uncommon",
+      "file": "Counterintelligence.png"
+    },
+    {
+      "id": "tta-base-81",
+      "name": "Crowspies",
+      "rarity": "uncommon",
+      "file": "Crowspies.png"
+    },
+    {
+      "id": "tta-base-82",
+      "name": "Cultists",
+      "rarity": "uncommon",
+      "file": "Cultists.png"
+    },
+    {
+      "id": "tta-base-83",
+      "name": "De'vone Matria",
+      "rarity": "common",
+      "file": "De'vone Matria.png"
+    },
+    {
+      "id": "tta-base-84",
+      "name": "Death Becomes",
+      "rarity": "uncommon",
+      "file": "Death Becomes.png"
+    },
+    {
+      "id": "tta-base-85",
+      "name": "Death Enough",
+      "rarity": "uncommon",
+      "file": "Death Enough.png"
+    },
+    {
+      "id": "tta-base-86",
+      "name": "Death Forgets",
+      "rarity": "uncommon",
+      "file": "Death Forgets.png"
+    },
+    {
+      "id": "tta-base-87",
+      "name": "Death Forgives",
+      "rarity": "uncommon",
+      "file": "Death Forgives.png"
+    },
+    {
+      "id": "tta-base-88",
+      "name": "Death Indeed",
+      "rarity": "uncommon",
+      "file": "Death Indeed.png"
+    },
+    {
+      "id": "tta-base-89",
+      "name": "Death Mushroom",
+      "rarity": "common",
+      "file": "Death Mushroom.png"
+    },
+    {
+      "id": "tta-base-90",
+      "name": "Death Remembers",
+      "rarity": "uncommon",
+      "file": "Death Remembers.png"
+    },
+    {
+      "id": "tta-base-91",
+      "name": "Defel, The Rain",
+      "rarity": "uncommon",
+      "file": "Defel, The Rain.png"
+    },
+    {
+      "id": "tta-base-92",
+      "name": "Demense",
+      "rarity": "uncommon",
+      "file": "Demense.png"
+    },
+    {
+      "id": "tta-base-93",
+      "name": "Deranged Prisoners",
+      "rarity": "common",
+      "file": "Deranged Prisoners.png"
+    },
+    {
+      "id": "tta-base-94",
+      "name": "Diorys Gianpetro",
+      "rarity": "rare",
+      "file": "Diorys Gianpetro.png"
+    },
+    {
+      "id": "tta-base-95",
+      "name": "Directionless",
+      "rarity": "common",
+      "file": "Directionless.png"
+    },
+    {
+      "id": "tta-base-96",
+      "name": "Dishonorable Discharge",
+      "rarity": "common",
+      "file": "Dishonorable Discharge.png"
+    },
+    {
+      "id": "tta-base-97",
+      "name": "Distortion Curse",
+      "rarity": "uncommon",
+      "file": "Distortion Curse.png"
+    },
+    {
+      "id": "tta-base-98",
+      "name": "Divination Scribe",
+      "rarity": "common",
+      "file": "Divination Scribe.png"
+    },
+    {
+      "id": "tta-base-99",
+      "name": "Divine Intervention",
+      "rarity": "legendary",
+      "file": "Divine Intervention.png"
+    },
+    {
+      "id": "tta-base-100",
+      "name": "Double Down",
+      "rarity": "rare",
+      "file": "Double Down.png"
+    },
+    {
+      "id": "tta-base-101",
+      "name": "Double Up",
+      "rarity": "common",
+      "file": "Double Up.png"
+    },
+    {
+      "id": "tta-base-102",
+      "name": "Draft the Recruits",
+      "rarity": "rare",
+      "file": "Draft the Recruits.png"
+    },
+    {
+      "id": "tta-base-103",
+      "name": "Dragonslayer",
+      "rarity": "rare",
+      "file": "Dragonslayer.png"
+    },
+    {
+      "id": "tta-base-104",
+      "name": "Draught",
+      "rarity": "common",
+      "file": "Draught.png"
+    },
+    {
+      "id": "tta-base-105",
+      "name": "Droves of Wolves",
+      "rarity": "common",
+      "file": "Droves of Wolves.png"
+    },
+    {
+      "id": "tta-base-106",
+      "name": "Duray, Pickpocket",
+      "rarity": "common",
+      "file": "Duray, Pickpocket.png"
+    },
+    {
+      "id": "tta-base-107",
+      "name": "Eat Up",
+      "rarity": "common",
+      "file": "Eat Up.png"
+    },
+    {
+      "id": "tta-base-108",
+      "name": "Embolden",
+      "rarity": "common",
+      "file": "Embolden.png"
+    },
+    {
+      "id": "tta-base-109",
+      "name": "Endless Knives",
+      "rarity": "rare",
+      "file": "Endless Knives.png"
+    },
+    {
+      "id": "tta-base-110",
+      "name": "Enough!",
+      "rarity": "common",
+      "file": "Enough!.png"
+    },
+    {
+      "id": "tta-base-111",
+      "name": "Ethical Soldier",
+      "rarity": "uncommon",
+      "file": "Ethical Soldier.png"
+    },
+    {
+      "id": "tta-base-112",
+      "name": "Expensive Armor",
+      "rarity": "common",
+      "file": "Expensive Armor.png"
+    },
+    {
+      "id": "tta-base-113",
+      "name": "Exploding Rats",
+      "rarity": "common",
+      "file": "Exploding Rats.png"
+    },
+    {
+      "id": "tta-base-114",
+      "name": "Extortion",
+      "rarity": "common",
+      "file": "Extortion.png"
+    },
+    {
+      "id": "tta-base-115",
+      "name": "Eye of Pride",
+      "rarity": "common",
+      "file": "Eye of Pride.png"
+    },
+    {
+      "id": "tta-base-116",
+      "name": "Failed Insurrection",
+      "rarity": "rare",
+      "file": "Failed Insurrection.png"
+    },
+    {
+      "id": "tta-base-117",
+      "name": "Fattened Battle Cattle",
+      "rarity": "common",
+      "file": "Fattened Battle Cattle.png"
+    },
+    {
+      "id": "tta-base-118",
+      "name": "Fatty Gunni",
+      "rarity": "common",
+      "file": "Fatty Gunni.png"
+    },
+    {
+      "id": "tta-base-119",
+      "name": "Feral Cats",
+      "rarity": "common",
+      "file": "Feral Cats.png"
+    },
+    {
+      "id": "tta-base-120",
+      "name": "Field of Blood",
+      "rarity": "common",
+      "file": "Field of Blood.png"
+    },
+    {
+      "id": "tta-base-121",
+      "name": "Final Charge",
+      "rarity": "uncommon",
+      "file": "Final Charge.png"
+    },
+    {
+      "id": "tta-base-122",
+      "name": "Fire Arrows",
+      "rarity": "common",
+      "file": "Fire Arrows.png"
+    },
+    {
+      "id": "tta-base-123",
+      "name": "Fisherman Yimoti",
+      "rarity": "common",
+      "file": "Fisherman Yimoti.png"
+    },
+    {
+      "id": "tta-base-124",
+      "name": "Fixed Result",
+      "rarity": "common",
+      "file": "Fixed Result.png"
+    },
+    {
+      "id": "tta-base-125",
+      "name": "Flute Player's Anthem",
+      "rarity": "uncommon",
+      "file": "Flute Player's Anthem.png"
+    },
+    {
+      "id": "tta-base-126",
+      "name": "Foggy Hills",
+      "rarity": "common",
+      "file": "Foggy Hills.png"
+    },
+    {
+      "id": "tta-base-127",
+      "name": "Foggy Morning",
+      "rarity": "rare",
+      "file": "Foggy Morning.png"
+    },
+    {
+      "id": "tta-base-128",
+      "name": "Forged Vambraces",
+      "rarity": "common",
+      "file": "Forged Vambraces.png"
+    },
+    {
+      "id": "tta-base-129",
+      "name": "Forgotten By the Future",
+      "rarity": "uncommon",
+      "file": "Forgotten By the Future.png"
+    },
+    {
+      "id": "tta-base-130",
+      "name": "Fresh Drinking Water",
+      "rarity": "rare",
+      "file": "Fresh Drinking Water.png"
+    },
+    {
+      "id": "tta-base-131",
+      "name": "Full Belly Ceddir",
+      "rarity": "common",
+      "file": "Full Belly Ceddir.png"
+    },
+    {
+      "id": "tta-base-132",
+      "name": "General Azure",
+      "rarity": "rare",
+      "file": "General Azure.png"
+    },
+    {
+      "id": "tta-base-133",
+      "name": "General's Bounty",
+      "rarity": "uncommon",
+      "file": "General's Bounty.png"
+    },
+    {
+      "id": "tta-base-134",
+      "name": "General's Command",
+      "rarity": "common",
+      "file": "General's Command.png"
+    },
+    {
+      "id": "tta-base-135",
+      "name": "Getaway Steeds",
+      "rarity": "uncommon",
+      "file": "Getaway Steeds.png"
+    },
+    {
+      "id": "tta-base-136",
+      "name": "Give Ground",
+      "rarity": "common",
+      "file": "Give Ground.png"
+    },
+    {
+      "id": "tta-base-137",
+      "name": "Golden Knight Captain",
+      "rarity": "uncommon",
+      "file": "Golden Knight Captain.png"
+    },
+    {
+      "id": "tta-base-138",
+      "name": "Golden Knight Leader Lorren",
+      "rarity": "uncommon",
+      "file": "Golden Knight Leader Lorren.png"
+    },
+    {
+      "id": "tta-base-139",
+      "name": "Golden Ymra",
+      "rarity": "rare",
+      "file": "Golden Ymra.png"
+    },
+    {
+      "id": "tta-base-140",
+      "name": "Golden Ymra X",
+      "rarity": "ultra-x-rare",
+      "file": "Golden Ymra X.png"
+    },
+    {
+      "id": "tta-base-141",
+      "name": "Grand Researcher Udolvis",
+      "rarity": "uncommon",
+      "file": "Grand Researcher Udolvis.png"
+    },
+    {
+      "id": "tta-base-142",
+      "name": "Grandfather Pine",
+      "rarity": "uncommon",
+      "file": "Grandfather Pine.png"
+    },
+    {
+      "id": "tta-base-143",
+      "name": "Gravetender's Shovel",
+      "rarity": "uncommon",
+      "file": "Gravetender's Shovel.png"
+    },
+    {
+      "id": "tta-base-144",
+      "name": "Greatwall Yvera",
+      "rarity": "uncommon",
+      "file": "Greatwall Yvera.png"
+    },
+    {
+      "id": "tta-base-145",
+      "name": "Greselia, Worldhopper",
+      "rarity": "uncommon",
+      "file": "Greselia, Worldhopper.png"
+    },
+    {
+      "id": "tta-base-146",
+      "name": "Grew Up Together",
+      "rarity": "common",
+      "file": "Grew Up Together.png"
+    },
+    {
+      "id": "tta-base-147",
+      "name": "Group of Corrupts",
+      "rarity": "common",
+      "file": "Group of Corrupts.png"
+    },
+    {
+      "id": "tta-base-148",
+      "name": "Grozu",
+      "rarity": "common",
+      "file": "Grozu.png"
+    },
+    {
+      "id": "tta-base-149",
+      "name": "Guttermite Drinny",
+      "rarity": "common",
+      "file": "Guttermite Drinny.png"
+    },
+    {
+      "id": "tta-base-150",
+      "name": "Handwraps",
+      "rarity": "common",
+      "file": "Handwraps.png"
+    },
+    {
+      "id": "tta-base-151",
+      "name": "Helm of Time",
+      "rarity": "rare",
+      "file": "Helm of Time.png"
+    },
+    {
+      "id": "tta-base-152",
+      "name": "Hide",
+      "rarity": "uncommon",
+      "file": "Hide.png"
+    },
+    {
+      "id": "tta-base-153",
+      "name": "High Morale",
+      "rarity": "rare",
+      "file": "High Morale.png"
+    },
+    {
+      "id": "tta-base-154",
+      "name": "Honorable Discharge",
+      "rarity": "common",
+      "file": "Honorable Discharge.png"
+    },
+    {
+      "id": "tta-base-155",
+      "name": "Hornman Thut",
+      "rarity": "common",
+      "file": "Hornman Thut.png"
+    },
+    {
+      "id": "tta-base-156",
+      "name": "Houndmaster Bretta",
+      "rarity": "rare",
+      "file": "Houndmaster Bretta.png"
+    },
+    {
+      "id": "tta-base-157",
+      "name": "Human Test Subject",
+      "rarity": "uncommon",
+      "file": "Human Test Subject.png"
+    },
+    {
+      "id": "tta-base-158",
+      "name": "Hungover Golden Knights",
+      "rarity": "common",
+      "file": "Hungover Golden Knights.png"
+    },
+    {
+      "id": "tta-base-159",
+      "name": "Huntsman Brekka",
+      "rarity": "common",
+      "file": "Huntsman Brekka.png"
+    },
+    {
+      "id": "tta-base-160",
+      "name": "Hurd and Grozu",
+      "rarity": "common",
+      "file": "Hurd and Grozu.png"
+    },
+    {
+      "id": "tta-base-161",
+      "name": "Ignorant Foresh",
+      "rarity": "common",
+      "file": "Ignorant Foresh.png"
+    },
+    {
+      "id": "tta-base-162",
+      "name": "In the Shade of the Trees",
+      "rarity": "rare",
+      "file": "In the Shade of the Trees.png"
+    },
+    {
+      "id": "tta-base-163",
+      "name": "Indric Puratta, the World is His",
+      "rarity": "rare",
+      "file": "Indric Puratta, the World is His.png"
+    },
+    {
+      "id": "tta-base-164",
+      "name": "Indric Puratta, The World Is His X",
+      "rarity": "ultra-x-rare",
+      "file": "Indric Puratta, The World Is His X.png"
+    },
+    {
+      "id": "tta-base-165",
+      "name": "Injection of Funds",
+      "rarity": "uncommon",
+      "file": "Injection of Funds.png"
+    },
+    {
+      "id": "tta-base-166",
+      "name": "Intersection of Past and Future",
+      "rarity": "common",
+      "file": "Intersection of Past and Future.png"
+    },
+    {
+      "id": "tta-base-167",
+      "name": "Intimidation",
+      "rarity": "rare",
+      "file": "Intimidation.png"
+    },
+    {
+      "id": "tta-base-168",
+      "name": "Jacques",
+      "rarity": "rare",
+      "file": "Jacques.png"
+    },
+    {
+      "id": "tta-base-169",
+      "name": "Jailbreak",
+      "rarity": "common",
+      "file": "Jailbreak.png"
+    },
+    {
+      "id": "tta-base-170",
+      "name": "Journey to the Otherside",
+      "rarity": "common",
+      "file": "Journey to the Otherside.png"
+    },
+    {
+      "id": "tta-base-171",
+      "name": "Keep the Family Close",
+      "rarity": "rare",
+      "file": "Keep the Family Close.png"
+    },
+    {
+      "id": "tta-base-172",
+      "name": "King's Favor",
+      "rarity": "uncommon",
+      "file": "King's Favor.png"
+    },
+    {
+      "id": "tta-base-173",
+      "name": "Kingkiller Vodd",
+      "rarity": "rare",
+      "file": "Kingkiller Vodd.png"
+    },
+    {
+      "id": "tta-base-174",
+      "name": "Knife Maiden",
+      "rarity": "common",
+      "file": "Knife Maiden.png"
+    },
+    {
+      "id": "tta-base-175",
+      "name": "Landshark",
+      "rarity": "common",
+      "file": "Landshark.png"
+    },
+    {
+      "id": "tta-base-176",
+      "name": "Latrine Diggers",
+      "rarity": "common",
+      "file": "Latrine Diggers.png"
+    },
+    {
+      "id": "tta-base-177",
+      "name": "Lead Astray",
+      "rarity": "uncommon",
+      "file": "Lead Astray.png"
+    },
+    {
+      "id": "tta-base-178",
+      "name": "Leader of the Maggots",
+      "rarity": "common",
+      "file": "Leader of the Maggots.png"
+    },
+    {
+      "id": "tta-base-179",
+      "name": "Leather Coat",
+      "rarity": "uncommon",
+      "file": "Leather Coat.png"
+    },
+    {
+      "id": "tta-base-180",
+      "name": "Lectio Divinia",
+      "rarity": "legendary",
+      "file": "Lectio Divinia.png"
+    },
+    {
+      "id": "tta-base-181",
+      "name": "Letters to the Future",
+      "rarity": "rare",
+      "file": "Letters to the Future.png"
+    },
+    {
+      "id": "tta-base-182",
+      "name": "Lost Company",
+      "rarity": "common",
+      "file": "Lost Company.png"
+    },
+    {
+      "id": "tta-base-183",
+      "name": "Loyal Hounds",
+      "rarity": "common",
+      "file": "Loyal Hounds.png"
+    },
+    {
+      "id": "tta-base-184",
+      "name": "Lupin, Young Royal",
+      "rarity": "common",
+      "file": "Lupin, Young Royal.png"
+    },
+    {
+      "id": "tta-base-185",
+      "name": "Marching On",
+      "rarity": "common",
+      "file": "Marching On.png"
+    },
+    {
+      "id": "tta-base-186",
+      "name": "Marshland",
+      "rarity": "common",
+      "file": "Marshland.png"
+    },
+    {
+      "id": "tta-base-187",
+      "name": "Master Assassin",
+      "rarity": "uncommon",
+      "file": "Master Assassin.png"
+    },
+    {
+      "id": "tta-base-188",
+      "name": "Midnight Concoction",
+      "rarity": "uncommon",
+      "file": "Midnight Concoction.png"
+    },
+    {
+      "id": "tta-base-189",
+      "name": "Mink, Jester of Kings",
+      "rarity": "uncommon",
+      "file": "Mink, Jester of Kings.png"
+    },
+    {
+      "id": "tta-base-190",
+      "name": "Misplaced Treasure",
+      "rarity": "rare",
+      "file": "Misplaced Treasure.png"
+    },
+    {
+      "id": "tta-base-191",
+      "name": "Moldy Bread",
+      "rarity": "common",
+      "file": "Moldy Bread.png"
+    },
+    {
+      "id": "tta-base-192",
+      "name": "More Than Enough",
+      "rarity": "uncommon",
+      "file": "More Than Enough.png"
+    },
+    {
+      "id": "tta-base-193",
+      "name": "Mouth of Hate",
+      "rarity": "uncommon",
+      "file": "Mouth of Hate.png"
+    },
+    {
+      "id": "tta-base-194",
+      "name": "Mundane Murderer",
+      "rarity": "common",
+      "file": "Mundane Murderer.png"
+    },
+    {
+      "id": "tta-base-195",
+      "name": "Mushroom Feaster",
+      "rarity": "common",
+      "file": "Mushroom Feaster.png"
+    },
+    {
+      "id": "tta-base-196",
+      "name": "Necrokane",
+      "rarity": "common",
+      "file": "Necrokane.png"
+    },
+    {
+      "id": "tta-base-197",
+      "name": "Nightfall",
+      "rarity": "legendary",
+      "file": "Nightfall.png"
+    },
+    {
+      "id": "tta-base-198",
+      "name": "Nightretch Assassins",
+      "rarity": "uncommon",
+      "file": "Nightretch Assassins.png"
+    },
+    {
+      "id": "tta-base-199",
+      "name": "No Soldier Goes Unpaid",
+      "rarity": "uncommon",
+      "file": "No Soldier Goes Unpaid.png"
+    },
+    {
+      "id": "tta-base-200",
+      "name": "Not Enough to Drink",
+      "rarity": "common",
+      "file": "Not Enough to Drink.png"
+    },
+    {
+      "id": "tta-base-201",
+      "name": "Not So Well Thought Plan",
+      "rarity": "common",
+      "file": "Not So Well Thought Plan.png"
+    },
+    {
+      "id": "tta-base-202",
+      "name": "Not Today, Soldier!",
+      "rarity": "uncommon",
+      "file": "Not Today, Soldier!.png"
+    },
+    {
+      "id": "tta-base-203",
+      "name": "Nothing Left",
+      "rarity": "rare",
+      "file": "Nothing Left.png"
+    },
+    {
+      "id": "tta-base-204",
+      "name": "Old Man Sigra",
+      "rarity": "uncommon",
+      "file": "Old Man Sigra.png"
+    },
+    {
+      "id": "tta-base-205",
+      "name": "Oracle",
+      "rarity": "uncommon",
+      "file": "Oracle.png"
+    },
+    {
+      "id": "tta-base-206",
+      "name": "Overworked Bookkeeper",
+      "rarity": "common",
+      "file": "Overworked Bookkeeper.png"
+    },
+    {
+      "id": "tta-base-207",
+      "name": "Pack of Hounds",
+      "rarity": "common",
+      "file": "Pack of Hounds.png"
+    },
+    {
+      "id": "tta-base-208",
+      "name": "Page Idica",
+      "rarity": "uncommon",
+      "file": "Page Idica.png"
+    },
+    {
+      "id": "tta-base-209",
+      "name": "Page of Hands",
+      "rarity": "uncommon",
+      "file": "Page of Hands.png"
+    },
+    {
+      "id": "tta-base-210",
+      "name": "Page Yus",
+      "rarity": "uncommon",
+      "file": "Page Yus.png"
+    },
+    {
+      "id": "tta-base-211",
+      "name": "Paid Off",
+      "rarity": "common",
+      "file": "Paid Off.png"
+    },
+    {
+      "id": "tta-base-212",
+      "name": "Parade",
+      "rarity": "common",
+      "file": "Parade.png"
+    },
+    {
+      "id": "tta-base-213",
+      "name": "Parley",
+      "rarity": "common",
+      "file": "Parley.png"
+    },
+    {
+      "id": "tta-base-214",
+      "name": "Pay Up",
+      "rarity": "common",
+      "file": "Pay Up.png"
+    },
+    {
+      "id": "tta-base-215",
+      "name": "Penny Pincher",
+      "rarity": "uncommon",
+      "file": "Penny Pincher.png"
+    },
+    {
+      "id": "tta-base-216",
+      "name": "Pickpocket",
+      "rarity": "common",
+      "file": "Pickpocket.png"
+    },
+    {
+      "id": "tta-base-217",
+      "name": "Place the Order",
+      "rarity": "common",
+      "file": "Place the Order.png"
+    },
+    {
+      "id": "tta-base-218",
+      "name": "Plague of Rats",
+      "rarity": "common",
+      "file": "Plague of Rats.png"
+    },
+    {
+      "id": "tta-base-219",
+      "name": "Plan",
+      "rarity": "common",
+      "file": "Plan.png"
+    },
+    {
+      "id": "tta-base-220",
+      "name": "Plate of Night",
+      "rarity": "uncommon",
+      "file": "Plate of Night.png"
+    },
+    {
+      "id": "tta-base-221",
+      "name": "Porous Ducts",
+      "rarity": "common",
+      "file": "Porous Ducts.png"
+    },
+    {
+      "id": "tta-base-222",
+      "name": "Prayer",
+      "rarity": "common",
+      "file": "Prayer.png"
+    },
+    {
+      "id": "tta-base-223",
+      "name": "Prayer of Winds",
+      "rarity": "uncommon",
+      "file": "Prayer of Winds.png"
+    },
+    {
+      "id": "tta-base-224",
+      "name": "Premeditated",
+      "rarity": "uncommon",
+      "file": "Premeditated.png"
+    },
+    {
+      "id": "tta-base-225",
+      "name": "Prepare to Strike",
+      "rarity": "uncommon",
+      "file": "Prepare to Strike.png"
+    },
+    {
+      "id": "tta-base-226",
+      "name": "Promising Recruit",
+      "rarity": "common",
+      "file": "Promising Recruit.png"
+    },
+    {
+      "id": "tta-base-227",
+      "name": "Prophecy",
+      "rarity": "common",
+      "file": "Prophecy.png"
+    },
+    {
+      "id": "tta-base-228",
+      "name": "Protectorate Genus",
+      "rarity": "common",
+      "file": "Protectorate Genus.png"
+    },
+    {
+      "id": "tta-base-229",
+      "name": "Protectorate Leader of All",
+      "rarity": "uncommon",
+      "file": "Protectorate Leader of All.png"
+    },
+    {
+      "id": "tta-base-230",
+      "name": "Proud Soldiers",
+      "rarity": "common",
+      "file": "Proud Soldiers.png"
+    },
+    {
+      "id": "tta-base-231",
+      "name": "Puratta's Broadsword, Blessed Blade",
+      "rarity": "legendary",
+      "file": "Puratta's Broadsword, Blessed Blade.png"
+    },
+    {
+      "id": "tta-base-232",
+      "name": "Puratta's Broadsword, Blessed Blade X",
+      "rarity": "ultra-x-rare",
+      "file": "Puratta's Broadsword, Blessed Blade X.png"
+    },
+    {
+      "id": "tta-base-233",
+      "name": "Puratta's Oath",
+      "rarity": "common",
+      "file": "Puratta's Oath.png"
+    },
+    {
+      "id": "tta-base-234",
+      "name": "Putyr, Viero, and Shara Vallobranch",
+      "rarity": "rare",
+      "file": "Putyr, Viero, and Shara Vallobranch.png"
+    },
+    {
+      "id": "tta-base-235",
+      "name": "Putyr's Favorite Charger",
+      "rarity": "common",
+      "file": "Putyr's Favorite Charger.png"
+    },
+    {
+      "id": "tta-base-236",
+      "name": "Quake",
+      "rarity": "legendary",
+      "file": "Quake.png"
+    },
+    {
+      "id": "tta-base-237",
+      "name": "Quartermaster Bergana",
+      "rarity": "rare",
+      "file": "Quartermaster Bergana.png"
+    },
+    {
+      "id": "tta-base-238",
+      "name": "Queens Command",
+      "rarity": "uncommon",
+      "file": "Queens Command.png"
+    },
+    {
+      "id": "tta-base-239",
+      "name": "Quick Grab",
+      "rarity": "uncommon",
+      "file": "Quick Grab.png"
+    },
+    {
+      "id": "tta-base-240",
+      "name": "Rampaging Demigod Vodd",
+      "rarity": "rare",
+      "file": "Rampaging Demigod Vodd.png"
+    },
+    {
+      "id": "tta-base-241",
+      "name": "Rampaging Demigod Vodd X",
+      "rarity": "ultra-x-rare",
+      "file": "Rampaging Demigod Vodd X.png"
+    },
+    {
+      "id": "tta-base-242",
+      "name": "Ready Or Not",
+      "rarity": "uncommon",
+      "file": "Ready Or Not.png"
+    },
+    {
+      "id": "tta-base-243",
+      "name": "Reborn Rabbit",
+      "rarity": "common",
+      "file": "Reborn Rabbit.png"
+    },
+    {
+      "id": "tta-base-244",
+      "name": "Recco",
+      "rarity": "rare",
+      "file": "Recco.png"
+    },
+    {
+      "id": "tta-base-245",
+      "name": "Recco Demonblood",
+      "rarity": "rare",
+      "file": "Recco Demonblood.png"
+    },
+    {
+      "id": "tta-base-246",
+      "name": "Recco, Plane of Hate",
+      "rarity": "legendary",
+      "file": "Recco, Plane of Hate.png"
+    },
+    {
+      "id": "tta-base-247",
+      "name": "Regroup",
+      "rarity": "common",
+      "file": "Regroup.png"
+    },
+    {
+      "id": "tta-base-248",
+      "name": "Researcher Pilio",
+      "rarity": "common",
+      "file": "Researcher Pilio.png"
+    },
+    {
+      "id": "tta-base-249",
+      "name": "Researcher Recruit",
+      "rarity": "common",
+      "file": "Researcher Recruit.png"
+    },
+    {
+      "id": "tta-base-250",
+      "name": "Retreat",
+      "rarity": "common",
+      "file": "Retreat.png"
+    },
+    {
+      "id": "tta-base-251",
+      "name": "Rew, the Butcher",
+      "rarity": "uncommon",
+      "file": "Rew, the Butcher.png"
+    },
+    {
+      "id": "tta-base-252",
+      "name": "Ritual Maiden Ferlindie",
+      "rarity": "uncommon",
+      "file": "Ritual Maiden Ferlindie.png"
+    },
+    {
+      "id": "tta-base-253",
+      "name": "Roques",
+      "rarity": "legendary",
+      "file": "Roques.png"
+    },
+    {
+      "id": "tta-base-254",
+      "name": "Royal Palace",
+      "rarity": "common",
+      "file": "Royal Palace.png"
+    },
+    {
+      "id": "tta-base-255",
+      "name": "Rupert, Flag Bearer",
+      "rarity": "uncommon",
+      "file": "Rupert, Flag Bearer.png"
+    },
+    {
+      "id": "tta-base-256",
+      "name": "Rusty Sword",
+      "rarity": "common",
+      "file": "Rusty Sword.png"
+    },
+    {
+      "id": "tta-base-257",
+      "name": "Sacrificial Boars",
+      "rarity": "uncommon",
+      "file": "Sacrificial Boars.png"
+    },
+    {
+      "id": "tta-base-258",
+      "name": "Sadistic Wretch",
+      "rarity": "common",
+      "file": "Sadistic Wretch.png"
+    },
+    {
+      "id": "tta-base-259",
+      "name": "Salla Salvato, Disguise Master",
+      "rarity": "common",
+      "file": "Salla Salvato, Disguise Master.png"
+    },
+    {
+      "id": "tta-base-260",
+      "name": "Salutations",
+      "rarity": "common",
+      "file": "Salutations.png"
+    },
+    {
+      "id": "tta-base-261",
+      "name": "Scars of a General's Past",
+      "rarity": "rare",
+      "file": "Scars of a General's Past.png"
+    },
+    {
+      "id": "tta-base-262",
+      "name": "See it in the Bones",
+      "rarity": "common",
+      "file": "See it in the Bones.png"
+    },
+    {
+      "id": "tta-base-263",
+      "name": "Send in the Ladies",
+      "rarity": "uncommon",
+      "file": "Send in the Ladies.png"
+    },
+    {
+      "id": "tta-base-264",
+      "name": "Ser Banyon",
+      "rarity": "common",
+      "file": "Ser Banyon.png"
+    },
+    {
+      "id": "tta-base-265",
+      "name": "Ser Geren, Knight of the King",
+      "rarity": "uncommon",
+      "file": "Ser Geren, Knight of the King.png"
+    },
+    {
+      "id": "tta-base-266",
+      "name": "Ser Indric",
+      "rarity": "rare",
+      "file": "Ser Indric.png"
+    },
+    {
+      "id": "tta-base-267",
+      "name": "Ser Indric's Victory",
+      "rarity": "rare",
+      "file": "Ser Indric's Victory.png"
+    },
+    {
+      "id": "tta-base-268",
+      "name": "Sewers",
+      "rarity": "common",
+      "file": "Sewers.png"
+    },
+    {
+      "id": "tta-base-269",
+      "name": "Shamed Royal",
+      "rarity": "common",
+      "file": "Shamed Royal.png"
+    },
+    {
+      "id": "tta-base-270",
+      "name": "Shara, The Lone Branch",
+      "rarity": "rare",
+      "file": "Shara, The Lone Branch.png"
+    },
+    {
+      "id": "tta-base-271",
+      "name": "Shara, The Lone Branch X",
+      "rarity": "ultra-x-rare",
+      "file": "Shara, The Lone Branch X.png"
+    },
+    {
+      "id": "tta-base-272",
+      "name": "Sharpened Blade",
+      "rarity": "uncommon",
+      "file": "Sharpened Blade.png"
+    },
+    {
+      "id": "tta-base-273",
+      "name": "Siege Weapons",
+      "rarity": "rare",
+      "file": "Siege Weapons.png"
+    },
+    {
+      "id": "tta-base-274",
+      "name": "Sister Wressa",
+      "rarity": "common",
+      "file": "Sister Wressa.png"
+    },
+    {
+      "id": "tta-base-275",
+      "name": "Sister Wrinna",
+      "rarity": "common",
+      "file": "Sister Wrinna.png"
+    },
+    {
+      "id": "tta-base-276",
+      "name": "Sleep Mushroom",
+      "rarity": "common",
+      "file": "Sleep Mushroom.png"
+    },
+    {
+      "id": "tta-base-277",
+      "name": "Slingshot",
+      "rarity": "common",
+      "file": "Slingshot.png"
+    },
+    {
+      "id": "tta-base-278",
+      "name": "Snake Under the Sheets",
+      "rarity": "common",
+      "file": "Snake Under the Sheets.png"
+    },
+    {
+      "id": "tta-base-279",
+      "name": "Snakeskin Assassin",
+      "rarity": "uncommon",
+      "file": "Snakeskin Assassin.png"
+    },
+    {
+      "id": "tta-base-280",
+      "name": "Son of Arvada, Personal Guard",
+      "rarity": "common",
+      "file": "Son of Arvada, Personal Guard.png"
+    },
+    {
+      "id": "tta-base-281",
+      "name": "Soulcloud",
+      "rarity": "common",
+      "file": "Soulcloud.png"
+    },
+    {
+      "id": "tta-base-282",
+      "name": "Speak with Animals",
+      "rarity": "common",
+      "file": "Speak with Animals.png"
+    },
+    {
+      "id": "tta-base-283",
+      "name": "Split Open",
+      "rarity": "common",
+      "file": "Split Open.png"
+    },
+    {
+      "id": "tta-base-284",
+      "name": "Spotter",
+      "rarity": "common",
+      "file": "Spotter.png"
+    },
+    {
+      "id": "tta-base-285",
+      "name": "Sprout Horns",
+      "rarity": "common",
+      "file": "Sprout Horns.png"
+    },
+    {
+      "id": "tta-base-286",
+      "name": "Spyglass",
+      "rarity": "uncommon",
+      "file": "Spyglass.png"
+    },
+    {
+      "id": "tta-base-287",
+      "name": "Spymaster Droxy",
+      "rarity": "rare",
+      "file": "Spymaster Droxy.png"
+    },
+    {
+      "id": "tta-base-288",
+      "name": "Squire Moveux",
+      "rarity": "common",
+      "file": "Squire Moveux.png"
+    },
+    {
+      "id": "tta-base-289",
+      "name": "Staff of the Beast",
+      "rarity": "common",
+      "file": "Staff of the Beast.png"
+    },
+    {
+      "id": "tta-base-290",
+      "name": "Starlight",
+      "rarity": "legendary",
+      "file": "Starlight.png"
+    },
+    {
+      "id": "tta-base-291",
+      "name": "Stash House",
+      "rarity": "common",
+      "file": "Stash House.png"
+    },
+    {
+      "id": "tta-base-292",
+      "name": "Steady!",
+      "rarity": "common",
+      "file": "Steady!.png"
+    },
+    {
+      "id": "tta-base-293",
+      "name": "Stigmata",
+      "rarity": "uncommon",
+      "file": "Stigmata.png"
+    },
+    {
+      "id": "tta-base-294",
+      "name": "Stone Mushroom",
+      "rarity": "common",
+      "file": "Stone Mushroom.png"
+    },
+    {
+      "id": "tta-base-295",
+      "name": "Stored for Later",
+      "rarity": "common",
+      "file": "Stored for Later.png"
+    },
+    {
+      "id": "tta-base-296",
+      "name": "Sturdy Leather Boots",
+      "rarity": "common",
+      "file": "Sturdy Leather Boots.png"
+    },
+    {
+      "id": "tta-base-297",
+      "name": "Sturdy Phalanx",
+      "rarity": "uncommon",
+      "file": "Sturdy Phalanx.png"
+    },
+    {
+      "id": "tta-base-298",
+      "name": "Summoner Aslye",
+      "rarity": "uncommon",
+      "file": "Summoner Aslye.png"
+    },
+    {
+      "id": "tta-base-299",
+      "name": "Sunrise",
+      "rarity": "legendary",
+      "file": "Sunrise.png"
+    },
+    {
+      "id": "tta-base-300",
+      "name": "Sunset",
+      "rarity": "common",
+      "file": "Sunset.png"
+    },
+    {
+      "id": "tta-base-301",
+      "name": "Supplies",
+      "rarity": "common",
+      "file": "Supplies.png"
+    },
+    {
+      "id": "tta-base-302",
+      "name": "Supply Line Cutoff",
+      "rarity": "uncommon",
+      "file": "Supply Line Cutoff.png"
+    },
+    {
+      "id": "tta-base-303",
+      "name": "Sweat",
+      "rarity": "common",
+      "file": "Sweat.png"
+    },
+    {
+      "id": "tta-base-304",
+      "name": "Tales of Yternus",
+      "rarity": "uncommon",
+      "file": "Tales of Yternus.png"
+    },
+    {
+      "id": "tta-base-305",
+      "name": "Tears of God",
+      "rarity": "legendary",
+      "file": "Tears of God.png"
+    },
+    {
+      "id": "tta-base-306",
+      "name": "Temporary Encampment",
+      "rarity": "rare",
+      "file": "Temporary Encampment.png"
+    },
+    {
+      "id": "tta-base-307",
+      "name": "Tempted Traitor",
+      "rarity": "uncommon",
+      "file": "Tempted Traitor.png"
+    },
+    {
+      "id": "tta-base-308",
+      "name": "Tent Maiden",
+      "rarity": "common",
+      "file": "Tent Maiden.png"
+    },
+    {
+      "id": "tta-base-309",
+      "name": "Teserio the Mage",
+      "rarity": "common",
+      "file": "Teserio the Mage.png"
+    },
+    {
+      "id": "tta-base-310",
+      "name": "The Bonfire",
+      "rarity": "common",
+      "file": "The Bonfire.png"
+    },
+    {
+      "id": "tta-base-311",
+      "name": "The Burning Pile",
+      "rarity": "common",
+      "file": "The Burning Pile.png"
+    },
+    {
+      "id": "tta-base-312",
+      "name": "The Castle",
+      "rarity": "common",
+      "file": "The Castle.png"
+    },
+    {
+      "id": "tta-base-313",
+      "name": "The Core",
+      "rarity": "rare",
+      "file": "The Core.png"
+    },
+    {
+      "id": "tta-base-314",
+      "name": "The Creator's Star",
+      "rarity": "rare",
+      "file": "The Creator's Star.png"
+    },
+    {
+      "id": "tta-base-315",
+      "name": "The Fixer",
+      "rarity": "uncommon",
+      "file": "The Fixer.png"
+    },
+    {
+      "id": "tta-base-316",
+      "name": "The Forgotten Branch",
+      "rarity": "rare",
+      "file": "The Forgotten Branch.png"
+    },
+    {
+      "id": "tta-base-317",
+      "name": "The Funeral",
+      "rarity": "rare",
+      "file": "The Funeral.png"
+    },
+    {
+      "id": "tta-base-318",
+      "name": "The House",
+      "rarity": "rare",
+      "file": "The House.png"
+    },
+    {
+      "id": "tta-base-319",
+      "name": "The House Always Wins",
+      "rarity": "common",
+      "file": "The House Always Wins.png"
+    },
+    {
+      "id": "tta-base-320",
+      "name": "The Influence",
+      "rarity": "rare",
+      "file": "The Influence.png"
+    },
+    {
+      "id": "tta-base-321",
+      "name": "The Knights Creed",
+      "rarity": "common",
+      "file": "The Knights Creed.png"
+    },
+    {
+      "id": "tta-base-322",
+      "name": "The Laughing Knight",
+      "rarity": "common",
+      "file": "The Laughing Knight.png"
+    },
+    {
+      "id": "tta-base-323",
+      "name": "The Lie",
+      "rarity": "rare",
+      "file": "The Lie.png"
+    },
+    {
+      "id": "tta-base-324",
+      "name": "The Negotiator",
+      "rarity": "uncommon",
+      "file": "The Negotiator.png"
+    },
+    {
+      "id": "tta-base-325",
+      "name": "The Night Before",
+      "rarity": "uncommon",
+      "file": "The Night Before.png"
+    },
+    {
+      "id": "tta-base-326",
+      "name": "The Pact",
+      "rarity": "rare",
+      "file": "The Pact.png"
+    },
+    {
+      "id": "tta-base-327",
+      "name": "The People's Knight",
+      "rarity": "rare",
+      "file": "The People's Knight.png"
+    },
+    {
+      "id": "tta-base-328",
+      "name": "The Perfect Moment",
+      "rarity": "common",
+      "file": "The Perfect Moment.png"
+    },
+    {
+      "id": "tta-base-329",
+      "name": "The Reborn",
+      "rarity": "common",
+      "file": "The Reborn.png"
+    },
+    {
+      "id": "tta-base-330",
+      "name": "The Ritual",
+      "rarity": "rare",
+      "file": "The Ritual.png"
+    },
+    {
+      "id": "tta-base-331",
+      "name": "The Sleepless Man",
+      "rarity": "uncommon",
+      "file": "The Sleepless Man.png"
+    },
+    {
+      "id": "tta-base-332",
+      "name": "The Timer",
+      "rarity": "uncommon",
+      "file": "The Timer.png"
+    },
+    {
+      "id": "tta-base-333",
+      "name": "The Vallobranch Family Blade",
+      "rarity": "legendary",
+      "file": "The Vallobranch Family Blade.png"
+    },
+    {
+      "id": "tta-base-334",
+      "name": "The Vallobranch Family Blade X",
+      "rarity": "ultra-x-rare",
+      "file": "The Vallobranch Family Blade X.png"
+    },
+    {
+      "id": "tta-base-335",
+      "name": "Thunderstorm",
+      "rarity": "common",
+      "file": "Thunderstorm.png"
+    },
+    {
+      "id": "tta-base-336",
+      "name": "Too Much to Drink",
+      "rarity": "uncommon",
+      "file": "Too Much to Drink.png"
+    },
+    {
+      "id": "tta-base-337",
+      "name": "Trained Hawk",
+      "rarity": "common",
+      "file": "Trained Hawk.png"
+    },
+    {
+      "id": "tta-base-338",
+      "name": "Trash Panda",
+      "rarity": "common",
+      "file": "Trash Panda.png"
+    },
+    {
+      "id": "tta-base-339",
+      "name": "Traveling Merchant",
+      "rarity": "uncommon",
+      "file": "Traveling Merchant.png"
+    },
+    {
+      "id": "tta-base-340",
+      "name": "Trebuchet Tactics",
+      "rarity": "rare",
+      "file": "Trebuchet Tactics.png"
+    },
+    {
+      "id": "tta-base-341",
+      "name": "Tremors",
+      "rarity": "uncommon",
+      "file": "Tremors.png"
+    },
+    {
+      "id": "tta-base-342",
+      "name": "Trench Diggers",
+      "rarity": "common",
+      "file": "Trench Diggers.png"
+    },
+    {
+      "id": "tta-base-343",
+      "name": "Turn the Other Way",
+      "rarity": "common",
+      "file": "Turn the Other Way.png"
+    },
+    {
+      "id": "tta-base-344",
+      "name": "Unchained Tiger",
+      "rarity": "uncommon",
+      "file": "Unchained Tiger.png"
+    },
+    {
+      "id": "tta-base-345",
+      "name": "Uncontrollable Bloom",
+      "rarity": "legendary",
+      "file": "Uncontrollable Bloom.png"
+    },
+    {
+      "id": "tta-base-346",
+      "name": "Under the Stars",
+      "rarity": "common",
+      "file": "Under the Stars.png"
+    },
+    {
+      "id": "tta-base-347",
+      "name": "Unnamed Slaves",
+      "rarity": "common",
+      "file": "Unnamed Slaves.png"
+    },
+    {
+      "id": "tta-base-348",
+      "name": "Unseen Forces",
+      "rarity": "rare",
+      "file": "Unseen Forces.png"
+    },
+    {
+      "id": "tta-base-349",
+      "name": "Unseen Terror-Monger",
+      "rarity": "common",
+      "file": "Unseen Terror-Monger.png"
+    },
+    {
+      "id": "tta-base-350",
+      "name": "Used Chainmail",
+      "rarity": "uncommon",
+      "file": "Used Chainmail.png"
+    },
+    {
+      "id": "tta-base-351",
+      "name": "Utility Belt",
+      "rarity": "common",
+      "file": "Utility Belt.png"
+    },
+    {
+      "id": "tta-base-352",
+      "name": "Vallobranch Riches",
+      "rarity": "uncommon",
+      "file": "Vallobranch Riches.png"
+    },
+    {
+      "id": "tta-base-353",
+      "name": "Valuable Prisoner",
+      "rarity": "rare",
+      "file": "Valuable Prisoner.png"
+    },
+    {
+      "id": "tta-base-354",
+      "name": "Veiled Guard of Stars",
+      "rarity": "common",
+      "file": "Veiled Guard of Stars.png"
+    },
+    {
+      "id": "tta-base-355",
+      "name": "Vesta's Roar",
+      "rarity": "rare",
+      "file": "Vesta's Roar.png"
+    },
+    {
+      "id": "tta-base-356",
+      "name": "Victorious!",
+      "rarity": "common",
+      "file": "Victorious!.png"
+    },
+    {
+      "id": "tta-base-357",
+      "name": "Viero and Shara",
+      "rarity": "rare",
+      "file": "Viero and Shara.png"
+    },
+    {
+      "id": "tta-base-358",
+      "name": "Viero's Family Ring",
+      "rarity": "rare",
+      "file": "Viero's Family Ring.png"
+    },
+    {
+      "id": "tta-base-359",
+      "name": "Violetta Shadowhunt",
+      "rarity": "rare",
+      "file": "Violetta Shadowhunt.png"
+    },
+    {
+      "id": "tta-base-360",
+      "name": "Violetta Shadowhunt X",
+      "rarity": "ultra-x-rare",
+      "file": "Violetta Shadowhunt X.png"
+    },
+    {
+      "id": "tta-base-361",
+      "name": "Violetta, First Meeting",
+      "rarity": "rare",
+      "file": "Violetta, First Meeting.png"
+    },
+    {
+      "id": "tta-base-362",
+      "name": "Violetta's Gamble",
+      "rarity": "rare",
+      "file": "Violetta's Gamble.png"
+    },
+    {
+      "id": "tta-base-363",
+      "name": "Violetta's Mistakes",
+      "rarity": "rare",
+      "file": "Violetta's Mistakes.png"
+    },
+    {
+      "id": "tta-base-364",
+      "name": "Violetta's Straight Sword, Oathtaker",
+      "rarity": "legendary",
+      "file": "Violetta's Straight Sword, Oathtaker.png"
+    },
+    {
+      "id": "tta-base-365",
+      "name": "Violetta's Straight Sword, Oathtaker X",
+      "rarity": "ultra-x-rare",
+      "file": "Violetta's Straight Sword, Oathtaker X.png"
+    },
+    {
+      "id": "tta-base-366",
+      "name": "Visions",
+      "rarity": "uncommon",
+      "file": "Visions.png"
+    },
+    {
+      "id": "tta-base-367",
+      "name": "Vodd, Tamed",
+      "rarity": "rare",
+      "file": "Vodd, Tamed.png"
+    },
+    {
+      "id": "tta-base-368",
+      "name": "Vodd's Champion",
+      "rarity": "uncommon",
+      "file": "Vodd's Champion.png"
+    },
+    {
+      "id": "tta-base-369",
+      "name": "Vodd's Dual Swords, Tyrant and Tamer",
+      "rarity": "legendary",
+      "file": "Vodd's Dual Swords, Tyrant and Tamer.png"
+    },
+    {
+      "id": "tta-base-370",
+      "name": "Vodd's Dual Swords, Tyrant and Tamer X",
+      "rarity": "ultra-x-rare",
+      "file": "Vodd's Dual Swords, Tyrant and Tamer X.png"
+    },
+    {
+      "id": "tta-base-371",
+      "name": "Vodd's Duststorm",
+      "rarity": "uncommon",
+      "file": "Vodd's Duststorm.png"
+    },
+    {
+      "id": "tta-base-372",
+      "name": "Vodd's Visions",
+      "rarity": "rare",
+      "file": "Vodd's Visions.png"
+    },
+    {
+      "id": "tta-base-373",
+      "name": "Wannabe Killer",
+      "rarity": "common",
+      "file": "Wannabe Killer.png"
+    },
+    {
+      "id": "tta-base-374",
+      "name": "War Horse",
+      "rarity": "common",
+      "file": "War Horse.png"
+    },
+    {
+      "id": "tta-base-375",
+      "name": "Washed Clean",
+      "rarity": "common",
+      "file": "Washed Clean.png"
+    },
+    {
+      "id": "tta-base-376",
+      "name": "Wasted Talent",
+      "rarity": "common",
+      "file": "Wasted Talent.png"
+    },
+    {
+      "id": "tta-base-377",
+      "name": "Weary Traveller",
+      "rarity": "common",
+      "file": "Weary Traveller.png"
+    },
+    {
+      "id": "tta-base-378",
+      "name": "Well Thought Plan",
+      "rarity": "uncommon",
+      "file": "Well Thought Plan.png"
+    },
+    {
+      "id": "tta-base-379",
+      "name": "What the Future Holds",
+      "rarity": "rare",
+      "file": "What the Future Holds.png"
+    },
+    {
+      "id": "tta-base-380",
+      "name": "Wide Swing",
+      "rarity": "uncommon",
+      "file": "Wide Swing.png"
+    },
+    {
+      "id": "tta-base-381",
+      "name": "Wild Visionary",
+      "rarity": "common",
+      "file": "Wild Visionary.png"
+    },
+    {
+      "id": "tta-base-382",
+      "name": "Words, Soft Spoken",
+      "rarity": "uncommon",
+      "file": "Words, Soft Spoken.png"
+    },
+    {
+      "id": "tta-base-383",
+      "name": "Ymra, Barbarica",
+      "rarity": "rare",
+      "file": "Ymra, Barbarica.png"
+    },
+    {
+      "id": "tta-base-384",
+      "name": "Ymra, Covered In Blood",
+      "rarity": "rare",
+      "file": "Ymra, Covered In Blood.png"
+    },
+    {
+      "id": "tta-base-385",
+      "name": "Ymra's Axe of the Sun",
+      "rarity": "legendary",
+      "file": "Ymra's Axe of the Sun.png"
+    },
+    {
+      "id": "tta-base-386",
+      "name": "Ymra's Axe of the Sun X",
+      "rarity": "ultra-x-rare",
+      "file": "Ymra's Axe of the Sun X.png"
+    },
+    {
+      "id": "tta-base-387",
+      "name": "Ymra's Chosen Sacrifice",
+      "rarity": "uncommon",
+      "file": "Ymra's Chosen Sacrifice.png"
+    },
+    {
+      "id": "tta-base-388",
+      "name": "Ymra's Prayers",
+      "rarity": "uncommon",
+      "file": "Ymra's Prayers.png"
+    },
+    {
+      "id": "tta-base-389",
+      "name": "Ymra's Wolves",
+      "rarity": "uncommon",
+      "file": "Ymra's Wolves.png"
+    },
+    {
+      "id": "tta-base-390",
+      "name": "Young Fil",
+      "rarity": "common",
+      "file": "Young Fil.png"
+    },
+    {
+      "id": "tta-base-391",
+      "name": "Yun-Wa, Advisor",
+      "rarity": "common",
+      "file": "Yun-Wa, Advisor.png"
+    }
+  ]
+}
