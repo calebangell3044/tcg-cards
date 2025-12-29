@@ -587,6 +587,38 @@ body{
       const [currentSetId, setCurrentSetId] = useState(null);
 
       // Load all configs on mount
+      const patchMissingMarketEntries = (baseValuesObj, currentValuesObj, breakoutCardsArr, historyObj, day) => {
+        const base = (baseValuesObj && typeof baseValuesObj === 'object') ? baseValuesObj : {};
+        const current = (currentValuesObj && typeof currentValuesObj === 'object') ? currentValuesObj : {};
+        let breakouts = Array.isArray(breakoutCardsArr) ? breakoutCardsArr : [];
+        const history = (historyObj && typeof historyObj === 'object') ? historyObj : {};
+
+        let didPatch = false;
+
+        for (const card of ALL_CARDS_GLOBAL) {
+          const id = card.id;
+          if (base[id] === undefined || base[id] === null) {
+            base[id] = generateMarketValueForCard(card);
+            didPatch = true;
+          }
+          if (current[id] === undefined || current[id] === null) {
+            current[id] = base[id];
+            didPatch = true;
+          }
+          if (!Array.isArray(history[id])) history[id] = [];
+          if (history[id].length === 0) {
+            history[id] = [{ day: day, value: current[id] }];
+            didPatch = true;
+          }
+          // Optional: give new cards a chance to be breakouts
+          if (didPatch && !breakouts.includes(id) && rand() < 0.10) {
+            breakouts.push(id);
+          }
+        }
+
+        return { base, current, breakouts, history, didPatch };
+      };
+
       useEffect(() => {
         const loadConfigs = async () => {
           try {
@@ -755,12 +787,58 @@ body{
     }) {
       // Derived values from config
       const ALL_CARDS = currentSetConfig.cards;
+
+      // Global card pool across all enabled games/sets (used for market simulation + Daily Singles)
+      const ALL_CARDS_GLOBAL = useMemo(() => {
+        const out = [];
+        try {
+          Object.keys(setConfigs || {}).forEach(gameId => {
+            const setsForGame = setConfigs[gameId] || {};
+            Object.keys(setsForGame).forEach(setId => {
+              const sc = setsForGame[setId];
+              if (!sc || !Array.isArray(sc.cards)) return;
+              sc.cards.forEach(c => {
+                if (!c || c.id === undefined || c.id === null) return;
+                out.push({ ...c, __gameId: gameId, __setId: setId });
+              });
+            });
+          });
+        } catch (e) {}
+        return out;
+      }, [setConfigs]);
+
+      const GLOBAL_CARD_INDEX = useMemo(() => {
+        const map = {};
+        const seen = new Set();
+        for (const c of ALL_CARDS_GLOBAL) {
+          const key = String(c.id);
+          if (!seen.has(key)) {
+            map[key] = c;
+            seen.add(key);
+          }
+        }
+        return map;
+      }, [ALL_CARDS_GLOBAL]);
+
       const RARITY_ORDER = currentGameConfig.rarityOrder;
+
+      const rarityColorsByGame = useMemo(() => {
+        const out = {};
+        try {
+          Object.keys(gameConfigs || {}).forEach(gid => {
+            out[gid] = buildRarityColors(gameConfigs[gid]);
+          });
+        } catch (e) {}
+        return out;
+      }, [gameConfigs]);
+
       const RARITY_COLORS = useMemo(() => buildRarityColors(currentGameConfig), [currentGameConfig]);
       const CARDS_BY_RARITY = useMemo(() => buildCardsByRarity(currentSetConfig, RARITY_ORDER), [currentSetConfig, RARITY_ORDER]);
       
       const getImageUrl = useCallback((card) => {
-        return buildImageUrl(currentGameId, currentSetId, card);
+        const gid = card?.__gameId || currentGameId;
+        const sid = card?.__setId || currentSetId;
+        return buildImageUrl(gid, sid, card);
       }, [currentGameId, currentSetId]);
 
       const getCardbackUrl = useCallback(() => {
@@ -1261,32 +1339,44 @@ body{
       };
 
       // Generate initial market values for all cards using config ranges
-      const generateMarketValues = () => {
+      // Generate initial market values for all cards (global) using per-set config ranges
+      const getMarketValueRangeForCard = (card) => {
+        const sc = setConfigs?.[card.__gameId]?.[card.__setId] || currentSetConfig;
+        const ranges = sc?.marketValueRanges || {};
+        return ranges[card.rarity] || null;
+      };
+
+      const generateMarketValueForCard = (card) => {
+        const range = getMarketValueRangeForCard(card);
+        if (range && typeof range.min === 'number' && typeof range.max === 'number') {
+          const peak = (typeof range.peak === 'number') ? range.peak : ((range.min + range.max) / 2);
+          const v = generateWeightedValue(range.min, range.max, peak);
+          return parseFloat(v.toFixed(2));
+        }
+        return 1.0;
+      };
+
+      const generateMarketValues = (cards = ALL_CARDS_GLOBAL) => {
         const values = {};
-        const ranges = currentSetConfig.marketValueRanges || {};
-        
-        ALL_CARDS.forEach(card => {
-          const range = ranges[card.rarity];
-          let value;
-          
-          if (range) {
-            value = generateWeightedValue(range.min, range.max, range.peak);
-          } else {
-            // Fallback for unknown rarities
-            value = 1.0;
-          }
-          values[card.id] = value;
+        (cards || []).forEach(card => {
+          values[card.id] = generateMarketValueForCard(card);
         });
         return values;
-      }
+      };
 
       // Generate per-card holo multipliers using config ranges
-      const generateHoloMultipliers = () => {
+
+const getHoloRangeForCard = (card) => {
+        const gc = gameConfigs?.[card.__gameId] || currentGameConfig;
+        return gc?.holoMultiplierRange || { min: 1.10, max: 2.50, peak: 1.50 };
+      };
+
+      const generateHoloMultipliers = (cards = ALL_CARDS_GLOBAL) => {
         const multipliers = {};
-        const holoRange = currentGameConfig.holoMultiplierRange || { min: 1.10, max: 2.50, peak: 1.50 };
-        
-        ALL_CARDS.forEach(card => {
-          multipliers[card.id] = generateWeightedValue(holoRange.min, holoRange.max, holoRange.peak);
+        (cards || []).forEach(card => {
+          const holoRange = getHoloRangeForCard(card);
+          const v = generateWeightedValue(holoRange.min, holoRange.max, holoRange.peak);
+          multipliers[card.id] = parseFloat(v.toFixed(2));
         });
         return multipliers;
       };
@@ -1304,14 +1394,58 @@ body{
       };
 
       // Use rarities from config for daily shop
-      const generateDailyShopPicks = () => {
+      const DAILY_SHOP_TIERS = [
+        { key: 'tier_0_5', label: '0–5 rations', min: 0, max: 5, minExclusive: false, maxInclusive: true },
+        { key: 'tier_5_25', label: '>5–25 rations', min: 5, max: 25, minExclusive: true, maxInclusive: true },
+        { key: 'tier_25_100', label: '>25–100 rations', min: 25, max: 100, minExclusive: true, maxInclusive: true },
+        { key: 'tier_100_plus', label: '>100 rations', min: 100, max: Infinity, minExclusive: true, maxInclusive: false }
+      ];
+
+      const inDailyShopTier = (value, tier) => {
+        if (value === null || value === undefined) return false;
+        const v = Number(value);
+        if (!Number.isFinite(v)) return false;
+        const above = tier.minExclusive ? (v > tier.min) : (v >= tier.min);
+        const below = (tier.max === Infinity)
+          ? true
+          : (tier.maxInclusive ? (v <= tier.max) : (v < tier.max));
+        return above && below;
+      };
+
+      const generateDailyShopPicks = (valuesMap) => {
         const picks = {};
-        RARITY_ORDER.forEach(rarity => {
-          const cards = CARDS_BY_RARITY[rarity] || [];
-          if (!cards.length) return;
-          const pick = cards[Math.floor(rand() * cards.length)];
-          if (pick && pick.id) picks[rarity] = pick.id;
+        const picked = new Set();
+        const values = (valuesMap && typeof valuesMap === 'object') ? valuesMap : (marketValues || {});
+
+        DAILY_SHOP_TIERS.forEach(tier => {
+          let candidates = ALL_CARDS_GLOBAL.filter(c => !picked.has(String(c.id)) && inDailyShopTier(values[c.id], tier));
+
+          // Fallbacks to guarantee we always pick something
+          if (!candidates.length) {
+            if (tier.max === Infinity) {
+              candidates = [...ALL_CARDS_GLOBAL]
+                .filter(c => !picked.has(String(c.id)) && Number.isFinite(Number(values[c.id])))
+                .sort((a, b) => (Number(values[b.id]) || 0) - (Number(values[a.id]) || 0))
+                .slice(0, Math.min(50, ALL_CARDS_GLOBAL.length));
+            } else {
+              candidates = ALL_CARDS_GLOBAL.filter(c =>
+                !picked.has(String(c.id)) &&
+                Number.isFinite(Number(values[c.id])) &&
+                Number(values[c.id]) <= tier.max
+              );
+            }
+          }
+
+          if (!candidates.length) candidates = ALL_CARDS_GLOBAL.filter(c => !picked.has(String(c.id)));
+          if (!candidates.length) return;
+
+          const pick = candidates[Math.floor(rand() * candidates.length)];
+          if (pick && pick.id !== undefined && pick.id !== null) {
+            picks[tier.key] = pick.id;
+            picked.add(String(pick.id));
+          }
         });
+
         return picks;
       };
 
@@ -1420,15 +1554,16 @@ body{
       // Apply daily market fluctuation
       const fluctuateMarket = (baseValues, currentValues, breakoutCards) => {
         const newValues = {};
-        ALL_CARDS.forEach(card => {
-          const baseValue = baseValues[card.id];
-          const currentValue = currentValues[card.id] || baseValue;
-          const isBreakout = breakoutCards.includes(card.id);
-          
+        const bo = Array.isArray(breakoutCards) ? breakoutCards : [];
+        for (const card of ALL_CARDS_GLOBAL) {
+          const baseValue = (baseValues && baseValues[card.id] != null) ? baseValues[card.id] : (currentValues?.[card.id] ?? 1);
+          const currentValue = (currentValues && currentValues[card.id] != null) ? currentValues[card.id] : baseValue;
+          const isBreakout = bo.includes(card.id);
+
           // Random fluctuation between -15% and +15%
           const fluctuation = (rand() * 0.30) - 0.15; // -0.15 to +0.15
           let newValue = currentValue * (1 + fluctuation);
-          
+
           // 90% of cards stay within 50-150% of base value
           if (!isBreakout) {
             const minBound = baseValue * 0.5;
@@ -1440,21 +1575,29 @@ body{
             const maxBound = baseValue * 2.0;
             newValue = Math.max(minBound, Math.min(maxBound, newValue));
           }
-          
+
           newValues[card.id] = parseFloat(newValue.toFixed(2));
-        });
+        }
         return newValues;
       };
 
       // Select 10% of cards from each rarity to be "breakout" cards
-      const selectBreakoutCards = () => {
+      const selectBreakoutCards = (cards = ALL_CARDS_GLOBAL) => {
         const breakouts = [];
-        Object.keys(CARDS_BY_RARITY).forEach(rarity => {
-          const cards = CARDS_BY_RARITY[rarity];
-          const count = Math.ceil(cards.length * 0.1);
-          const shuffled = [...cards].sort(() => rand() - 0.5);
+        const groups = {};
+        (cards || []).forEach(c => {
+          const r = c.rarity || 'unknown';
+          if (!groups[r]) groups[r] = [];
+          groups[r].push(c);
+        });
+
+        Object.keys(groups).forEach(rarity => {
+          const arr = groups[rarity];
+          const count = Math.ceil(arr.length * 0.1);
+          const shuffled = [...arr].sort(() => rand() - 0.5);
           breakouts.push(...shuffled.slice(0, count).map(c => c.id));
         });
+
         return breakouts;
       };
 
@@ -1580,7 +1723,7 @@ body{
           }
         }
 
-        // Initialize or load daily shop rotation (5 singles, 1 per rarity)
+        // Initialize or load daily shop rotation (4 singles by market value tier)
         let dsDate = localStorage.getItem('tcg-daily-shop-date');
         let dsPicksRaw = localStorage.getItem('tcg-daily-shop-picks');
         let dsPicks = null;
@@ -1599,26 +1742,77 @@ body{
         const currentDay = bootDay;
 
         // Validate / rotate daily shop picks (advances by in-game Day, not real time)
+        // Daily Singles are 4 cards picked by current market value tiers across ALL games/sets.
         let dsDay = parseInt(localStorage.getItem('tcg-daily-shop-day') || '0', 10);
-        if (!dsDay || dsDay !== currentDay || !dsPicks || typeof dsPicks !== 'object') {
-          dsPicks = generateDailyShopPicks();
+
+        // Ensure we have a market map available for tier selection without overwriting existing prices.
+        let marketForShop = {};
+        if (currentValues) {
+          try {
+            const parsed = JSON.parse(currentValues);
+            if (parsed && typeof parsed === 'object') marketForShop = parsed;
+          } catch (e) {}
+        }
+
+        // If current market map is missing, fall back to base market map for tier selection.
+        if ((!marketForShop || Object.keys(marketForShop).length === 0) && baseValues) {
+          try {
+            const parsedBase = JSON.parse(baseValues);
+            if (parsedBase && typeof parsedBase === 'object') marketForShop = parsedBase;
+          } catch (e) {}
+        }
+
+        // If market is not initialized at all (first run), initialize now so tier selection works.
+        if (!baseValues) {
+          try {
+            const initBaseObj = generateMarketValues();
+            const initCurrentObj = { ...initBaseObj };
+            const initBreakoutsObj = selectBreakoutCards();
+            const initHistoryObj = {};
+            Object.keys(initCurrentObj).forEach(cardId => {
+              initHistoryObj[cardId] = [{ day: currentDay, value: initCurrentObj[cardId] }];
+            });
+
+            localStorage.setItem('tcg-market-base', JSON.stringify(initBaseObj));
+            localStorage.setItem('tcg-market-current', JSON.stringify(initCurrentObj));
+            localStorage.setItem('tcg-market-breakouts', JSON.stringify(initBreakoutsObj));
+            localStorage.setItem('tcg-market-last-day', String(currentDay));
+            localStorage.setItem('tcg-price-history', JSON.stringify(initHistoryObj));
+
+            // Update local variables so the market init block later doesn't reinitialize.
+            baseValues = JSON.stringify(initBaseObj);
+            currentValues = JSON.stringify(initCurrentObj);
+            breakoutCards = JSON.stringify(initBreakoutsObj);
+            history = JSON.stringify(initHistoryObj);
+            lastMarketDay = String(currentDay);
+            marketForShop = initCurrentObj;
+          } catch (e) {
+            marketForShop = {};
+          }
+        }
+
+        const picksAreValid = (p) => {
+          if (!p || typeof p !== 'object') return false;
+          return DAILY_SHOP_TIERS.every(t => p[t.key]);
+        };
+
+        if (!dsDay || dsDay !== currentDay || !picksAreValid(dsPicks)) {
+          dsPicks = generateDailyShopPicks(marketForShop);
           dsDay = currentDay;
           localStorage.setItem('tcg-daily-shop-day', String(dsDay));
           localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(dsPicks));
         } else {
-          // Patch missing rarities (in case data changed)
+          // Patch missing tiers (in case schema changed)
           let didPatch = false;
-          DAILY_SHOP_RARITIES.forEach(rarity => {
-            if (!dsPicks[rarity]) {
-              const cards = CARDS_BY_RARITY[rarity] || [];
-              if (cards.length) {
-                dsPicks[rarity] = cards[Math.floor(rand() * cards.length)].id;
-                didPatch = true;
-              }
-            }
+          DAILY_SHOP_TIERS.forEach(tier => {
+            if (!dsPicks[tier.key]) didPatch = true;
           });
-          if (didPatch) localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(dsPicks));
+          if (didPatch) {
+            dsPicks = generateDailyShopPicks(marketForShop);
+            localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(dsPicks));
+          }
         }
+
         setDailyShopDate(`Day ${dsDay || currentDay}`);
         setDailyShopPicks(dsPicks || {});
 
@@ -1650,9 +1844,11 @@ body{
           }
           // Fill any missing card IDs (in case new cards were added)
           let didPatch = false;
-          ALL_CARDS.forEach(card => {
-            if (!holoMap[card.id]) {
-              holoMap[card.id] = generateWeightedValue(1.10, 2.50, 1.50);
+          ALL_CARDS_GLOBAL.forEach(card => {
+            if (holoMap[card.id] === undefined || holoMap[card.id] === null) {
+              const hr = getHoloRangeForCard(card);
+              const v = generateWeightedValue(hr.min, hr.max, hr.peak);
+              holoMap[card.id] = parseFloat(v.toFixed(2));
               didPatch = true;
             }
           });
@@ -1682,6 +1878,21 @@ body{
           currentValues = JSON.parse(currentValues);
           breakoutCards = JSON.parse(breakoutCards);
           history = history ? JSON.parse(history) : {};
+          
+          // Patch missing entries for newly added cards/sets without resetting existing prices
+          try {
+            const patched = patchMissingMarketEntries(baseValues, currentValues, breakoutCards, history, currentDay);
+            baseValues = patched.base;
+            currentValues = patched.current;
+            breakoutCards = patched.breakouts;
+            history = patched.history;
+            if (patched.didPatch) {
+              localStorage.setItem('tcg-market-base', JSON.stringify(baseValues));
+              localStorage.setItem('tcg-market-current', JSON.stringify(currentValues));
+              localStorage.setItem('tcg-market-breakouts', JSON.stringify(breakoutCards));
+              localStorage.setItem('tcg-price-history', JSON.stringify(history));
+            }
+          } catch (e) {}
           
           // Prices only change when in-game Day advances (via the Advance Day button)
           let lastDayNum = parseInt(localStorage.getItem('tcg-market-last-day') || '0', 10);
@@ -1931,6 +2142,21 @@ body{
           }
           if (!current || Object.keys(current).length === 0) current = { ...base };
 
+          // Patch missing entries for newly added cards/sets without resetting existing prices
+          try {
+            const patched = patchMissingMarketEntries(base, current, breakout, history, nextDay);
+            base = patched.base;
+            current = patched.current;
+            breakout = patched.breakouts;
+            history = patched.history;
+            if (patched.didPatch) {
+              localStorage.setItem('tcg-market-base', JSON.stringify(base));
+              localStorage.setItem('tcg-market-breakouts', JSON.stringify(breakout));
+              localStorage.setItem('tcg-price-history', JSON.stringify(history));
+            }
+          } catch (e) {}
+
+
           const newValues = fluctuateMarket(base, current, breakout);
           localStorage.setItem('tcg-market-current', JSON.stringify(newValues));
           localStorage.setItem('tcg-market-last-day', String(nextDay));
@@ -1950,7 +2176,7 @@ body{
 
         // Rotate daily shop picks for the new day
         try {
-          const picks = generateDailyShopPicks();
+          const picks = generateDailyShopPicks(newValues);
           localStorage.setItem('tcg-daily-shop-day', String(nextDay));
           localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(picks));
           setDailyShopPicks(picks);
@@ -2267,9 +2493,11 @@ const persistShopStock = (ss) => {
       
       const getCardById = (cardId) => {
         const idStr = String(cardId);
-        const card = ALL_CARDS.find(c => String(c.id) === idStr);
+        const card = GLOBAL_CARD_INDEX[idStr];
         if (!card) return null;
-        return { ...card, image: getImageUrl(card) };
+        const gid = card.__gameId || currentGameId;
+        const sid = card.__setId || currentSetId;
+        return { ...card, image: buildImageUrl(gid, sid, card) };
       };
 
 const getRareSlotCard = () => {
@@ -3375,14 +3603,15 @@ if (!isLoaded) {
                   <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 14px' }}>Need a specific missing card? Buy it directly — but it costs more than pulling it from packs.</p>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-                    {DAILY_SHOP_RARITIES.map(rarity => {
-                      const cardId = dailyShopPicks[rarity];
+                    {DAILY_SHOP_TIERS.map(tier => {
+                      const cardId = dailyShopPicks[tier.key];
                       const card = getCardById(cardId);
                       if (!card) return null;
                       const price = getDailyShopPrice(card.id);
-                      const colors = RARITY_COLORS[card.rarity] || RARITY_COLORS.common;
+                      const colorMap = rarityColorsByGame[card.__gameId] || RARITY_COLORS;
+                      const colors = colorMap[card.rarity] || colorMap.common || RARITY_COLORS.common;
                       return (
-                        <div key={rarity} style={{
+                        <div key={tier.key} style={{
                           background: 'rgba(31,41,55,0.75)',
                           borderRadius: 14,
                           padding: 12,
@@ -3401,7 +3630,7 @@ if (!isLoaded) {
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ color: 'white', fontWeight: 800, fontSize: 14, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.name}</div>
                               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 8px', borderRadius: 999, background: colors.bg, border: `1px solid ${colors.border}` }}>
-                                <span style={{ color: colors.text, fontSize: 11, fontWeight: 800, textTransform: 'capitalize' }}>{rarity}</span>
+                                <span style={{ color: colors.text, fontSize: 11, fontWeight: 800, textTransform: 'capitalize' }}>{tier.label}</span>
                               </div>
                             </div>
                           </div>
@@ -3417,7 +3646,7 @@ if (!isLoaded) {
                                 title: `Buy ${card.name}`,
                                 cost: price,
                                 cardId: card.id,
-                                details: `Daily single • 25% markup. Adds 1 copy of ${card.name} to your collection.`
+                                details: `Daily single (${tier.label}) • 25% markup. Adds 1 copy of ${card.name} to your collection.`
                               })}
                               disabled={rations < price}
                               style={{
