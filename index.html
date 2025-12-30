@@ -1609,11 +1609,13 @@ body{
 
       // Apply daily market fluctuation
       const fluctuateMarket = (baseValues, currentValues, breakoutCards) => {
-        const newValues = {};
-        ALL_CARDS.forEach(card => {
-          const baseValue = baseValues[card.id];
-          const currentValue = currentValues[card.id] || baseValue;
-          const isBreakout = breakoutCards.includes(card.id);
+        const newValues = { ...currentValues }; // Start with current values to preserve all cards
+        
+        // Fluctuate ALL cards in baseValues (which should include all games/sets)
+        Object.keys(baseValues).forEach(cardId => {
+          const baseValue = baseValues[cardId];
+          const currentValue = currentValues[cardId] || baseValue;
+          const isBreakout = breakoutCards.includes(cardId);
           
           // Random fluctuation between -15% and +15%
           const fluctuation = (rand() * 0.30) - 0.15; // -0.15 to +0.15
@@ -1631,16 +1633,33 @@ body{
             newValue = Math.max(minBound, Math.min(maxBound, newValue));
           }
           
-          newValues[card.id] = parseFloat(newValue.toFixed(2));
+          newValues[cardId] = parseFloat(newValue.toFixed(2));
         });
         return newValues;
       };
 
-      // Select 10% of cards from each rarity to be "breakout" cards
+      // Select 10% of cards from each rarity across ALL games/sets to be "breakout" cards
       const selectBreakoutCards = () => {
         const breakouts = [];
-        Object.keys(CARDS_BY_RARITY).forEach(rarity => {
-          const cards = CARDS_BY_RARITY[rarity];
+        const cardsByRarity = {};
+        
+        // Collect all cards from all games/sets by rarity
+        for (const [gameId, gameSets] of Object.entries(setConfigs)) {
+          for (const [setId, setConfig] of Object.entries(gameSets)) {
+            if (!setConfig || !setConfig.cards) continue;
+            
+            setConfig.cards.forEach(card => {
+              if (!cardsByRarity[card.rarity]) cardsByRarity[card.rarity] = [];
+              // Avoid duplicates
+              if (!cardsByRarity[card.rarity].find(c => c.id === card.id)) {
+                cardsByRarity[card.rarity].push(card);
+              }
+            });
+          }
+        }
+        
+        Object.keys(cardsByRarity).forEach(rarity => {
+          const cards = cardsByRarity[rarity];
           const count = Math.ceil(cards.length * 0.1);
           const shuffled = [...cards].sort(() => rand() - 0.5);
           breakouts.push(...shuffled.slice(0, count).map(c => c.id));
@@ -2811,6 +2830,8 @@ const getRareSlotCard = () => {
         setRevealedCards([]);
         setPackPhase('sealed');
         setRipProgress(0);
+        setCurrentCardIndex(0);
+        setSlidingCards([]);
         setPackCount(prev => {
           const next = prev + 1;
           savePackCount(next);
@@ -3424,27 +3445,52 @@ const getRareSlotCard = () => {
       
       
       const getShopSellCards = () => {
-        // Build cards with ownership + values, then filter/sort for the Shop Sell tab.
-        let cards = ALL_CARDS.map((card) => {
-          const entry = collection[card.id] || { normal: 0, holo: 0 };
-          const ownedNormal = entry.normal || 0;
-          const ownedHolo = entry.holo || 0;
-          const owned = ownedNormal + ownedHolo;
-          const marketValue = getBaseMarketValue(card.id);
-          const holoValue = getHoloMarketValue(card.id);
-          const payout = marketValue * SELL_TO_SHOP_RATE;
-          const holoPayout = holoValue * SELL_TO_SHOP_RATE;
-          return {
-            ...card,
-            image: getImageUrl(card),
-            owned,
-            ownedNormal,
-            ownedHolo,
-            marketValue,
-            holoValue,
-            payout,
-            holoPayout
-          };
+        // Build cards from all games/sets (or filtered) with ownership + values
+        let cards = [];
+        
+        const gamesToInclude = sellGameFilter === 'all' 
+          ? gamesIndex.games.filter(g => g.enabled).map(g => g.id)
+          : [sellGameFilter];
+        
+        gamesToInclude.forEach(gameId => {
+          const gameConfig = gameConfigs[gameId];
+          if (!gameConfig) return;
+          
+          const setsToInclude = sellSetFilter === 'all'
+            ? gameConfig.sets
+            : [sellSetFilter];
+          
+          setsToInclude.forEach(setId => {
+            const setConfig = setConfigs[gameId]?.[setId];
+            if (!setConfig || !setConfig.cards) return;
+            
+            setConfig.cards.forEach(card => {
+              const entry = collection[card.id] || { normal: 0, holo: 0 };
+              const ownedNormal = entry.normal || 0;
+              const ownedHolo = entry.holo || 0;
+              const owned = ownedNormal + ownedHolo;
+              const marketValue = getBaseMarketValue(card.id);
+              const holoValue = getHoloMarketValue(card.id);
+              const payout = marketValue * SELL_TO_SHOP_RATE;
+              const holoPayout = holoValue * SELL_TO_SHOP_RATE;
+              
+              cards.push({
+                ...card,
+                gameId,
+                setId,
+                gameName: gameConfig.name,
+                setName: setConfig.name,
+                image: buildImageUrl(gameId, setId, card),
+                owned,
+                ownedNormal,
+                ownedHolo,
+                marketValue,
+                holoValue,
+                payout,
+                holoPayout
+              });
+            });
+          });
         });
 
         // Variant filter
@@ -3668,7 +3714,6 @@ if (!isLoaded) {
                 <button onClick={() => navigate('collection')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'collection' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
                   Collection
                 </button>
-                
                 <button onClick={() => navigate('settings')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'settings' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
                   Settings
                 </button>
@@ -4967,7 +5012,7 @@ if (!isLoaded) {
                     
                     <div className="card-stack-container">
                       {packCards.map((card, index) => {
-                        const colors = RARITY_COLORS[card.rarity];
+                        const colors = RARITY_COLORS[card.rarity] || { bg: '#374151', border: '#6b7280', text: '#d1d5db' };
                         const isSliding = slidingCards.includes(index);
                         const isVisible = index >= currentCardIndex;
                         const stackPosition = index - currentCardIndex;
@@ -5043,7 +5088,7 @@ if (!isLoaded) {
                     
                     <div className="cards-grid-reveal">
                       {packCards.map((card, index) => {
-                        const colors = RARITY_COLORS[card.rarity];
+                        const colors = RARITY_COLORS[card.rarity] || { bg: '#374151', border: '#6b7280', text: '#d1d5db' };
                         return (
                           <div
                             key={`${card.id}-${index}`}
@@ -5696,24 +5741,27 @@ return (
                       maxHeight: '80vh',
                       objectFit: 'contain',
                       borderRadius: 16,
-                      border: `4px solid ${RARITY_COLORS[enlargedCard.rarity].border}`,
-                      boxShadow: `0 0 40px ${RARITY_COLORS[enlargedCard.rarity].border}`,
+                      border: `4px solid ${(RARITY_COLORS[enlargedCard.rarity] || { border: '#6b7280' }).border}`,
+                      boxShadow: `0 0 40px ${(RARITY_COLORS[enlargedCard.rarity] || { border: '#6b7280' }).border}`,
                       cursor: 'default'
                     }}
                   />
                 </div>
                 
                 {/* Price Info Panel */}
+                {(() => {
+                  const enlargedColors = RARITY_COLORS[enlargedCard.rarity] || { bg: '#374151', border: '#6b7280', text: '#d1d5db' };
+                  return (
                 <div style={{
                   background: 'rgba(0,0,0,0.8)',
                   padding: 24,
                   borderRadius: 16,
-                  border: `2px solid ${RARITY_COLORS[enlargedCard.rarity].border}`,
+                  border: `2px solid ${enlargedColors.border}`,
                   minWidth: 300,
                   maxWidth: 400
                 }}>
                   <h2 style={{ color: 'white', fontSize: 24, fontWeight: 'bold', margin: '0 0 8px' }}>{enlargedCard.name}</h2>
-                  <p style={{ color: RARITY_COLORS[enlargedCard.rarity].text, fontSize: 16, textTransform: 'capitalize', margin: '0 0 24px' }}>
+                  <p style={{ color: enlargedColors.text, fontSize: 16, textTransform: 'capitalize', margin: '0 0 24px' }}>
                     {enlargedCard.rarity}
                   </p>
                   {/* Market Values */}
@@ -5908,6 +5956,8 @@ return (
                     Close
                   </button>
                 </div>
+                  );
+                })()}
               </div>
             </div>
           )}
