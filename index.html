@@ -2520,10 +2520,19 @@ const getRareSlotCard = () => {
 
       // Open a specific pack by ID (for use from inventory modal)
       const openSpecificPack = (packId) => {
+        console.log('openSpecificPack called with packId:', packId);
+        console.log('Current packInventory:', packInventory);
+        
         const packIndex = packInventory.findIndex(p => p.id === packId);
-        if (packIndex === -1) return;
+        console.log('Found pack at index:', packIndex);
+        
+        if (packIndex === -1) {
+          console.error('Pack not found:', packId);
+          return;
+        }
         
         const packToOpen = packInventory[packIndex];
+        console.log('Pack to open:', packToOpen);
         
         // Remove this pack from inventory
         const newInventory = [...packInventory];
@@ -2532,15 +2541,25 @@ const getRareSlotCard = () => {
         // Get the pack's game/set config
         const packGameId = packToOpen.gameId || currentGameId;
         const packSetId = packToOpen.setId || currentSetId;
+        console.log('Using game/set:', packGameId, packSetId);
+        
         const packGameConfig = gameConfigs[packGameId];
         const packSetConfig = setConfigs[packGameId]?.[packSetId];
+        console.log('Configs:', { packGameConfig, packSetConfig });
         
         if (!packSetConfig || !packGameConfig) {
-          console.error('Missing config for pack', packGameId, packSetId);
+          console.error('Missing config for pack', packGameId, packSetId, { packGameConfig, packSetConfig });
           return;
         }
 
         const packStructure = packSetConfig.packStructure;
+        if (!packStructure || !packStructure.slots) {
+          console.error('Missing packStructure or slots for', packGameId, packSetId, packStructure);
+          return;
+        }
+        
+        console.log('Pack structure:', packStructure);
+        
         const godPackConfig = packSetConfig.godPack;
         const godPackChance = godPackConfig?.chance || (1 / 1000);
         
@@ -2690,6 +2709,8 @@ const getRareSlotCard = () => {
           });
         }
 
+        console.log('Generated pack with', newPack.length, 'cards:', newPack);
+
         // Preload all images in the pack for instant display
         newPack.forEach(card => {
           const img = new Image();
@@ -2697,6 +2718,7 @@ const getRareSlotCard = () => {
         });
 
         // Update state
+        console.log('Updating state and navigating to opening...');
         setPackInventory(newInventory);
         savePackInventory(newInventory);
         setCurrentPack(newPack);
@@ -2709,6 +2731,7 @@ const getRareSlotCard = () => {
           return next;
         });
         navigate('opening');
+        console.log('Navigation complete');
       };
 
       const openPack = () => {
@@ -5233,7 +5256,7 @@ if (!isLoaded) {
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: 16 }}>
                   {getCollectionCards().map(card => {
-                    const colors = RARITY_COLORS[card.rarity];
+                    const colors = RARITY_COLORS[card.rarity] || { bg: '#374151', border: '#6b7280', text: '#d1d5db' };
                     const marketValue = (typeof card.marketValue === 'number') ? card.marketValue : (marketValues[card.id] || 1);
                     const priceChange = (typeof card.priceChange === 'number') ? card.priceChange : 0;
                     const holoMult = getHoloMultiplier(card.id);
