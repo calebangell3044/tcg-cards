@@ -1361,16 +1361,73 @@ body{
       };
 
       // Use rarities from config for daily shop
+      // Now picks 4 cards from any game/set based on price tiers
       const generateDailyShopPicks = () => {
+        // Collect all cards from all loaded games/sets with their market values
+        const allCardsWithPrices = [];
+        
+        for (const [gameId, gameSets] of Object.entries(setConfigs)) {
+          const gameConfig = gameConfigs[gameId];
+          if (!gameConfig) continue;
+          
+          for (const [setId, setConfig] of Object.entries(gameSets)) {
+            if (!setConfig || !setConfig.cards) continue;
+            
+            for (const card of setConfig.cards) {
+              // Use marketValueRanges to estimate price (use peak as estimate)
+              const range = setConfig.marketValueRanges?.[card.rarity];
+              const estimatedPrice = range?.peak || 1;
+              
+              allCardsWithPrices.push({
+                id: card.id,
+                name: card.name,
+                rarity: card.rarity,
+                gameId,
+                setId,
+                estimatedPrice,
+                file: card.file
+              });
+            }
+          }
+        }
+        
+        // Define price tiers
+        const tiers = [
+          { key: 'budget', min: 0, max: 5 },
+          { key: 'mid', min: 5, max: 25 },
+          { key: 'premium', min: 25, max: 100 },
+          { key: 'chase', min: 100, max: Infinity }
+        ];
+        
         const picks = {};
-        RARITY_ORDER.forEach(rarity => {
-          const cards = CARDS_BY_RARITY[rarity] || [];
-          if (!cards.length) return;
-          const pick = cards[Math.floor(rand() * cards.length)];
-          if (pick && pick.id) picks[rarity] = pick.id;
-        });
+        
+        for (const tier of tiers) {
+          const eligible = allCardsWithPrices.filter(c => 
+            c.estimatedPrice >= tier.min && c.estimatedPrice < tier.max
+          );
+          
+          if (eligible.length > 0) {
+            const pick = eligible[Math.floor(rand() * eligible.length)];
+            picks[tier.key] = {
+              cardId: pick.id,
+              gameId: pick.gameId,
+              setId: pick.setId,
+              file: pick.file,
+              rarity: pick.rarity
+            };
+          }
+        }
+        
         return picks;
       };
+
+      // Price tier labels for display
+      const DAILY_SHOP_TIERS = [
+        { key: 'budget', label: 'Budget Pick', color: '#9ca3af' },
+        { key: 'mid', label: 'Mid-Range', color: '#10b981' },
+        { key: 'premium', label: 'Premium', color: '#3b82f6' },
+        { key: 'chase', label: 'Chase Card', color: '#f59e0b' }
+      ];
 
       const generateDailyShopStock = (day) => {
         const d = (day !== null && day !== undefined) ? day : gameDay;
@@ -1662,20 +1719,8 @@ body{
           dsDay = currentDay;
           localStorage.setItem('tcg-daily-shop-day', String(dsDay));
           localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(dsPicks));
-        } else {
-          // Patch missing rarities (in case data changed)
-          let didPatch = false;
-          DAILY_SHOP_RARITIES.forEach(rarity => {
-            if (!dsPicks[rarity]) {
-              const cards = CARDS_BY_RARITY[rarity] || [];
-              if (cards.length) {
-                dsPicks[rarity] = cards[Math.floor(rand() * cards.length)].id;
-                didPatch = true;
-              }
-            }
-          });
-          if (didPatch) localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(dsPicks));
         }
+        // No patching needed - just regenerate if day changed
         setDailyShopDate(`Day ${dsDay || currentDay}`);
         setDailyShopPicks(dsPicks || {});
 
@@ -3507,31 +3552,48 @@ if (!isLoaded) {
                   <>
 
 
-                {/* Daily Singles */}
+                {/* Daily Singles - Price Tier Based */}
                 <div style={{ maxWidth: 1200, margin: '0 auto 28px', padding: 16, borderRadius: 16, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 10 }}>
                     <h3 style={{ color: 'white', fontSize: 20, fontWeight: 'bold', margin: 0 }}>Daily Singles</h3>
                     <div style={{ color: '#9ca3af', fontSize: 12 }}>Rotates daily • 25% markup • {dailyShopDate || ''}</div>
                   </div>
-                  <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 14px' }}>Need a specific missing card? Buy it directly — but it costs more than pulling it from packs.</p>
+                  <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 14px' }}>Cards from any game/set, sorted by price tier. Buy directly — but it costs more than pulling from packs.</p>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-                    {DAILY_SHOP_RARITIES.map(rarity => {
-                      const cardId = dailyShopPicks[rarity];
-                      const card = getCardById(cardId);
-                      if (!card) return null;
+                    {DAILY_SHOP_TIERS.map(tier => {
+                      const pick = dailyShopPicks[tier.key];
+                      if (!pick) return null;
+                      
+                      // Get the card info from the correct game/set
+                      const pickSetConfig = setConfigs[pick.gameId]?.[pick.setId];
+                      const pickGameConfig = gameConfigs[pick.gameId];
+                      const cardData = pickSetConfig?.cards?.find(c => c.id === pick.cardId);
+                      if (!cardData) return null;
+                      
+                      // Build card object with image URL
+                      const card = {
+                        ...cardData,
+                        image: buildImageUrl(pick.gameId, pick.setId, cardData)
+                      };
+                      
                       const price = getDailyShopPrice(card.id);
-                      const colors = RARITY_COLORS[card.rarity] || RARITY_COLORS.common;
+                      const rarityInfo = pickGameConfig?.rarities?.find(r => r.id === card.rarity);
+                      const colors = RARITY_COLORS[card.rarity] || { bg: '#374151', border: '#6b7280', text: '#d1d5db' };
+                      
                       return (
-                        <div key={rarity} style={{
+                        <div key={tier.key} style={{
                           background: 'rgba(31,41,55,0.75)',
                           borderRadius: 14,
                           padding: 12,
-                          border: `2px solid ${colors.border}55`,
+                          border: `2px solid ${tier.color}55`,
                           display: 'flex',
                           flexDirection: 'column',
                           gap: 10
                         }}>
+                          <div style={{ color: tier.color, fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 }}>
+                            {tier.label}
+                          </div>
                           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                             <img
                               src={card.image}
@@ -3541,8 +3603,9 @@ if (!isLoaded) {
                             />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ color: 'white', fontWeight: 800, fontSize: 14, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.name}</div>
+                              <div style={{ color: '#9ca3af', fontSize: 10, marginBottom: 4 }}>{pickGameConfig?.name}</div>
                               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 8px', borderRadius: 999, background: colors.bg, border: `1px solid ${colors.border}` }}>
-                                <span style={{ color: colors.text, fontSize: 11, fontWeight: 800, textTransform: 'capitalize' }}>{rarity}</span>
+                                <span style={{ color: colors.text, fontSize: 11, fontWeight: 800, textTransform: 'capitalize' }}>{rarityInfo?.name || card.rarity}</span>
                               </div>
                             </div>
                           </div>
@@ -3558,7 +3621,9 @@ if (!isLoaded) {
                                 title: `Buy ${card.name}`,
                                 cost: price,
                                 cardId: card.id,
-                                details: `Daily single • 25% markup. Adds 1 copy of ${card.name} to your collection.`
+                                dailyCardGameId: pick.gameId,
+                                dailyCardSetId: pick.setId,
+                                details: `Daily single from ${pickGameConfig?.name} • 25% markup. Adds 1 copy to your collection.`
                               })}
                               disabled={rations < price}
                               style={{
