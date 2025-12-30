@@ -2866,29 +2866,62 @@ const getRareSlotCard = () => {
         saveRations(newRations);
       };
 
-      const sellSealedItem = (sealedType) => {
-        if (!sealedType) return;
-        const prices = (sealedMarket && sealedMarket.prices) ? sealedMarket.prices : {};
-        const price = Number.isFinite(prices[sealedType]) ? prices[sealedType] : 0;
+      // Universal sell sealed product function
+      const sellSealedProduct = (gameId, setId, productType) => {
+        if (!gameId || !setId || !productType) return;
+        
+        const count = getSealedCount(gameId, setId, productType);
+        if (count <= 0) return;
+        
+        // Get price for this product
+        const price = getProductPrice(gameId, setId, productType);
         const payout = parseFloat((price * SEALED_SELL_RATE).toFixed(2));
-
-        if (sealedType === 'single') {
-          sellSealedSinglePack();
-          return;
-        }
-
-        // bundle / booster / case live in sealedInventory
-        const currentCount = (sealedInventory && sealedInventory[sealedType]) ? sealedInventory[sealedType] : 0;
-        if (currentCount <= 0) return;
-
-        mutateSealedInventory(prev => ({
-          ...prev,
-          [sealedType]: Math.max(0, (prev[sealedType] || 0) - 1)
-        }));
-
+        
+        // Decrement inventory
+        updateSealedCount(gameId, setId, productType, -1);
+        
+        // Add rations
         const newRations = parseFloat((rations + payout).toFixed(2));
         setRations(newRations);
         saveRations(newRations);
+      };
+
+      // Sell a single pack from pack inventory
+      const sellSinglePack = (packId) => {
+        const packIndex = packInventory.findIndex(p => p.id === packId);
+        if (packIndex === -1) return;
+        
+        const pack = packInventory[packIndex];
+        const price = getProductPrice(pack.gameId || currentGameId, pack.setId || currentSetId, 'single');
+        const payout = parseFloat((price * SEALED_SELL_RATE).toFixed(2));
+        
+        // Remove pack from inventory
+        const newInventory = [...packInventory];
+        newInventory.splice(packIndex, 1);
+        setPackInventory(newInventory);
+        savePackInventory(newInventory);
+        
+        // Add rations
+        const newRations = parseFloat((rations + payout).toFixed(2));
+        setRations(newRations);
+        saveRations(newRations);
+      };
+
+      // Legacy function - kept for compatibility
+      const sellSealedItem = (sealedType) => {
+        if (!sealedType) return;
+        
+        if (sealedType === 'single') {
+          // Find first single pack and sell it
+          const singlePack = packInventory.find(p => p.type === 'single');
+          if (singlePack) {
+            sellSinglePack(singlePack.id);
+          }
+          return;
+        }
+        
+        // For other types, sell from current game/set
+        sellSealedProduct(currentGameId, currentSetId, sealedType);
       };
 
       const getCollectionCards = () => {
@@ -3893,123 +3926,131 @@ if (!isLoaded) {
 
 
                     <div style={{ marginBottom: 14, padding: '12px 12px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(0,0,0,0.18)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                        <div>
-                          <div style={{ fontSize: 16, fontWeight: 900 }}>Sealed Product</div>
-                          <div style={{ color: '#9ca3af', fontSize: 12, marginTop: 2 }}>
-                            Market = expected pack value (EV) × set age appreciation. Set age: <b>{sealedMarket.age}</b> • Appreciation: <b>{sealedMarket.appreciation}x</b>
-                          </div>
-                        </div>
-                        <div style={{ color: '#9ca3af', fontSize: 12 }}>
-                          Pack EV: <b>{sealedMarket.curEV.toFixed(2)}</b> (base {sealedMarket.baseEV.toFixed(2)})
-                        </div>
+                      <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 8 }}>Sealed Product</div>
+                      <div style={{ color: '#9ca3af', fontSize: 12, marginBottom: 12 }}>
+                        Shop pays <b>{Math.round(SEALED_SELL_RATE * 100)}%</b> of market value.
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10, marginTop: 10 }}>
-                        <div style={{ padding: 12, borderRadius: 12, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
-                          <div style={{ fontWeight: 900, marginBottom: 4 }}>Single Pack</div>
-                          <div style={{ color: '#9ca3af', fontSize: 12 }}>You have: {(packInventory || []).filter(p => p && p.type === 'single').length}</div>
-                          <div style={{ color: '#d1d5db', fontSize: 12, marginTop: 6 }}>
-                            Market: <b>{sealedMarket.prices.single.toFixed(2)}</b> • Sell: <b>{(sealedMarket.prices.single * SEALED_SELL_RATE).toFixed(2)}</b>
+                      {/* Dynamic list of owned sealed products */}
+                      {(() => {
+                        // Collect all owned sealed products
+                        const ownedProducts = [];
+                        
+                        // First, add single packs from packInventory (grouped by game/set)
+                        const packsByGameSet = {};
+                        packInventory.forEach(pack => {
+                          if (pack.type === 'single') {
+                            const key = `${pack.gameId || currentGameId}|${pack.setId || currentSetId}`;
+                            if (!packsByGameSet[key]) {
+                              packsByGameSet[key] = {
+                                gameId: pack.gameId || currentGameId,
+                                setId: pack.setId || currentSetId,
+                                count: 0,
+                                packs: []
+                              };
+                            }
+                            packsByGameSet[key].count++;
+                            packsByGameSet[key].packs.push(pack);
+                          }
+                        });
+                        
+                        Object.values(packsByGameSet).forEach(group => {
+                          const gc = gameConfigs[group.gameId];
+                          const sc = setConfigs[group.gameId]?.[group.setId];
+                          const price = getProductPrice(group.gameId, group.setId, 'single');
+                          ownedProducts.push({
+                            type: 'single',
+                            gameId: group.gameId,
+                            setId: group.setId,
+                            gameName: gc?.name || group.gameId,
+                            setName: sc?.name || group.setId,
+                            productName: 'Single Pack',
+                            count: group.count,
+                            price,
+                            payout: parseFloat((price * SEALED_SELL_RATE).toFixed(2)),
+                            packToSell: group.packs[0]
+                          });
+                        });
+                        
+                        // Then add sealed inventory items
+                        Object.entries(sealedInventory).forEach(([gameId, sets]) => {
+                          Object.entries(sets).forEach(([setId, products]) => {
+                            Object.entries(products).forEach(([productType, count]) => {
+                              if (count > 0 && productType !== 'single') {
+                                const gc = gameConfigs[gameId];
+                                const sc = setConfigs[gameId]?.[setId];
+                                const productConfig = sc?.sealedProducts?.[productType];
+                                const price = getProductPrice(gameId, setId, productType);
+                                ownedProducts.push({
+                                  type: productType,
+                                  gameId,
+                                  setId,
+                                  gameName: gc?.name || gameId,
+                                  setName: sc?.name || setId,
+                                  productName: productConfig?.name || productType,
+                                  count,
+                                  price,
+                                  payout: parseFloat((price * SEALED_SELL_RATE).toFixed(2))
+                                });
+                              }
+                            });
+                          });
+                        });
+                        
+                        if (ownedProducts.length === 0) {
+                          return (
+                            <div style={{ color: '#6b7280', fontSize: 13, textAlign: 'center', padding: 20 }}>
+                              You don't own any sealed products to sell.
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+                            {ownedProducts.map((product, idx) => (
+                              <div key={`${product.gameId}-${product.setId}-${product.type}-${idx}`} style={{ 
+                                padding: 12, 
+                                borderRadius: 12, 
+                                background: 'rgba(17,24,39,0.55)', 
+                                border: '1px solid rgba(168,85,247,0.3)' 
+                              }}>
+                                <div style={{ fontWeight: 900, marginBottom: 2, fontSize: 14 }}>{product.productName}</div>
+                                <div style={{ color: '#9ca3af', fontSize: 11, marginBottom: 4 }}>
+                                  {product.gameName} • {product.setName}
+                                </div>
+                                <div style={{ color: '#a855f7', fontSize: 12, fontWeight: 'bold', marginBottom: 6 }}>
+                                  You have: {product.count}
+                                </div>
+                                <div style={{ color: '#d1d5db', fontSize: 11, marginBottom: 8 }}>
+                                  Market: <b>{product.price.toFixed(2)}</b> • Sell: <span style={{ color: '#fbbf24' }}><b>{product.payout.toFixed(2)}</b></span>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    if (product.type === 'single' && product.packToSell) {
+                                      sellSinglePack(product.packToSell.id);
+                                    } else {
+                                      sellSealedProduct(product.gameId, product.setId, product.type);
+                                    }
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '8px 12px',
+                                    borderRadius: 8,
+                                    border: 'none',
+                                    background: 'linear-gradient(90deg, #9333ea, #6366f1)',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    fontWeight: 800,
+                                    fontSize: 12
+                                  }}
+                                >
+                                  Sell for {product.payout.toFixed(2)}
+                                </button>
+                              </div>
+                            ))}
                           </div>
-                          <button
-                            onClick={() => sellSealedItem('single')}
-                            disabled={(packInventory || []).filter(p => p && p.type === 'single').length <= 0}
-                            style={{
-                              width: '100%',
-                              marginTop: 10,
-                              padding: '10px 12px',
-                              borderRadius: 10,
-                              border: '1px solid rgba(255,255,255,0.10)',
-                              background: 'rgba(168,85,247,0.22)',
-                              color: 'white',
-                              cursor: (packInventory || []).filter(p => p && p.type === 'single').length > 0 ? 'pointer' : 'not-allowed',
-                              fontWeight: 800
-                            }}
-                          >
-                            Sell Pack
-                          </button>
-                        </div>
-
-                        <div style={{ padding: 12, borderRadius: 12, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
-                          <div style={{ fontWeight: 900, marginBottom: 4 }}>Bundle (8 Packs)</div>
-                          <div style={{ color: '#9ca3af', fontSize: 12 }}>You have: {(sealedInventory && sealedInventory.bundle) ? sealedInventory.bundle : 0}</div>
-                          <div style={{ color: '#d1d5db', fontSize: 12, marginTop: 6 }}>
-                            Market: <b>{sealedMarket.prices.bundle.toFixed(2)}</b> • Sell: <b>{(sealedMarket.prices.bundle * SEALED_SELL_RATE).toFixed(2)}</b>
-                          </div>
-                          <button
-                            onClick={() => sellSealedItem('bundle')}
-                            disabled={!sealedInventory || (sealedInventory.bundle || 0) <= 0}
-                            style={{
-                              width: '100%',
-                              marginTop: 10,
-                              padding: '10px 12px',
-                              borderRadius: 10,
-                              border: '1px solid rgba(255,255,255,0.10)',
-                              background: 'rgba(168,85,247,0.22)',
-                              color: 'white',
-                              cursor: (sealedInventory && (sealedInventory.bundle || 0) > 0) ? 'pointer' : 'not-allowed',
-                              fontWeight: 800
-                            }}
-                          >
-                            Sell Bundle
-                          </button>
-                        </div>
-
-                        <div style={{ padding: 12, borderRadius: 12, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
-                          <div style={{ fontWeight: 900, marginBottom: 4 }}>Booster Box (24 Packs)</div>
-                          <div style={{ color: '#9ca3af', fontSize: 12 }}>You have: {(sealedInventory && sealedInventory.booster) ? sealedInventory.booster : 0}</div>
-                          <div style={{ color: '#d1d5db', fontSize: 12, marginTop: 6 }}>
-                            Market: <b>{sealedMarket.prices.booster.toFixed(2)}</b> • Sell: <b>{(sealedMarket.prices.booster * SEALED_SELL_RATE).toFixed(2)}</b>
-                          </div>
-                          <button
-                            onClick={() => sellSealedItem('booster')}
-                            disabled={!sealedInventory || (sealedInventory.booster || 0) <= 0}
-                            style={{
-                              width: '100%',
-                              marginTop: 10,
-                              padding: '10px 12px',
-                              borderRadius: 10,
-                              border: '1px solid rgba(255,255,255,0.10)',
-                              background: 'rgba(168,85,247,0.22)',
-                              color: 'white',
-                              cursor: (sealedInventory && (sealedInventory.booster || 0) > 0) ? 'pointer' : 'not-allowed',
-                              fontWeight: 800
-                            }}
-                          >
-                            Sell Box
-                          </button>
-                        </div>
-
-                        <div style={{ padding: 12, borderRadius: 12, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
-                          <div style={{ fontWeight: 900, marginBottom: 4 }}>Booster Case (144 Packs)</div>
-                          <div style={{ color: '#9ca3af', fontSize: 12 }}>You have: {(sealedInventory && sealedInventory.case) ? sealedInventory.case : 0}</div>
-                          <div style={{ color: '#d1d5db', fontSize: 12, marginTop: 6 }}>
-                            Market: <b>{sealedMarket.prices.case.toFixed(2)}</b> • Sell: <b>{(sealedMarket.prices.case * SEALED_SELL_RATE).toFixed(2)}</b>
-                          </div>
-                          <button
-                            onClick={() => sellSealedItem('case')}
-                            disabled={!sealedInventory || (sealedInventory.case || 0) <= 0}
-                            style={{
-                              width: '100%',
-                              marginTop: 10,
-                              padding: '10px 12px',
-                              borderRadius: 10,
-                              border: '1px solid rgba(255,255,255,0.10)',
-                              background: 'rgba(168,85,247,0.22)',
-                              color: 'white',
-                              cursor: (sealedInventory && (sealedInventory.case || 0) > 0) ? 'pointer' : 'not-allowed',
-                              fontWeight: 800
-                            }}
-                          >
-                            Sell Case
-                          </button>
-                        </div>
-                      </div>
-
-                      <div style={{ color: '#9ca3af', fontSize: 12, marginTop: 10 }}>
-                        Shop pays <b>{Math.round(SEALED_SELL_RATE * 100)}%</b> of sealed market value.
-                      </div>
+                        );
+                      })()}
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 14, alignItems: 'center' }}>
                       <input
