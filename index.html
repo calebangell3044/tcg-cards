@@ -166,6 +166,19 @@ html, body {
   text-shadow: 0 1px 2px rgba(0,0,0,0.85);
 }
 
+.new-badge {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.6), 0 0 24px rgba(249, 115, 22, 0.3);
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  animation: new-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes new-pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(249, 115, 22, 0.6), 0 0 24px rgba(249, 115, 22, 0.3); }
+  50% { box-shadow: 0 0 18px rgba(249, 115, 22, 0.8), 0 0 36px rgba(249, 115, 22, 0.5); }
+}
+
 .rainbow-text {
   background: linear-gradient(90deg, #ff3ea5, #2ee9ff, #ffe155, #ff3ea5);
   -webkit-background-clip: text;
@@ -2650,11 +2663,8 @@ const getRareSlotCard = () => {
 
       // Open a specific pack by ID (for use from inventory modal)
       const openSpecificPack = (packId) => {
-        console.log('openSpecificPack called with packId:', packId);
-        console.log('Current packInventory:', packInventory);
         
         const packIndex = packInventory.findIndex(p => p.id === packId);
-        console.log('Found pack at index:', packIndex);
         
         if (packIndex === -1) {
           console.error('Pack not found:', packId);
@@ -2662,7 +2672,6 @@ const getRareSlotCard = () => {
         }
         
         const packToOpen = packInventory[packIndex];
-        console.log('Pack to open:', packToOpen);
         
         // Remove this pack from inventory
         const newInventory = [...packInventory];
@@ -2671,11 +2680,9 @@ const getRareSlotCard = () => {
         // Get the pack's game/set config
         const packGameId = packToOpen.gameId || currentGameId;
         const packSetId = packToOpen.setId || currentSetId;
-        console.log('Using game/set:', packGameId, packSetId);
         
         const packGameConfig = gameConfigs[packGameId];
         const packSetConfig = setConfigs[packGameId]?.[packSetId];
-        console.log('Configs:', { packGameConfig, packSetConfig });
         
         if (!packSetConfig || !packGameConfig) {
           console.error('Missing config for pack', packGameId, packSetId, { packGameConfig, packSetConfig });
@@ -2688,7 +2695,6 @@ const getRareSlotCard = () => {
           return;
         }
         
-        console.log('Pack structure:', packStructure);
         
         const godPackConfig = packSetConfig.godPack;
         const godPackChance = godPackConfig?.chance || (1 / 1000);
@@ -2839,7 +2845,6 @@ const getRareSlotCard = () => {
           });
         }
 
-        console.log('Generated pack with', newPack.length, 'cards:', newPack);
 
         // Preload all images in the pack for instant display
         newPack.forEach(card => {
@@ -2848,10 +2853,6 @@ const getRareSlotCard = () => {
         });
 
         // Update state
-        console.log('Updating state and navigating to opening...');
-        console.log('Setting openingPackGameId to:', packGameId);
-        console.log('Setting openingPackSetId to:', packSetId);
-        console.log('Pack image URL will be:', buildProductImageUrl(packGameId, packSetId, 'single'));
         setPackInventory(newInventory);
         savePackInventory(newInventory);
         setPackCards(newPack);
@@ -2871,7 +2872,6 @@ const getRareSlotCard = () => {
           return next;
         });
         navigate('opening');
-        console.log('Navigation complete');
       };
 
       const openPack = () => {
@@ -3336,7 +3336,7 @@ const getRareSlotCard = () => {
         sellSealedProduct(currentGameId, currentSetId, sealedType);
       };
 
-      const getCollectionCards = () => {
+      const collectionCards = useMemo(() => {
         // Collect cards from all games/sets or filtered game/set
         let cards = [];
         
@@ -3387,7 +3387,7 @@ const getRareSlotCard = () => {
           const owned = ownedNormal + ownedHolo;
 
           const marketValue = marketValues[card.id] || 1;
-          const holoMult = getHoloMultiplier(card.id);
+          const holoMult = holoMultipliers[card.id] || 1.5;
           const holoValue = marketValue * holoMult;
 
           const history = priceHistory[card.id] || [];
@@ -3473,11 +3473,11 @@ const getRareSlotCard = () => {
         });
 
         return enriched;
-      };
+      }, [collectionGameFilter, collectionSetFilter, collectionFilter, collectionSearch, collection, marketValues, holoMultipliers, priceHistory, hideUnknown, ownedFilter, holoFilter, sortDir, sortKey, setConfigs, gameConfigs, gamesIndex]);
 
       
       
-      const getShopSellCards = () => {
+      const shopSellCards = useMemo(() => {
         // Build cards from all games/sets (or filtered) with ownership + values
         let cards = [];
         
@@ -3502,8 +3502,9 @@ const getRareSlotCard = () => {
               const ownedNormal = entry.normal || 0;
               const ownedHolo = entry.holo || 0;
               const owned = ownedNormal + ownedHolo;
-              const marketValue = getBaseMarketValue(card.id);
-              const holoValue = getHoloMarketValue(card.id);
+              const marketValue = marketValues[card.id] || 1;
+              const holoMult = holoMultipliers[card.id] || 1.5;
+              const holoValue = marketValue * holoMult;
               const payout = marketValue * SELL_TO_SHOP_RATE;
               const holoPayout = holoValue * SELL_TO_SHOP_RATE;
               
@@ -3560,7 +3561,7 @@ const getRareSlotCard = () => {
         });
 
         return cards;
-      };
+      }, [sellGameFilter, sellSetFilter, shopSellVariant, shopSellFilter, shopSellSearch, shopSellSort, collection, marketValues, holoMultipliers, setConfigs, gameConfigs, gamesIndex]);
 
 
 const movers7d = useMemo(() => {
@@ -4336,7 +4337,7 @@ if (!isLoaded) {
                             />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ color: 'white', fontWeight: 800, fontSize: 14, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.name}</div>
-                              <div style={{ color: '#9ca3af', fontSize: 10, marginBottom: 4 }}>{pickGameConfig?.name}</div>
+                              <div style={{ color: '#9ca3af', fontSize: 10, marginBottom: 4 }}>{pickGameConfig?.name} • {pickSetConfig?.name}</div>
                               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 8px', borderRadius: 999, background: colors.bg, border: `1px solid ${colors.border}` }}>
                                 <span style={{ color: colors.text, fontSize: 11, fontWeight: 800, textTransform: 'capitalize' }}>{rarityInfo?.name || card.rarity}</span>
                               </div>
@@ -4904,7 +4905,7 @@ if (!isLoaded) {
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-                      {getShopSellCards().map(card => {
+                      {shopSellCards.map(card => {
                         const colors = RARITY_COLORS[card.rarity] || RARITY_COLORS.common;
                         const canSellNormal = card.ownedNormal > 0;
                         const canSellHolo = card.ownedHolo > 0;
@@ -4984,7 +4985,7 @@ if (!isLoaded) {
                       })}
                     </div>
 
-                    {getShopSellCards().length === 0 && (
+                    {shopSellCards.length === 0 && (
                       <div style={{ marginTop: 14, color: '#9ca3af', textAlign: 'center' }}>No cards match your filters.</div>
                     )}
                   </div>
@@ -5094,6 +5095,11 @@ if (!isLoaded) {
                         const stackPosition = index - currentCardIndex;
                         const isTopCard = index === currentCardIndex;
                         
+                        // Check if this card is new (not in collection before this pack)
+                        const collectionEntry = collection[card.id] || { normal: 0, holo: 0 };
+                        const wasInCollection = card.isHolo ? collectionEntry.holo > 0 : collectionEntry.normal > 0;
+                        const isNewCard = !wasInCollection;
+                        
                         if (!isVisible && !isSliding) return null;
                         
                         // Peek offset calculation
@@ -5119,6 +5125,20 @@ if (!isLoaded) {
                               alt={card.name}
                               draggable={false}
                             />
+                            {isNewCard && (
+                              <div className="new-badge" style={{
+                                position: 'absolute',
+                                top: 8,
+                                left: 8,
+                                padding: '3px 8px',
+                                borderRadius: 6,
+                                fontSize: 10,
+                                fontWeight: 'bold',
+                                textTransform: 'uppercase'
+                              }}>
+                                New!
+                              </div>
+                            )}
                             {card.isHolo && (
                               <div style={{
                                 position: 'absolute',
@@ -5160,11 +5180,22 @@ if (!isLoaded) {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
                     <p style={{ color: '#10b981', fontSize: 16, fontWeight: 'bold', margin: 0 }}>
                       Pack Complete! {packCards.filter(c => c.isHolo).length > 0 && `✨ ${packCards.filter(c => c.isHolo).length} Holo`}
+                      {packCards.filter(c => {
+                        const entry = collection[c.id] || { normal: 0, holo: 0 };
+                        return c.isHolo ? entry.holo === 0 : entry.normal === 0;
+                      }).length > 0 && ` • ${packCards.filter(c => {
+                        const entry = collection[c.id] || { normal: 0, holo: 0 };
+                        return c.isHolo ? entry.holo === 0 : entry.normal === 0;
+                      }).length} New`}
                     </p>
                     
                     <div className="cards-grid-reveal">
                       {packCards.map((card, index) => {
                         const colors = RARITY_COLORS[card.rarity] || { bg: '#374151', border: '#6b7280', text: '#d1d5db' };
+                        const collectionEntry = collection[card.id] || { normal: 0, holo: 0 };
+                        const wasInCollection = card.isHolo ? collectionEntry.holo > 0 : collectionEntry.normal > 0;
+                        const isNewCard = !wasInCollection;
+                        
                         return (
                           <div
                             key={`${card.id}-${index}`}
@@ -5176,6 +5207,19 @@ if (!isLoaded) {
                               src={card.image} 
                               alt={card.name}
                             />
+                            {isNewCard && (
+                              <div className="new-badge" style={{
+                                position: 'absolute',
+                                top: 4,
+                                left: 4,
+                                padding: '2px 6px',
+                                borderRadius: 4,
+                                fontSize: 9,
+                                fontWeight: 'bold'
+                              }}>
+                                New!
+                              </div>
+                            )}
                             {card.isHolo && (
                               <div style={{
                                 position: 'absolute',
@@ -5541,12 +5585,17 @@ if (!isLoaded) {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: 16 }}>
-                  {getCollectionCards().map(card => {
+                  {collectionCards.map(card => {
                     const colors = RARITY_COLORS[card.rarity] || { bg: '#374151', border: '#6b7280', text: '#d1d5db' };
                     const marketValue = (typeof card.marketValue === 'number') ? card.marketValue : (marketValues[card.id] || 1);
                     const priceChange = (typeof card.priceChange === 'number') ? card.priceChange : 0;
                     const holoMult = getHoloMultiplier(card.id);
                     const holoValue = marketValue * holoMult;
+                    
+                    // Get short game/set identifier
+                    const gameShort = card.gameId === 'tta' ? 'TTA' : card.gameId === 'spiritual-possessions' ? 'SP' : card.gameId?.substring(0, 3).toUpperCase();
+                    const setShort = card.setId === 'base-set' ? 'Base' : card.setId === 'expansion-set' ? 'Exp' : card.setId?.substring(0, 4);
+                    
 return (
                       <div 
                         key={card.id} 
@@ -5559,7 +5608,7 @@ return (
                           position: 'relative', 
                           opacity: card.owned === 0 ? 0.4 : 1,
                         }}
-                        title={card.owned > 0 ? `${card.name} - ${marketValue.toFixed(2)}` : '???'}
+                        title={card.owned > 0 ? `${card.name} - ${marketValue.toFixed(2)} (${card.gameName} - ${card.setName})` : '???'}
                       >
                         <div 
                           style={{ width: '100%', height: '100%', borderRadius: 12, overflow: 'hidden', cursor: card.owned > 0 ? 'zoom-in' : 'default' }}
@@ -5580,6 +5629,24 @@ return (
                             </div>
                           )}
                         </div>
+                        
+                        {/* Game/Set indicator - bottom left */}
+                        {card.owned > 0 && (collectionGameFilter === 'all') && (
+                          <div style={{
+                            position: 'absolute',
+                            bottom: 6,
+                            left: 6,
+                            background: 'rgba(0,0,0,0.75)',
+                            padding: '2px 6px',
+                            borderRadius: 6,
+                            fontSize: 9,
+                            fontWeight: 600,
+                            color: '#9ca3af',
+                            zIndex: 5
+                          }}>
+                            {gameShort} {setShort}
+                          </div>
+                        )}
                         
                         {card.owned > 0 && (
                           <>
