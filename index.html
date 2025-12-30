@@ -777,17 +777,17 @@ body{
         return buildCardbackUrl(gameConfig);
       }, [currentGameConfig, openingPackGameId, currentGameId, gameConfigs]);
 
-      // Get the pack image URL for the currently opening pack (computed directly, not memoized)
-      const openingPackImageUrl = openingPackGameId && openingPackSetId 
-        ? buildProductImageUrl(openingPackGameId, openingPackSetId, 'single')
-        : buildProductImageUrl(currentGameId, currentSetId, 'single');
+      // Get the pack image URL for the currently opening pack
+      // Use refs for immediate access since state updates are async
+      const getOpeningPackGameId = () => openingPackGameIdRef.current || openingPackGameId || currentGameId;
+      const getOpeningPackSetId = () => openingPackSetIdRef.current || openingPackSetId || currentSetId;
       
-      const openingCardbackUrl = openingPackGameId 
-        ? buildCardbackUrl(gameConfigs[openingPackGameId] || currentGameConfig)
-        : buildCardbackUrl(currentGameConfig);
+      const openingPackImageUrl = buildProductImageUrl(getOpeningPackGameId(), getOpeningPackSetId(), 'single');
+      
+      const openingCardbackUrl = buildCardbackUrl(gameConfigs[getOpeningPackGameId()] || currentGameConfig);
 
       // Debug: log what's being computed
-      console.log('RENDER - openingPackGameId:', openingPackGameId, 'openingPackSetId:', openingPackSetId);
+      console.log('RENDER - openingPackGameId:', getOpeningPackGameId(), 'openingPackSetId:', getOpeningPackSetId());
       console.log('RENDER - openingPackImageUrl:', openingPackImageUrl);
 
       // Helper to get sealed product info from config
@@ -841,6 +841,9 @@ body{
       // Track current opening pack's game/set for correct images
       const [openingPackGameId, setOpeningPackGameId] = useState(null);
       const [openingPackSetId, setOpeningPackSetId] = useState(null);
+      // Use refs for immediate access (state updates are async)
+      const openingPackGameIdRef = useRef(null);
+      const openingPackSetIdRef = useRef(null);
 
       // Pack ripping state
       const [packPhase, setPackPhase] = useState('sealed'); // sealed | ripping | stack | revealed
@@ -2862,8 +2865,11 @@ const getRareSlotCard = () => {
         setRipProgress(0);
         setCurrentCardIndex(0);
         setSlidingCards([]);
+        // Set both state AND refs (refs update immediately)
         setOpeningPackGameId(packGameId);
         setOpeningPackSetId(packSetId);
+        openingPackGameIdRef.current = packGameId;
+        openingPackSetIdRef.current = packSetId;
         setPackCount(prev => {
           const next = prev + 1;
           savePackCount(next);
