@@ -771,8 +771,18 @@ body{
       }, [currentGameId, currentSetId]);
 
       const getCardbackUrl = useCallback(() => {
-        return buildCardbackUrl(currentGameConfig);
-      }, [currentGameConfig]);
+        // Use opening pack's game config if available, otherwise current
+        const gameId = openingPackGameId || currentGameId;
+        const gameConfig = gameConfigs[gameId] || currentGameConfig;
+        return buildCardbackUrl(gameConfig);
+      }, [currentGameConfig, openingPackGameId, currentGameId, gameConfigs]);
+
+      // Get the pack image URL for the currently opening pack
+      const getOpeningPackImageUrl = useCallback(() => {
+        const gameId = openingPackGameId || currentGameId;
+        const setId = openingPackSetId || currentSetId;
+        return buildProductImageUrl(gameId, setId, 'single');
+      }, [openingPackGameId, openingPackSetId, currentGameId, currentSetId]);
 
       // Helper to get sealed product info from config
       const getSealedInfo = useCallback((type) => {
@@ -821,6 +831,10 @@ body{
       const [revealedCards, setRevealedCards] = useState([]);
       const [view, setView] = useState('home');
       const [menuOpen, setMenuOpen] = useState(false);
+      
+      // Track current opening pack's game/set for correct images
+      const [openingPackGameId, setOpeningPackGameId] = useState(null);
+      const [openingPackSetId, setOpeningPackSetId] = useState(null);
 
       // Pack ripping state
       const [packPhase, setPackPhase] = useState('sealed'); // sealed | ripping | stack | revealed
@@ -2839,6 +2853,8 @@ const getRareSlotCard = () => {
         setRipProgress(0);
         setCurrentCardIndex(0);
         setSlidingCards([]);
+        setOpeningPackGameId(packGameId);
+        setOpeningPackSetId(packSetId);
         setPackCount(prev => {
           const next = prev + 1;
           savePackCount(next);
@@ -5022,10 +5038,11 @@ if (!isLoaded) {
                       <div className="pack-wrapper">
                         <div className="pack-body">
                           <img 
-                            src={getCardbackUrl()} 
+                            src={getOpeningPackImageUrl()} 
                             alt="Booster Pack" 
                             style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
                             draggable={false}
+                            onError={(e) => e.target.src = getCardbackUrl()}
                           />
                         </div>
                         
