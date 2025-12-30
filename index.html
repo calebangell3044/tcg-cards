@@ -2721,10 +2721,9 @@ const getRareSlotCard = () => {
         console.log('Updating state and navigating to opening...');
         setPackInventory(newInventory);
         savePackInventory(newInventory);
-        setCurrentPack(newPack);
+        setPackCards(newPack);
         setRevealedCards([]);
-        setRevealPhase('ripping');
-        setOpeningPhase('ripping');
+        setPackPhase('sealed');
         setPackCount(prev => {
           const next = prev + 1;
           savePackCount(next);
