@@ -849,6 +849,22 @@ body{
       const [priceHistory, setPriceHistory] = useState({});
       const [sellConfirm, setSellConfirm] = useState(null);
       const [packInventory, setPackInventory] = useState([]);
+      
+      // Inspect sealed product modal state
+      const [inspectProduct, setInspectProduct] = useState(null);
+      
+      // Collection filters for game/set
+      const [collectionGameFilter, setCollectionGameFilter] = useState('all');
+      const [collectionSetFilter, setCollectionSetFilter] = useState('all');
+      
+      // Track which game/sets have claimed free starter
+      const [freeStartersClaimed, setFreeStartersClaimed] = useState(() => {
+        try {
+          const raw = localStorage.getItem('tcg-free-starters-claimed');
+          if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return {};
+      });
 
       // Sealed inventory is now nested: sealedInventory[gameId][setId][productType] = count
       const [sealedInventory, setSealedInventory] = useState(() => {
@@ -1487,8 +1503,10 @@ body{
       const buyGodPack = () => {
         const newPacks = [{
           id: generatePackId(),
-          type: 'god',
-          isGodPack: true
+          type: 'godpack',
+          isGodPack: true,
+          gameId: currentGameId,
+          setId: currentSetId
         }];
         const newInventory = [...packInventory, ...newPacks];
         setPackInventory(newInventory);
@@ -2277,6 +2295,44 @@ body{
         saveFreeStarterClaimed(true);
       };
 
+      // Game/set-specific free starter
+      const claimFreeStarterForSet = (gameId, setId) => {
+        const claimKey = `${gameId}-${setId}`;
+        if (freeStartersClaimed[claimKey]) return;
+
+        const newPacks = [];
+        for (let i = 0; i < 5; i++) {
+          newPacks.push({ 
+            id: generatePackId(), 
+            type: 'starter',
+            gameId: gameId,
+            setId: setId
+          });
+        }
+
+        const newInventory = [...packInventory, ...newPacks];
+        setPackInventory(newInventory);
+        savePackInventory(newInventory);
+
+        const newClaimed = { ...freeStartersClaimed, [claimKey]: true };
+        setFreeStartersClaimed(newClaimed);
+        localStorage.setItem('tcg-free-starters-claimed', JSON.stringify(newClaimed));
+      };
+
+      // Game/set-specific god pack
+      const buyGodPackForSet = (gameId, setId) => {
+        const newPack = { 
+          id: generatePackId(), 
+          type: 'godpack',
+          gameId: gameId,
+          setId: setId
+        };
+
+        const newInventory = [...packInventory, newPack];
+        setPackInventory(newInventory);
+        savePackInventory(newInventory);
+      };
+
       // Buy a daily rotating single (non-holo), 25% markup
       const buyDailyShopCard = (cardId, cost) => {
         if (!cardId) return;
@@ -2379,13 +2435,13 @@ const persistShopStock = (ss) => {
             buyBoosterCase();
             break;
           case 'freeStarter':
-            claimFreeStarterBox();
+            claimFreeStarterForSet(purchaseConfirm.gameId, purchaseConfirm.setId);
             break;
           case 'dailyCard':
             buyDailyShopCard(purchaseConfirm.cardId, purchaseConfirm.cost);
             break;
           case 'godpack':
-            buyGodPack();
+            buyGodPackForSet(purchaseConfirm.gameId, purchaseConfirm.setId);
             break;
 
           default:
@@ -2461,6 +2517,199 @@ const getRareSlotCard = () => {
         return getRandomCard(Object.keys(odds)[0]);
       }
 ;
+
+      // Open a specific pack by ID (for use from inventory modal)
+      const openSpecificPack = (packId) => {
+        const packIndex = packInventory.findIndex(p => p.id === packId);
+        if (packIndex === -1) return;
+        
+        const packToOpen = packInventory[packIndex];
+        
+        // Remove this pack from inventory
+        const newInventory = [...packInventory];
+        newInventory.splice(packIndex, 1);
+
+        // Get the pack's game/set config
+        const packGameId = packToOpen.gameId || currentGameId;
+        const packSetId = packToOpen.setId || currentSetId;
+        const packGameConfig = gameConfigs[packGameId];
+        const packSetConfig = setConfigs[packGameId]?.[packSetId];
+        
+        if (!packSetConfig || !packGameConfig) {
+          console.error('Missing config for pack', packGameId, packSetId);
+          return;
+        }
+
+        const packStructure = packSetConfig.packStructure;
+        const godPackConfig = packSetConfig.godPack;
+        const godPackChance = godPackConfig?.chance || (1 / 1000);
+        
+        // Build cards by rarity for this specific set
+        const packCardsByRarity = {};
+        packGameConfig.rarityOrder.forEach(r => {
+          packCardsByRarity[r] = packSetConfig.cards.filter(c => c.rarity === r);
+        });
+        
+        // Helper to get random card from this pack's card pool
+        const getPackCard = (rarity) => {
+          const pool = packCardsByRarity[rarity] || [];
+          if (pool.length === 0) return null;
+          const card = pool[Math.floor(rand() * pool.length)];
+          return {
+            ...card,
+            image: buildImageUrl(packGameId, packSetId, card)
+          };
+        };
+        
+        // Helper to get rare slot card for this pack
+        const getPackRareSlotCard = () => {
+          const weightedSlot = packStructure.slots.find(s => s.type === 'weighted' || s.type === 'rare-slot');
+          if (!weightedSlot || !weightedSlot.odds) {
+            return getPackCard('rare');
+          }
+          const odds = weightedSlot.odds;
+          const roll = rand() * 100;
+          let cumulative = 0;
+          for (const [rarity, chance] of Object.entries(odds)) {
+            cumulative += chance;
+            if (roll < cumulative) {
+              return getPackCard(rarity);
+            }
+          }
+          return getPackCard(Object.keys(odds)[0]);
+        };
+        
+        // Helper to get foil slot card for this pack
+        const getPackFoilSlotCard = () => {
+          const holoSlot = packStructure.slots.find(s => s.type === 'holo');
+          if (!holoSlot || !holoSlot.odds) {
+            return getPackCard('common');
+          }
+          const odds = holoSlot.odds;
+          const roll = rand() * 100;
+          let cumulative = 0;
+          for (const [rarity, chance] of Object.entries(odds)) {
+            cumulative += chance;
+            if (roll < cumulative) {
+              return getPackCard(rarity);
+            }
+          }
+          return getPackCard(Object.keys(odds)[0]);
+        };
+
+        // Determine if this is a God Pack
+        const isGodPack = !!packToOpen.isGodPack || packToOpen.type === 'godpack' || (rand() < godPackChance);
+        setLastPackWasGod(isGodPack);
+        if (isGodPack) {
+          setShowGodPackGate(true);
+          triggerGodPackEffect();
+        }
+
+        const newPack = [];
+
+        if (isGodPack && godPackConfig) {
+          // God Pack: use config distribution
+          let slot = 0;
+          const distribution = godPackConfig.distribution || [];
+          
+          for (const dist of distribution) {
+            for (let i = 0; i < dist.count; i++) {
+              const card = getPackCard(dist.rarity);
+              if (card) {
+                newPack.push({ 
+                  ...card, 
+                  slot: slot++, 
+                  isHolo: godPackConfig.allHolo !== false, 
+                  isGodPack: true 
+                });
+              }
+            }
+          }
+
+          // Safety: fill remaining slots if needed
+          const targetSize = godPackConfig.size || packStructure.size;
+          while (newPack.length < targetSize) {
+            const fallbackRarity = distribution.length > 0 ? distribution[0].rarity : 'rare';
+            const fallback = getPackCard(fallbackRarity);
+            if (!fallback) break;
+            newPack.push({ ...fallback, slot: slot++, isHolo: true, isGodPack: true });
+          }
+
+          // Shuffle slightly so the sequence isn't always identical
+          newPack.sort(() => rand() - 0.5);
+          newPack.forEach((c, i) => c.slot = i);
+        } else {
+          // Normal pack: use config structure
+          let slotIndex = 0;
+          
+          for (const slotConfig of packStructure.slots) {
+            const count = slotConfig.count || 1;
+            
+            if (slotConfig.type === 'guaranteed') {
+              // Guaranteed rarity cards
+              for (let i = 0; i < count; i++) {
+                const card = getPackCard(slotConfig.rarity);
+                if (card) newPack.push({ ...card, slot: slotIndex++ });
+              }
+            } else if (slotConfig.type === 'weighted' || slotConfig.type === 'rare-slot') {
+              // Weighted rarity slot
+              for (let i = 0; i < count; i++) {
+                if (packToOpen.forceRarity) {
+                  // Guaranteed rarity from sealed product
+                  const guaranteedCard = getPackCard(packToOpen.forceRarity);
+                  if (guaranteedCard) newPack.push({ ...guaranteedCard, slot: slotIndex++ });
+                } else {
+                  const card = getPackRareSlotCard();
+                  if (card) {
+                    // Check if this slot has a holo chance (for SP-style rare slots)
+                    const isHolo = slotConfig.holoChance && rand() < slotConfig.holoChance;
+                    newPack.push({ ...card, slot: slotIndex++, isHolo });
+                  }
+                }
+              }
+            } else if (slotConfig.type === 'holo') {
+              // Holo slot - always holo
+              for (let i = 0; i < count; i++) {
+                const foilCard = getPackFoilSlotCard();
+                if (foilCard) newPack.push({ ...foilCard, slot: slotIndex++, isHolo: true, isFoilSlot: true });
+              }
+            }
+          }
+        }
+
+        // Record milestone events
+        if (isGodPack) {
+          appendEvent({
+            id: `gp-${gameDay || 1}-${packCount + 1}-${Math.floor(rand() * 1e9)}`,
+            type: 'godpack',
+            game: packGameId,
+            set: packSetId,
+            day: gameDay || 1,
+            packIndex: packCount + 1,
+            cards: newPack.map(c => ({ id: c.id, rarity: c.rarity, isHolo: !!c.isHolo, holoMult: c.holoMult || null }))
+          });
+        }
+
+        // Preload all images in the pack for instant display
+        newPack.forEach(card => {
+          const img = new Image();
+          img.src = card.image;
+        });
+
+        // Update state
+        setPackInventory(newInventory);
+        savePackInventory(newInventory);
+        setCurrentPack(newPack);
+        setRevealedCards([]);
+        setRevealPhase('ripping');
+        setOpeningPhase('ripping');
+        setPackCount(prev => {
+          const next = prev + 1;
+          savePackCount(next);
+          return next;
+        });
+        navigate('opening');
+      };
 
       const openPack = () => {
         // Check if we have packs for current game/set
@@ -2925,7 +3174,36 @@ const getRareSlotCard = () => {
       };
 
       const getCollectionCards = () => {
-        let cards = [...ALL_CARDS];
+        // Collect cards from all games/sets or filtered game/set
+        let cards = [];
+        
+        const gamesToInclude = collectionGameFilter === 'all' 
+          ? gamesIndex.games.filter(g => g.enabled).map(g => g.id)
+          : [collectionGameFilter];
+        
+        gamesToInclude.forEach(gameId => {
+          const gameConfig = gameConfigs[gameId];
+          if (!gameConfig) return;
+          
+          const setsToInclude = collectionSetFilter === 'all'
+            ? gameConfig.sets
+            : [collectionSetFilter];
+          
+          setsToInclude.forEach(setId => {
+            const setConfig = setConfigs[gameId]?.[setId];
+            if (!setConfig || !setConfig.cards) return;
+            
+            setConfig.cards.forEach(card => {
+              cards.push({
+                ...card,
+                gameId,
+                setId,
+                gameName: gameConfig.name,
+                setName: setConfig.name
+              });
+            });
+          });
+        });
 
         // Rarity filter (quick buttons)
         if (collectionFilter !== 'all') {
@@ -2959,7 +3237,7 @@ const getRareSlotCard = () => {
 
           return {
             ...card,
-            image: getImageUrl(card),
+            image: buildImageUrl(card.gameId, card.setId, card),
             owned,
             ownedNormal,
             ownedHolo,
@@ -3410,146 +3688,342 @@ if (!isLoaded) {
 
           <main style={{ maxWidth: 1200, margin: '0 auto', padding: 32 }}>
             {view === 'home' && (
-              <div style={{ textAlign: 'center' }}>
-                {/* Game/Set Selector for Inventory */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-                  <select
-                    value={currentGameId}
-                    onChange={(e) => switchGame(e.target.value)}
-                    style={{
-                      padding: '10px 16px',
-                      borderRadius: 10,
-                      border: '2px solid rgba(168,85,247,0.4)',
-                      background: 'rgba(0,0,0,0.4)',
-                      color: 'white',
-                      fontSize: 14,
-                      fontWeight: 'bold',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {gamesIndex.games.filter(g => g.enabled).map(game => (
-                      <option key={game.id} value={game.id}>{game.name}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={currentSetId}
-                    onChange={(e) => switchSet(e.target.value)}
-                    style={{
-                      padding: '10px 16px',
-                      borderRadius: 10,
-                      border: '2px solid rgba(168,85,247,0.4)',
-                      background: 'rgba(0,0,0,0.4)',
-                      color: 'white',
-                      fontSize: 14,
-                      fontWeight: 'bold',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {currentGameConfig.sets.map(setId => {
-                      const sc = setConfigs[currentGameId]?.[setId];
-                      return (
-                        <option key={setId} value={setId}>{sc?.name || setId}</option>
-                      );
-                    })}
-                  </select>
-                </div>
+              <div>
+                <h2 style={{ color: 'white', fontSize: 28, fontWeight: 'bold', marginBottom: 24, textAlign: 'center' }}>
+                  Inventory
+                </h2>
 
-                <p style={{ color: '#9ca3af', marginBottom: 8 }}>Packs Opened: {packCount}</p>
-                <p style={{ color: '#9ca3af', marginBottom: 8 }}>Total Cards: {stats.totalOwned}</p>
-                <p style={{ color: '#fbbf24', fontSize: 20, fontWeight: 'bold', marginBottom: 32 }}>
-                  Packs Available: {currentGameSetPacks.length}
-                </p>
-
-                {/* Sealed inventory for current game/set */}
+                {/* All owned inventory grouped by game then set */}
                 {(() => {
-                  const currentSealed = sealedInventory?.[currentGameId]?.[currentSetId] || {};
-                  const products = currentSetConfig.sealedProducts || {};
-                  const sealedTypes = Object.keys(products).filter(t => t !== 'single');
-                  if (sealedTypes.length === 0) return null;
-                  return (
-                    <>
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
-                        {sealedTypes.map(type => (
-                          <div key={type} style={{ color: '#d1d5db', fontSize: 13, padding: '6px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
-                            {products[type]?.name || type}: {currentSealed[type] || 0}
-                          </div>
-                        ))}
+                  // Collect all owned items
+                  const ownedByGame = {};
+                  
+                  // Add single packs from packInventory
+                  packInventory.forEach(pack => {
+                    const gameId = pack.gameId || 'tta';
+                    const setId = pack.setId || 'base-set';
+                    if (!ownedByGame[gameId]) ownedByGame[gameId] = {};
+                    if (!ownedByGame[gameId][setId]) ownedByGame[gameId][setId] = { packs: [], sealed: {} };
+                    ownedByGame[gameId][setId].packs.push(pack);
+                  });
+                  
+                  // Add sealed products
+                  Object.entries(sealedInventory).forEach(([gameId, sets]) => {
+                    Object.entries(sets).forEach(([setId, products]) => {
+                      Object.entries(products).forEach(([productType, count]) => {
+                        if (count > 0) {
+                          if (!ownedByGame[gameId]) ownedByGame[gameId] = {};
+                          if (!ownedByGame[gameId][setId]) ownedByGame[gameId][setId] = { packs: [], sealed: {} };
+                          ownedByGame[gameId][setId].sealed[productType] = count;
+                        }
+                      });
+                    });
+                  });
+                  
+                  const hasAnyInventory = Object.keys(ownedByGame).length > 0;
+                  
+                  if (!hasAnyInventory) {
+                    return (
+                      <div style={{ textAlign: 'center', padding: 40 }}>
+                        <p style={{ color: '#9ca3af', fontSize: 18, marginBottom: 20 }}>Your inventory is empty</p>
+                        <button 
+                          onClick={() => navigate('shop')}
+                          style={{
+                            padding: '12px 24px',
+                            background: 'linear-gradient(90deg, #9333ea, #ec4899)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 8,
+                            cursor: 'pointer',
+                            fontSize: 16,
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          Visit Shop
+                        </button>
                       </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 28 }}>
-                        {sealedTypes.map(type => {
-                          const count = currentSealed[type] || 0;
-                          const config = products[type];
+                    );
+                  }
+                  
+                  return Object.entries(ownedByGame).map(([gameId, sets]) => {
+                    const gameConfig = gameConfigs[gameId];
+                    const gameName = gameConfig?.name || gameId;
+                    
+                    return (
+                      <div key={gameId} style={{ marginBottom: 32 }}>
+                        <h3 style={{ 
+                          color: '#a855f7', 
+                          fontSize: 20, 
+                          fontWeight: 'bold', 
+                          margin: '0 0 16px',
+                          padding: '8px 0',
+                          borderBottom: '2px solid rgba(168,85,247,0.3)'
+                        }}>
+                          {gameName}
+                        </h3>
+                        
+                        {Object.entries(sets).map(([setId, inventory]) => {
+                          const setConfig = setConfigs[gameId]?.[setId];
+                          const setName = setConfig?.name || setId;
+                          const cardbackUrl = `${GITHUB_BASE}/${gameConfig?.cardback || 'cardback.png'}`;
+                          
+                          const totalPacks = inventory.packs.length;
+                          const sealedItems = Object.entries(inventory.sealed);
+                          
                           return (
-                            <button
-                              key={type}
-                              onClick={() => openSealedProduct(currentGameId, currentSetId, type)}
-                              disabled={count <= 0}
-                              style={{
-                                padding: '10px 14px',
-                                borderRadius: 12,
-                                border: '1px solid rgba(255,255,255,0.12)',
-                                background: count > 0 ? 'rgba(59,130,246,0.25)' : 'rgba(107,114,128,0.25)',
-                                color: 'white',
-                                cursor: count > 0 ? 'pointer' : 'not-allowed'
-                              }}
-                            >
-                              Open {config?.name || type} (+{config?.packs || 1} Packs)
-                            </button>
+                            <div key={setId} style={{ marginBottom: 20, padding: 16, background: 'rgba(0,0,0,0.2)', borderRadius: 12 }}>
+                              <h4 style={{ color: '#d1d5db', fontSize: 16, fontWeight: 'bold', margin: '0 0 12px' }}>
+                                {setName}
+                              </h4>
+                              
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                                {/* Single Packs */}
+                                {totalPacks > 0 && (
+                                  <div 
+                                    onClick={() => setInspectProduct({ 
+                                      type: 'packs', 
+                                      gameId, 
+                                      setId, 
+                                      gameName, 
+                                      setName,
+                                      count: totalPacks,
+                                      packs: inventory.packs,
+                                      cardbackUrl
+                                    })}
+                                    style={{ 
+                                      padding: 12, 
+                                      background: 'rgba(168,85,247,0.15)', 
+                                      borderRadius: 10, 
+                                      border: '2px solid rgba(168,85,247,0.4)',
+                                      cursor: 'pointer',
+                                      textAlign: 'center',
+                                      minWidth: 100,
+                                      transition: 'transform 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                  >
+                                    <img src={cardbackUrl} alt="Packs" style={{ width: 60, height: 90, objectFit: 'cover', borderRadius: 6, marginBottom: 8 }} />
+                                    <div style={{ color: 'white', fontWeight: 'bold', fontSize: 14 }}>Packs</div>
+                                    <div style={{ color: '#a855f7', fontWeight: 'bold', fontSize: 18 }}>×{totalPacks}</div>
+                                  </div>
+                                )}
+                                
+                                {/* Sealed Products */}
+                                {sealedItems.map(([productType, count]) => {
+                                  const productConfig = setConfig?.sealedProducts?.[productType];
+                                  const productName = productConfig?.name || productType;
+                                  
+                                  return (
+                                    <div 
+                                      key={productType}
+                                      onClick={() => setInspectProduct({ 
+                                        type: 'sealed', 
+                                        productType,
+                                        gameId, 
+                                        setId, 
+                                        gameName, 
+                                        setName,
+                                        productName,
+                                        count,
+                                        packs: productConfig?.packs || 1,
+                                        guaranteed: productConfig?.guaranteed || [],
+                                        cardbackUrl
+                                      })}
+                                      style={{ 
+                                        padding: 12, 
+                                        background: 'rgba(59,130,246,0.15)', 
+                                        borderRadius: 10, 
+                                        border: '2px solid rgba(59,130,246,0.4)',
+                                        cursor: 'pointer',
+                                        textAlign: 'center',
+                                        minWidth: 100,
+                                        transition: 'transform 0.2s'
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                    >
+                                      <img src={cardbackUrl} alt={productName} style={{ width: 60, height: 90, objectFit: 'cover', borderRadius: 6, marginBottom: 8 }} />
+                                      <div style={{ color: 'white', fontWeight: 'bold', fontSize: 14 }}>{productName}</div>
+                                      <div style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: 18 }}>×{count}</div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           );
                         })}
                       </div>
-                    </>
-                  );
+                    );
+                  });
                 })()}
-
-                {currentGameSetPacks.length > 0 ? (
-                  <div onClick={openPack} style={{ width: 256, height: 384, margin: '0 auto', cursor: 'pointer', position: 'relative' }}>
-                    <img 
-                      src={getCardbackUrl()} 
-                      alt="Booster Pack" 
-                      style={{ 
-                        width: '100%', 
-                        height: '100%', 
-                        objectFit: 'cover', 
-                        borderRadius: 16, 
-                        border: '3px solid rgba(168,85,247,0.5)',
-                        boxShadow: '0 25px 50px -12px rgba(168,85,247,0.5)',
-                        transition: 'transform 0.2s, box-shadow 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.05)';
-                        e.currentTarget.style.boxShadow = '0 30px 60px -12px rgba(168,85,247,0.7)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(168,85,247,0.5)';
-                      }}
-                    />
-                    <div style={{ position: 'absolute', bottom: 16, left: 0, right: 0, textAlign: 'center', pointerEvents: 'none' }}>
-                      <p style={{ color: 'white', fontSize: 14, margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>Click to Open</p>
+              </div>
+            )}
+            
+            {/* Inspect Product Modal */}
+            {inspectProduct && (
+              <div
+                onClick={() => setInspectProduct(null)}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(0, 0, 0, 0.85)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1100,
+                  padding: 32
+                }}
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: '#111827',
+                    border: '2px solid rgba(168,85,247,0.5)',
+                    borderRadius: 16,
+                    padding: 24,
+                    maxWidth: 400,
+                    width: '100%',
+                    textAlign: 'center'
+                  }}
+                >
+                  <img 
+                    src={inspectProduct.cardbackUrl} 
+                    alt="Product" 
+                    style={{ width: 120, height: 180, objectFit: 'cover', borderRadius: 10, marginBottom: 16 }} 
+                  />
+                  
+                  <h3 style={{ color: 'white', fontSize: 20, fontWeight: 'bold', margin: '0 0 4px' }}>
+                    {inspectProduct.type === 'packs' ? 'Single Packs' : inspectProduct.productName}
+                  </h3>
+                  <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 12px' }}>
+                    {inspectProduct.gameName} • {inspectProduct.setName}
+                  </p>
+                  <p style={{ color: '#a855f7', fontSize: 24, fontWeight: 'bold', margin: '0 0 8px' }}>
+                    ×{inspectProduct.count}
+                  </p>
+                  
+                  {inspectProduct.type === 'sealed' && (
+                    <p style={{ color: '#10b981', fontSize: 12, margin: '0 0 16px' }}>
+                      Opens into {inspectProduct.packs} pack{inspectProduct.packs > 1 ? 's' : ''}
+                      {inspectProduct.guaranteed.length > 0 && (
+                        <> • Guaranteed: {inspectProduct.guaranteed.map(g => `${g.count} ${g.rarity}`).join(', ')}</>
+                      )}
+                    </p>
+                  )}
+                  
+                  {/* Market Value */}
+                  <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+                    <div style={{ color: '#9ca3af', fontSize: 12, marginBottom: 4 }}>Market Value</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      <img src="./rations.png" alt="" style={{ width: 20, height: 20 }} />
+                      <span style={{ color: '#fbbf24', fontSize: 20, fontWeight: 'bold' }}>
+                        {getProductPrice(inspectProduct.gameId, inspectProduct.setId, inspectProduct.type === 'packs' ? 'single' : inspectProduct.productType).toFixed(2)}
+                      </span>
+                      <span style={{ color: '#9ca3af', fontSize: 12 }}>each</span>
                     </div>
                   </div>
-                ) : (
-                  <div style={{ width: 256, height: 384, margin: '0 auto', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(107,114,128,0.2)', borderRadius: 16, border: '3px dashed rgba(168,85,247,0.5)' }}>
-                    <p style={{ color: '#9ca3af', fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>No Packs Available</p>
-                    <button 
-                      onClick={() => navigate('shop')}
+                  
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <button
+                      onClick={() => setInspectProduct(null)}
                       style={{
-                        padding: '12px 24px',
-                        background: 'linear-gradient(90deg, #9333ea, #ec4899)',
+                        flex: 1,
+                        padding: '12px',
+                        background: '#374151',
                         color: 'white',
                         border: 'none',
                         borderRadius: 8,
                         cursor: 'pointer',
-                        fontSize: 16,
                         fontWeight: 'bold'
                       }}
                     >
-                      Visit Shop
+                      Close
                     </button>
+                    
+                    {inspectProduct.type === 'packs' ? (
+                      <button
+                        onClick={() => {
+                          // Open first pack directly using its ID
+                          const packToOpen = inspectProduct.packs[0];
+                          if (packToOpen) {
+                            setInspectProduct(null);
+                            openSpecificPack(packToOpen.id);
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          background: 'linear-gradient(90deg, #9333ea, #ec4899)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        Open Pack
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          openSealedProduct(inspectProduct.gameId, inspectProduct.setId, inspectProduct.productType);
+                          if (inspectProduct.count <= 1) {
+                            setInspectProduct(null);
+                          } else {
+                            setInspectProduct({...inspectProduct, count: inspectProduct.count - 1});
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          background: 'linear-gradient(90deg, #3b82f6, #6366f1)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        Rip Open (+{inspectProduct.packs} packs)
+                      </button>
+                    )}
                   </div>
-                )}
+                  
+                  {/* Sell option */}
+                  <button
+                    onClick={() => {
+                      if (inspectProduct.type === 'packs') {
+                        sellSinglePack(inspectProduct.packs[0].id);
+                      } else {
+                        sellSealedProduct(inspectProduct.gameId, inspectProduct.setId, inspectProduct.productType);
+                      }
+                      if (inspectProduct.count <= 1) {
+                        setInspectProduct(null);
+                      } else {
+                        const newPacks = inspectProduct.type === 'packs' ? inspectProduct.packs.slice(1) : inspectProduct.packs;
+                        setInspectProduct({...inspectProduct, count: inspectProduct.count - 1, packs: newPacks});
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      marginTop: 12,
+                      padding: '10px',
+                      background: 'rgba(239,68,68,0.2)',
+                      color: '#f87171',
+                      border: '1px solid rgba(239,68,68,0.4)',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      fontSize: 13
+                    }}
+                  >
+                    Sell for {(getProductPrice(inspectProduct.gameId, inspectProduct.setId, inspectProduct.type === 'packs' ? 'single' : inspectProduct.productType) * SEALED_SELL_RATE).toFixed(2)} Rations
+                  </button>
+                </div>
               </div>
             )}
 
@@ -3740,10 +4214,11 @@ if (!isLoaded) {
                             
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
                               
-                              {/* Special items only for current set */}
-                              {isCurrentSet && (
-                                <>
-                                  {/* Free Starter */}
+                              {/* Free Starter - per game/set */}
+                              {(() => {
+                                const claimKey = `${game.id}-${setId}`;
+                                const isClaimed = freeStartersClaimed[claimKey];
+                                return (
                                   <div style={{
                                     background: 'rgba(31,41,55,0.8)',
                                     borderRadius: 12,
@@ -3765,65 +4240,79 @@ if (!isLoaded) {
                                       <span style={{ color: '#fbbf24', fontSize: 16, fontWeight: 'bold' }}>0</span>
                                     </div>
                                     <button
-                                      onClick={() => setPurchaseConfirm({ type: 'freeStarter', title: 'Free Starter Box', cost: 0, details: '5 free packs.' })}
-                                      disabled={freeStarterClaimed}
+                                      onClick={() => setPurchaseConfirm({ 
+                                        type: 'freeStarter', 
+                                        gameId: game.id,
+                                        setId: setId,
+                                        title: `Free Starter - ${setConfig.name}`, 
+                                        cost: 0, 
+                                        details: `5 free packs for ${game.name} - ${setConfig.name}.` 
+                                      })}
+                                      disabled={isClaimed}
                                       style={{
                                         width: '100%',
                                         padding: '8px',
-                                        background: freeStarterClaimed ? '#374151' : 'linear-gradient(90deg, #f59e0b, #f97316)',
+                                        background: isClaimed ? '#374151' : 'linear-gradient(90deg, #f59e0b, #f97316)',
                                         color: 'white',
                                         border: 'none',
                                         borderRadius: 6,
-                                        cursor: freeStarterClaimed ? 'not-allowed' : 'pointer',
+                                        cursor: isClaimed ? 'not-allowed' : 'pointer',
                                         fontWeight: 'bold',
                                         fontSize: 12,
-                                        opacity: freeStarterClaimed ? 0.5 : 1
+                                        opacity: isClaimed ? 0.5 : 1
                                       }}
                                     >
-                                      {freeStarterClaimed ? 'Claimed' : 'Claim'}
+                                      {isClaimed ? 'Claimed' : 'Claim'}
                                     </button>
                                   </div>
-                                  
-                                  {/* God Pack Test */}
-                                  <div style={{
-                                    background: 'rgba(31,41,55,0.8)',
-                                    borderRadius: 12,
-                                    padding: 16,
-                                    border: '2px solid rgba(236,72,153,0.55)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center'
-                                  }}>
-                                    <img
-                                      src={`${GITHUB_BASE}/${gameConfig.cardback}`}
-                                      alt="God Pack"
-                                      style={{ width: 100, height: 150, objectFit: 'cover', borderRadius: 8, marginBottom: 10, boxShadow: '0 0 20px rgba(236,72,153,0.3)' }}
-                                    />
-                                    <div style={{ color: '#f472b6', fontSize: 14, fontWeight: 'bold', marginBottom: 2 }}>God Pack</div>
-                                    <div style={{ color: '#9ca3af', fontSize: 11, marginBottom: 8 }}>Test only</div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
-                                      <img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />
-                                      <span style={{ color: '#fbbf24', fontSize: 16, fontWeight: 'bold' }}>0</span>
-                                    </div>
-                                    <button
-                                      onClick={() => setPurchaseConfirm({ type: 'godpack', title: 'God Pack (Test)', cost: 0, details: 'Free god pack for testing.' })}
-                                      style={{
-                                        width: '100%',
-                                        padding: '8px',
-                                        background: 'linear-gradient(90deg, #ec4899, #a855f7)',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: 6,
-                                        cursor: 'pointer',
-                                        fontWeight: 'bold',
-                                        fontSize: 12
-                                      }}
-                                    >
-                                      Get
-                                    </button>
-                                  </div>
-                                </>
-                              )}
+                                );
+                              })()}
+                              
+                              {/* God Pack Test - per game/set */}
+                              <div style={{
+                                background: 'rgba(31,41,55,0.8)',
+                                borderRadius: 12,
+                                padding: 16,
+                                border: '2px solid rgba(236,72,153,0.55)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center'
+                              }}>
+                                <img
+                                  src={`${GITHUB_BASE}/${gameConfig.cardback}`}
+                                  alt="God Pack"
+                                  style={{ width: 100, height: 150, objectFit: 'cover', borderRadius: 8, marginBottom: 10, boxShadow: '0 0 20px rgba(236,72,153,0.3)' }}
+                                />
+                                <div style={{ color: '#f472b6', fontSize: 14, fontWeight: 'bold', marginBottom: 2 }}>God Pack</div>
+                                <div style={{ color: '#9ca3af', fontSize: 11, marginBottom: 8 }}>Test only</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+                                  <img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />
+                                  <span style={{ color: '#fbbf24', fontSize: 16, fontWeight: 'bold' }}>0</span>
+                                </div>
+                                <button
+                                  onClick={() => setPurchaseConfirm({ 
+                                    type: 'godpack', 
+                                    gameId: game.id,
+                                    setId: setId,
+                                    title: `God Pack - ${setConfig.name}`, 
+                                    cost: 0, 
+                                    details: `Free god pack for ${game.name} - ${setConfig.name}.` 
+                                  })}
+                                  style={{
+                                    width: '100%',
+                                    padding: '8px',
+                                    background: 'linear-gradient(90deg, #ec4899, #a855f7)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: 6,
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold',
+                                    fontSize: 12
+                                  }}
+                                >
+                                  Get
+                                </button>
+                              </div>
                               
                               {/* Products from config */}
                               {Object.entries(setConfig.sealedProducts || {}).map(([productType, productConfig]) => {
@@ -4528,80 +5017,67 @@ if (!isLoaded) {
 
 {view === 'collection' && (
               <div>
-                {/* Game/Set Selector for Collection */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-                  <select
-                    value={currentGameId}
-                    onChange={(e) => switchGame(e.target.value)}
-                    style={{
-                      padding: '10px 16px',
-                      borderRadius: 10,
-                      border: '2px solid rgba(168,85,247,0.4)',
-                      background: 'rgba(0,0,0,0.4)',
-                      color: 'white',
-                      fontSize: 14,
-                      fontWeight: 'bold',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {gamesIndex.games.filter(g => g.enabled).map(game => (
-                      <option key={game.id} value={game.id}>{game.name}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={currentSetId}
-                    onChange={(e) => switchSet(e.target.value)}
-                    style={{
-                      padding: '10px 16px',
-                      borderRadius: 10,
-                      border: '2px solid rgba(168,85,247,0.4)',
-                      background: 'rgba(0,0,0,0.4)',
-                      color: 'white',
-                      fontSize: 14,
-                      fontWeight: 'bold',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {currentGameConfig.sets.map(setId => {
-                      const sc = setConfigs[currentGameId]?.[setId];
-                      return (
-                        <option key={setId} value={setId}>{sc?.name || setId}</option>
-                      );
-                    })}
-                  </select>
-                </div>
-
+                {/* Collection Stats Header - All Games */}
                 <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 12, padding: 24, marginBottom: 24 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, textAlign: 'center' }}>
-                    <div>
-                      <p style={{ color: '#9ca3af', fontSize: 14, margin: 0 }}>Total Value</p>
-                      <p style={{ color: 'white', fontSize: 22, fontWeight: 'bold', margin: '6px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                        <img src="./rations.png" alt="Rations" style={{ width: 18, height: 18 }} />
-                        <span>{totalCollectionValue.toFixed(2)}</span>
-                      </p>
-                    </div>
-                    <div>
-                      <p style={{ color: '#9ca3af', fontSize: 14, margin: 0 }}>Collected</p>
-                      <p style={{ color: 'white', fontSize: 18, fontWeight: 'bold', margin: '6px 0 0' }}>
-                        N {stats.uniqueNormalOwned}/{stats.totalCards}
-                      </p>
-                      <p style={{ color: 'white', fontSize: 18, fontWeight: 'bold', margin: '2px 0 0' }}>
-                        H {stats.uniqueHoloOwned}/{stats.totalCards}
-                      </p>
-                    </div>
-                    {RARITY_ORDER.map(rarity => (
-                      <div key={rarity}>
-                        <p style={{ color: RARITY_COLORS[rarity].text, fontSize: 14, textTransform: 'capitalize', margin: 0 }}>{rarity}</p>
-                        <p style={{ color: 'white', fontSize: 20, fontWeight: 'bold', margin: '4px 0 0' }}>
-                          {stats.byRarity[rarity]?.owned || 0}/{stats.byRarity[rarity]?.total || 0}
-                        </p>
-                      </div>
-                    ))}
+                  {/* Total Collection Value */}
+                  <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                    <p style={{ color: '#9ca3af', fontSize: 14, margin: 0 }}>Total Collection Value (All Games)</p>
+                    <p style={{ color: 'white', fontSize: 28, fontWeight: 'bold', margin: '8px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                      <img src="./rations.png" alt="Rations" style={{ width: 24, height: 24 }} />
+                      <span>{totalCollectionValue.toFixed(2)}</span>
+                    </p>
+                  </div>
+                  
+                  {/* Per-Game/Set Completion */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                    {gamesIndex.games.filter(g => g.enabled).map(game => {
+                      const gameConfig = gameConfigs[game.id];
+                      if (!gameConfig) return null;
+                      
+                      return gameConfig.sets.map(setId => {
+                        const setConfig = setConfigs[game.id]?.[setId];
+                        if (!setConfig || !setConfig.cards) return null;
+                        
+                        const totalCards = setConfig.cards.length;
+                        let ownedCount = 0;
+                        
+                        setConfig.cards.forEach(card => {
+                          const entry = collection[card.id];
+                          if (entry && ((entry.normal || 0) > 0 || (entry.holo || 0) > 0)) {
+                            ownedCount++;
+                          }
+                        });
+                        
+                        const completionPct = totalCards > 0 ? Math.round((ownedCount / totalCards) * 100) : 0;
+                        
+                        return (
+                          <div 
+                            key={`${game.id}-${setId}`}
+                            style={{ 
+                              padding: '10px 16px', 
+                              background: 'rgba(168,85,247,0.15)', 
+                              borderRadius: 10, 
+                              border: '1px solid rgba(168,85,247,0.3)',
+                              minWidth: 180
+                            }}
+                          >
+                            <div style={{ color: '#d1d5db', fontSize: 12, marginBottom: 4 }}>
+                              {game.name} - {setConfig.name}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                              <span style={{ color: '#a855f7', fontSize: 20, fontWeight: 'bold' }}>{completionPct}%</span>
+                              <span style={{ color: '#9ca3af', fontSize: 12 }}>({ownedCount}/{totalCards})</span>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })}
                   </div>
                 </div>
 
-                                <div style={{ background: 'rgba(0,0,0,0.28)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+                {/* Filters */}
+                <div style={{ background: 'rgba(0,0,0,0.28)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, alignItems: 'center', marginBottom: 12 }}>
                     <input
                       value={collectionSearch}
                       onChange={(e) => setCollectionSearch(e.target.value)}
@@ -4615,6 +5091,50 @@ if (!isLoaded) {
                         outline: 'none'
                       }}
                     />
+                    
+                    {/* Game Filter */}
+                    <select
+                      value={collectionGameFilter}
+                      onChange={(e) => {
+                        setCollectionGameFilter(e.target.value);
+                        setCollectionSetFilter('all');
+                      }}
+                      style={{ 
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(168,85,247,0.4)',
+                        background: 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="all">All Games</option>
+                      {gamesIndex.games.filter(g => g.enabled).map(game => (
+                        <option key={game.id} value={game.id}>{game.name}</option>
+                      ))}
+                    </select>
+                    
+                    {/* Set Filter */}
+                    <select
+                      value={collectionSetFilter}
+                      onChange={(e) => setCollectionSetFilter(e.target.value)}
+                      style={{ 
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(168,85,247,0.4)',
+                        background: 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="all">All Sets</option>
+                      {collectionGameFilter !== 'all' && gameConfigs[collectionGameFilter]?.sets.map(setId => {
+                        const sc = setConfigs[collectionGameFilter]?.[setId];
+                        return (
+                          <option key={setId} value={setId}>{sc?.name || setId}</option>
+                        );
+                      })}
+                    </select>
 
                     <select
                       value={ownedFilter}
