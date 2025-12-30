@@ -1525,17 +1525,66 @@ body{
 
       const generateDailyShopStock = (day) => {
         const d = (day !== null && day !== undefined) ? day : gameDay;
-        const singleLimit = generateWeightedInt(1, 15, 5);
-        const bundleLimit = generateWeightedInt(1, 4, 1);
-        const boosterLimit = generateWeightedInt(0, 3, 0);
-        const caseLimit = generateWeightedInt(0, 1, 0);
-        return {
-          day: d,
-          single: { limit: singleLimit, remaining: singleLimit },
-          bundle: { limit: bundleLimit, remaining: bundleLimit },
-          booster: { limit: boosterLimit, remaining: boosterLimit },
-          case: { limit: caseLimit, remaining: caseLimit }
+        
+        // Generate stock per game/set with different distributions
+        const stock = { day: d };
+        
+        // TTA Base Set: 0-5 packs, 0-2 bundles, 0-1 boxes, 0-1 cases
+        stock['tta'] = {
+          'base-set': {
+            single: { limit: generateWeightedInt(0, 5, 2), remaining: 0 },
+            bundle: { limit: generateWeightedInt(0, 2, 1), remaining: 0 },
+            booster: { limit: generateWeightedInt(0, 1, 0), remaining: 0 },
+            case: { limit: generateWeightedInt(0, 1, 0), remaining: 0 }
+          },
+          // TTA Expansion Set: 0-5 packs, 0-1 bundles, 0-1 boxes, 0-1 cases
+          'expansion-set': {
+            single: { limit: generateWeightedInt(0, 5, 2), remaining: 0 },
+            bundle: { limit: generateWeightedInt(0, 1, 0), remaining: 0 },
+            booster: { limit: generateWeightedInt(0, 1, 0), remaining: 0 },
+            case: { limit: generateWeightedInt(0, 1, 0), remaining: 0 }
+          }
         };
+        
+        // SP Base Set: 0-6 packs, 0-4 blisters, 0-2 summoning boxes, 0-1 boxes, 0-1 cases
+        stock['spiritual-possessions'] = {
+          'base-set': {
+            single: { limit: generateWeightedInt(0, 6, 3), remaining: 0 },
+            blister: { limit: generateWeightedInt(0, 4, 2), remaining: 0 },
+            summoningBox: { limit: generateWeightedInt(0, 2, 1), remaining: 0 },
+            booster: { limit: generateWeightedInt(0, 1, 0), remaining: 0 },
+            case: { limit: generateWeightedInt(0, 1, 0), remaining: 0 }
+          }
+        };
+        
+        // Set remaining = limit for all
+        for (const gameId in stock) {
+          if (gameId === 'day') continue;
+          for (const setId in stock[gameId]) {
+            for (const productType in stock[gameId][setId]) {
+              stock[gameId][setId][productType].remaining = stock[gameId][setId][productType].limit;
+            }
+          }
+        }
+        
+        return stock;
+      };
+      
+      // Helper to get stock for a specific product
+      const getProductStock = (gameId, setId, productType) => {
+        if (!shopStock || !shopStock[gameId] || !shopStock[gameId][setId]) return null;
+        return shopStock[gameId][setId][productType] || null;
+      };
+      
+      // Helper to decrement stock for a product
+      const decrementProductStock = (gameId, setId, productType) => {
+        if (!shopStock || !shopStock[gameId] || !shopStock[gameId][setId]) return shopStock;
+        const product = shopStock[gameId][setId][productType];
+        if (!product || product.remaining <= 0) return shopStock;
+        
+        const newStock = JSON.parse(JSON.stringify(shopStock));
+        newStock[gameId][setId][productType].remaining -= 1;
+        return newStock;
       };
 
       // Get price for daily shop card - uses the card's own set config for pricing
@@ -1864,7 +1913,9 @@ body{
             const ssRaw = localStorage.getItem('tcg-shop-stock');
             if (ssRaw) { try { ss = JSON.parse(ssRaw); } catch (e) { ss = null; } }
           }
-          if (!ss || typeof ss !== 'object' || ss.day !== currentDay || !ss.single || !ss.bundle || !ss.booster || !ss.case) {
+          // Check for new multi-game structure (has game IDs as keys, not 'single'/'bundle' etc.)
+          const isValidStructure = ss && typeof ss === 'object' && ss.day === currentDay && ss['tta'] && ss['spiritual-possessions'];
+          if (!isValidStructure) {
             ss = generateDailyShopStock(currentDay);
           }
           try { localStorage.setItem('tcg-shop-stock', JSON.stringify(ss)); } catch (e) {}
@@ -2514,19 +2565,39 @@ const persistShopStock = (ss) => {
         try { updateCoreSave({ shopStock: ss }); } catch (e) {}
       };
 
-      const consumeShopStock = (type) => {
-        const map = { single: 'single', bundle: 'bundle', booster: 'booster', case: 'case' };
-        const key = map[type] || null;
-        if (!key) return true;
-
+      const consumeShopStock = (gameId, setId, productType) => {
         let ss = shopStock;
-        if (!ss || typeof ss !== 'object' || ss.day !== gameDay || !ss[key]) {
+        
+        // Validate structure, regenerate if needed
+        const isValidStructure = ss && typeof ss === 'object' && ss.day === gameDay && ss['tta'] && ss['spiritual-possessions'];
+        if (!isValidStructure) {
           ss = generateDailyShopStock(gameDay);
-          try { localStorage.setItem('tcg-shop-stock', JSON.stringify(ss)); } catch (e) {}
+          persistShopStock(ss);
         }
 
-        const sku = ss[key];
-        const remaining = sku && Number.isFinite(sku.remaining) ? sku.remaining : 0;
+        // Get stock for this specific game/set/product
+        const gameStock = ss[gameId];
+        if (!gameStock) {
+          // Game not in stock structure - allow purchase (no limit)
+          setShopStock(ss);
+          return true;
+        }
+        
+        const setStock = gameStock[setId];
+        if (!setStock) {
+          // Set not in stock structure - allow purchase (no limit)
+          setShopStock(ss);
+          return true;
+        }
+        
+        const productStock = setStock[productType];
+        if (!productStock) {
+          // Product not in stock structure - allow purchase (no limit)
+          setShopStock(ss);
+          return true;
+        }
+        
+        const remaining = Number.isFinite(productStock.remaining) ? productStock.remaining : 0;
         if (remaining <= 0) {
           alert('Sold out today. Advance Day to restock.');
           setPurchaseConfirm(null);
@@ -2535,7 +2606,9 @@ const persistShopStock = (ss) => {
           return false;
         }
 
-        const next = { ...ss, [key]: { ...sku, remaining: remaining - 1 } };
+        // Decrement stock
+        const next = JSON.parse(JSON.stringify(ss));
+        next[gameId][setId][productType].remaining = remaining - 1;
         setShopStock(next);
         persistShopStock(next);
         return true;
@@ -2547,6 +2620,12 @@ const persistShopStock = (ss) => {
         // Handle universal product purchases with gameId/setId
         if (purchaseConfirm.gameId && purchaseConfirm.setId && purchaseConfirm.productType) {
           const { gameId, setId, productType, cost, isSealedProduct } = purchaseConfirm;
+          
+          // Check and consume stock
+          if (!consumeShopStock(gameId, setId, productType)) {
+            return; // Sold out
+          }
+          
           if (isSealedProduct) {
             // This goes into sealed inventory (bundles, boxes, cases)
             buySealedProduct(gameId, setId, productType, cost);
@@ -2562,19 +2641,19 @@ const persistShopStock = (ss) => {
         // Legacy handling for old purchase types
         switch (purchaseConfirm.type) {
           case 'single':
-            if (!consumeShopStock('single')) break;
+            if (!consumeShopStock(currentGameId, currentSetId, 'single')) break;
             buySinglePack();
             break;
           case 'bundle':
-            if (!consumeShopStock('bundle')) break;
+            if (!consumeShopStock(currentGameId, currentSetId, 'bundle')) break;
             buyBundleBox();
             break;
           case 'booster':
-            if (!consumeShopStock('booster')) break;
+            if (!consumeShopStock(currentGameId, currentSetId, 'booster')) break;
             buyBoosterBox();
             break;
           case 'case':
-            if (!consumeShopStock('case')) break;
+            if (!consumeShopStock(currentGameId, currentSetId, 'case')) break;
             buyBoosterCase();
             break;
           case 'freeStarter':
@@ -4552,6 +4631,12 @@ if (!isLoaded) {
                                 const productImageUrl = buildProductImageUrl(game.id, setId, productType);
                                 const cardbackUrl = `${GITHUB_BASE}/${gameConfig.cardback}`;
                                 
+                                // Get stock for this product
+                                const productStock = shopStock?.[game.id]?.[setId]?.[productType];
+                                const stockRemaining = productStock?.remaining ?? null;
+                                const stockLimit = productStock?.limit ?? null;
+                                const isSoldOut = stockRemaining !== null && stockRemaining <= 0;
+                                
                                 const guaranteedText = (productConfig.guaranteed || []).map(g => {
                                   const rarityName = gameConfig.rarities?.find(r => r.id === g.rarity)?.name || g.rarity;
                                   return `${g.count} ${rarityName}`;
@@ -4562,15 +4647,19 @@ if (!isLoaded) {
                                 else if (packs >= 20) borderColor = 'rgba(59,130,246,0.4)';
                                 else if (packs >= 5) borderColor = 'rgba(16,185,129,0.4)';
                                 
+                                // Hide if no stock (limit was 0)
+                                if (stockLimit === 0) return null;
+                                
                                 return (
                                   <div key={productType} style={{
                                     background: 'rgba(31,41,55,0.8)',
                                     borderRadius: 12,
                                     padding: 16,
-                                    border: `2px solid ${borderColor}`,
+                                    border: `2px solid ${isSoldOut ? 'rgba(239,68,68,0.4)' : borderColor}`,
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    alignItems: 'center'
+                                    alignItems: 'center',
+                                    opacity: isSoldOut ? 0.6 : 1
                                   }}>
                                     <img 
                                       src={productImageUrl}
@@ -4585,8 +4674,19 @@ if (!isLoaded) {
                                       {packs} pack{packs > 1 ? 's' : ''} ({packs * packSize} cards)
                                     </div>
                                     {guaranteedText && (
-                                      <div style={{ color: '#10b981', fontSize: 10, marginBottom: 6, textAlign: 'center' }}>
+                                      <div style={{ color: '#10b981', fontSize: 10, marginBottom: 4, textAlign: 'center' }}>
                                         ⭐ {guaranteedText}
+                                      </div>
+                                    )}
+                                    {/* Stock indicator */}
+                                    {stockRemaining !== null && (
+                                      <div style={{ 
+                                        color: isSoldOut ? '#ef4444' : stockRemaining <= 2 ? '#f59e0b' : '#10b981', 
+                                        fontSize: 10, 
+                                        fontWeight: 'bold',
+                                        marginBottom: 4
+                                      }}>
+                                        {isSoldOut ? 'SOLD OUT' : `${stockRemaining} left today`}
                                       </div>
                                     )}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
@@ -4603,21 +4703,21 @@ if (!isLoaded) {
                                         cost: price,
                                         details: `${packs} pack${packs > 1 ? 's' : ''} for ${game.name} - ${setConfig.name}.${guaranteedText ? ` Guaranteed: ${guaranteedText}.` : ''}`
                                       })}
-                                      disabled={!canAfford}
+                                      disabled={!canAfford || isSoldOut}
                                       style={{
                                         width: '100%',
                                         padding: '8px',
-                                        background: canAfford ? 'linear-gradient(90deg, #9333ea, #6366f1)' : '#374151',
+                                        background: (!canAfford || isSoldOut) ? '#374151' : 'linear-gradient(90deg, #9333ea, #6366f1)',
                                         color: 'white',
                                         border: 'none',
                                         borderRadius: 6,
-                                        cursor: canAfford ? 'pointer' : 'not-allowed',
+                                        cursor: (!canAfford || isSoldOut) ? 'not-allowed' : 'pointer',
                                         fontWeight: 'bold',
                                         fontSize: 12,
-                                        opacity: canAfford ? 1 : 0.5
+                                        opacity: (!canAfford || isSoldOut) ? 0.5 : 1
                                       }}
                                     >
-                                      {canAfford ? 'Buy' : 'Need More'}
+                                      {isSoldOut ? 'Sold Out' : canAfford ? 'Buy' : 'Need More'}
                                     </button>
                                   </div>
                                 );
