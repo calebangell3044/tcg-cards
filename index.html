@@ -777,19 +777,6 @@ body{
         return buildCardbackUrl(gameConfig);
       }, [currentGameConfig, openingPackGameId, currentGameId, gameConfigs]);
 
-      // Get the pack image URL for the currently opening pack
-      // Use refs for immediate access since state updates are async
-      const getOpeningPackGameId = () => openingPackGameIdRef.current || openingPackGameId || currentGameId;
-      const getOpeningPackSetId = () => openingPackSetIdRef.current || openingPackSetId || currentSetId;
-      
-      const openingPackImageUrl = buildProductImageUrl(getOpeningPackGameId(), getOpeningPackSetId(), 'single');
-      
-      const openingCardbackUrl = buildCardbackUrl(gameConfigs[getOpeningPackGameId()] || currentGameConfig);
-
-      // Debug: log what's being computed
-      console.log('RENDER - openingPackGameId:', getOpeningPackGameId(), 'openingPackSetId:', getOpeningPackSetId());
-      console.log('RENDER - openingPackImageUrl:', openingPackImageUrl);
-
       // Helper to get sealed product info from config
       const getSealedInfo = useCallback((type) => {
         const config = currentSetConfig.sealedProducts?.[type];
@@ -844,6 +831,14 @@ body{
       // Use refs for immediate access (state updates are async)
       const openingPackGameIdRef = useRef(null);
       const openingPackSetIdRef = useRef(null);
+
+      // Get the pack image URL for the currently opening pack
+      // Use refs for immediate access since state updates are async
+      const getOpeningPackGameId = () => openingPackGameIdRef.current || openingPackGameId || currentGameId;
+      const getOpeningPackSetId = () => openingPackSetIdRef.current || openingPackSetId || currentSetId;
+      
+      const openingPackImageUrl = buildProductImageUrl(getOpeningPackGameId(), getOpeningPackSetId(), 'single');
+      const openingCardbackUrl = buildCardbackUrl(gameConfigs[getOpeningPackGameId()] || currentGameConfig);
 
       // Pack ripping state
       const [packPhase, setPackPhase] = useState('sealed'); // sealed | ripping | stack | revealed
