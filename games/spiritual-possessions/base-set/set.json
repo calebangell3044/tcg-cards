@@ -55,8 +55,19 @@
     ]
   },
   "sealedProducts": {
-    "bundle": {
-      "packs": 8,
+    "single": {
+      "name": "Single Pack",
+      "packs": 1,
+      "guaranteed": []
+    },
+    "blister": {
+      "name": "3-Pack Blister",
+      "packs": 3,
+      "guaranteed": []
+    },
+    "summoningBox": {
+      "name": "Summoning Possessions Box",
+      "packs": 9,
       "guaranteed": [
         {
           "rarity": "legendary",
@@ -65,7 +76,8 @@
       ]
     },
     "booster": {
-      "packs": 24,
+      "name": "Booster Box",
+      "packs": 36,
       "guaranteed": [
         {
           "rarity": "x-rare",
@@ -74,6 +86,7 @@
       ]
     },
     "case": {
+      "name": "Case",
       "packs": 144,
       "guaranteed": [
         {
