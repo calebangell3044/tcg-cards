@@ -587,38 +587,6 @@ body{
       const [currentSetId, setCurrentSetId] = useState(null);
 
       // Load all configs on mount
-      const patchMissingMarketEntries = (baseValuesObj, currentValuesObj, breakoutCardsArr, historyObj, day) => {
-        const base = (baseValuesObj && typeof baseValuesObj === 'object') ? baseValuesObj : {};
-        const current = (currentValuesObj && typeof currentValuesObj === 'object') ? currentValuesObj : {};
-        let breakouts = Array.isArray(breakoutCardsArr) ? breakoutCardsArr : [];
-        const history = (historyObj && typeof historyObj === 'object') ? historyObj : {};
-
-        let didPatch = false;
-
-        for (const card of ALL_CARDS_GLOBAL) {
-          const id = card.id;
-          if (base[id] === undefined || base[id] === null) {
-            base[id] = generateMarketValueForCard(card);
-            didPatch = true;
-          }
-          if (current[id] === undefined || current[id] === null) {
-            current[id] = base[id];
-            didPatch = true;
-          }
-          if (!Array.isArray(history[id])) history[id] = [];
-          if (history[id].length === 0) {
-            history[id] = [{ day: day, value: current[id] }];
-            didPatch = true;
-          }
-          // Optional: give new cards a chance to be breakouts
-          if (didPatch && !breakouts.includes(id) && rand() < 0.10) {
-            breakouts.push(id);
-          }
-        }
-
-        return { base, current, breakouts, history, didPatch };
-      };
-
       useEffect(() => {
         const loadConfigs = async () => {
           try {
@@ -787,58 +755,12 @@ body{
     }) {
       // Derived values from config
       const ALL_CARDS = currentSetConfig.cards;
-
-      // Global card pool across all enabled games/sets (used for market simulation + Daily Singles)
-      const ALL_CARDS_GLOBAL = useMemo(() => {
-        const out = [];
-        try {
-          Object.keys(setConfigs || {}).forEach(gameId => {
-            const setsForGame = setConfigs[gameId] || {};
-            Object.keys(setsForGame).forEach(setId => {
-              const sc = setsForGame[setId];
-              if (!sc || !Array.isArray(sc.cards)) return;
-              sc.cards.forEach(c => {
-                if (!c || c.id === undefined || c.id === null) return;
-                out.push({ ...c, __gameId: gameId, __setId: setId });
-              });
-            });
-          });
-        } catch (e) {}
-        return out;
-      }, [setConfigs]);
-
-      const GLOBAL_CARD_INDEX = useMemo(() => {
-        const map = {};
-        const seen = new Set();
-        for (const c of ALL_CARDS_GLOBAL) {
-          const key = String(c.id);
-          if (!seen.has(key)) {
-            map[key] = c;
-            seen.add(key);
-          }
-        }
-        return map;
-      }, [ALL_CARDS_GLOBAL]);
-
       const RARITY_ORDER = currentGameConfig.rarityOrder;
-
-      const rarityColorsByGame = useMemo(() => {
-        const out = {};
-        try {
-          Object.keys(gameConfigs || {}).forEach(gid => {
-            out[gid] = buildRarityColors(gameConfigs[gid]);
-          });
-        } catch (e) {}
-        return out;
-      }, [gameConfigs]);
-
       const RARITY_COLORS = useMemo(() => buildRarityColors(currentGameConfig), [currentGameConfig]);
       const CARDS_BY_RARITY = useMemo(() => buildCardsByRarity(currentSetConfig, RARITY_ORDER), [currentSetConfig, RARITY_ORDER]);
       
       const getImageUrl = useCallback((card) => {
-        const gid = card?.__gameId || currentGameId;
-        const sid = card?.__setId || currentSetId;
-        return buildImageUrl(gid, sid, card);
+        return buildImageUrl(currentGameId, currentSetId, card);
       }, [currentGameId, currentSetId]);
 
       const getCardbackUrl = useCallback(() => {
@@ -928,16 +850,17 @@ body{
       const [sellConfirm, setSellConfirm] = useState(null);
       const [packInventory, setPackInventory] = useState([]);
 
+      // Sealed inventory is now nested: sealedInventory[gameId][setId][productType] = count
       const [sealedInventory, setSealedInventory] = useState(() => {
         try {
-          const core = readCoreSave();
-          if (core && core.sealedInventory) return core.sealedInventory;
+          // Try to load from global save key (not game/set scoped)
+          const raw = localStorage.getItem('tcg-global-sealed-inventory');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object') return parsed;
+          }
         } catch (e) {}
-        const raw = localStorage.getItem('tcg-sealed-inventory');
-        if (raw) {
-          try { return JSON.parse(raw); } catch (e) {}
-        }
-        return { bundle: 0, booster: 0, case: 0 };
+        return {};
       });
 
 
@@ -947,6 +870,52 @@ body{
       const [dailyShopPicks, setDailyShopPicks] = useState({});
       const [dailyShopDate, setDailyShopDate] = useState('');
 
+      // ===== Inventory Helper Functions =====
+      // Get sealed count for a specific game/set/product
+      const getSealedCount = useCallback((gameId, setId, productType) => {
+        return sealedInventory?.[gameId]?.[setId]?.[productType] || 0;
+      }, [sealedInventory]);
+
+      // Update sealed count for a specific game/set/product
+      const updateSealedCount = useCallback((gameId, setId, productType, delta) => {
+        setSealedInventory(prev => {
+          const newInv = { ...prev };
+          if (!newInv[gameId]) newInv[gameId] = {};
+          if (!newInv[gameId][setId]) newInv[gameId][setId] = {};
+          const current = newInv[gameId][setId][productType] || 0;
+          newInv[gameId][setId][productType] = Math.max(0, current + delta);
+          // Save to localStorage
+          try {
+            localStorage.setItem('tcg-global-sealed-inventory', JSON.stringify(newInv));
+          } catch (e) {}
+          return newInv;
+        });
+      }, []);
+
+      // Get packs for current game/set only
+      const currentGameSetPacks = useMemo(() => {
+        return packInventory.filter(p => p.gameId === currentGameId && p.setId === currentSetId);
+      }, [packInventory, currentGameId, currentSetId]);
+
+      // Save pack inventory to localStorage (global, not game/set scoped)
+      const saveGlobalPackInventory = useCallback((packs) => {
+        try {
+          localStorage.setItem('tcg-global-pack-inventory', JSON.stringify(packs));
+        } catch (e) {}
+      }, []);
+
+      // Load pack inventory on mount
+      useEffect(() => {
+        try {
+          const raw = localStorage.getItem('tcg-global-pack-inventory');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              setPackInventory(parsed);
+            }
+          }
+        } catch (e) {}
+      }, []);
       const [shopStock, setShopStock] = useState(() => {
         try {
           const core = readCoreSave();
@@ -960,6 +929,16 @@ body{
       });
 
       const [shopTab, setShopTab] = useState('buy'); // buy | sell
+      
+      // Shop-specific game/set selection (defaults to current)
+      const [shopGameId, setShopGameId] = useState(null);
+      const [shopSetId, setShopSetId] = useState(null);
+      
+      // Effective shop game/set (falls back to current if not set)
+      const effectiveShopGameId = shopGameId || currentGameId;
+      const effectiveShopSetId = shopSetId || currentSetId;
+      const shopGameConfig = gameConfigs[effectiveShopGameId];
+      const shopSetConfig = setConfigs[effectiveShopGameId]?.[effectiveShopSetId];
       const [shopSellSearch, setShopSellSearch] = useState('');
       const [shopSellFilter, setShopSellFilter] = useState('all'); // all | rarity
       const [shopSellVariant, setShopSellVariant] = useState('any'); // any | normal | holo
@@ -1339,44 +1318,32 @@ body{
       };
 
       // Generate initial market values for all cards using config ranges
-      // Generate initial market values for all cards (global) using per-set config ranges
-      const getMarketValueRangeForCard = (card) => {
-        const sc = setConfigs?.[card.__gameId]?.[card.__setId] || currentSetConfig;
-        const ranges = sc?.marketValueRanges || {};
-        return ranges[card.rarity] || null;
-      };
-
-      const generateMarketValueForCard = (card) => {
-        const range = getMarketValueRangeForCard(card);
-        if (range && typeof range.min === 'number' && typeof range.max === 'number') {
-          const peak = (typeof range.peak === 'number') ? range.peak : ((range.min + range.max) / 2);
-          const v = generateWeightedValue(range.min, range.max, peak);
-          return parseFloat(v.toFixed(2));
-        }
-        return 1.0;
-      };
-
-      const generateMarketValues = (cards = ALL_CARDS_GLOBAL) => {
+      const generateMarketValues = () => {
         const values = {};
-        (cards || []).forEach(card => {
-          values[card.id] = generateMarketValueForCard(card);
+        const ranges = currentSetConfig.marketValueRanges || {};
+        
+        ALL_CARDS.forEach(card => {
+          const range = ranges[card.rarity];
+          let value;
+          
+          if (range) {
+            value = generateWeightedValue(range.min, range.max, range.peak);
+          } else {
+            // Fallback for unknown rarities
+            value = 1.0;
+          }
+          values[card.id] = value;
         });
         return values;
-      };
+      }
 
       // Generate per-card holo multipliers using config ranges
-
-const getHoloRangeForCard = (card) => {
-        const gc = gameConfigs?.[card.__gameId] || currentGameConfig;
-        return gc?.holoMultiplierRange || { min: 1.10, max: 2.50, peak: 1.50 };
-      };
-
-      const generateHoloMultipliers = (cards = ALL_CARDS_GLOBAL) => {
+      const generateHoloMultipliers = () => {
         const multipliers = {};
-        (cards || []).forEach(card => {
-          const holoRange = getHoloRangeForCard(card);
-          const v = generateWeightedValue(holoRange.min, holoRange.max, holoRange.peak);
-          multipliers[card.id] = parseFloat(v.toFixed(2));
+        const holoRange = currentGameConfig.holoMultiplierRange || { min: 1.10, max: 2.50, peak: 1.50 };
+        
+        ALL_CARDS.forEach(card => {
+          multipliers[card.id] = generateWeightedValue(holoRange.min, holoRange.max, holoRange.peak);
         });
         return multipliers;
       };
@@ -1394,58 +1361,14 @@ const getHoloRangeForCard = (card) => {
       };
 
       // Use rarities from config for daily shop
-      const DAILY_SHOP_TIERS = [
-        { key: 'tier_0_5', label: '0–5 rations', min: 0, max: 5, minExclusive: false, maxInclusive: true },
-        { key: 'tier_5_25', label: '>5–25 rations', min: 5, max: 25, minExclusive: true, maxInclusive: true },
-        { key: 'tier_25_100', label: '>25–100 rations', min: 25, max: 100, minExclusive: true, maxInclusive: true },
-        { key: 'tier_100_plus', label: '>100 rations', min: 100, max: Infinity, minExclusive: true, maxInclusive: false }
-      ];
-
-      const inDailyShopTier = (value, tier) => {
-        if (value === null || value === undefined) return false;
-        const v = Number(value);
-        if (!Number.isFinite(v)) return false;
-        const above = tier.minExclusive ? (v > tier.min) : (v >= tier.min);
-        const below = (tier.max === Infinity)
-          ? true
-          : (tier.maxInclusive ? (v <= tier.max) : (v < tier.max));
-        return above && below;
-      };
-
-      const generateDailyShopPicks = (valuesMap) => {
+      const generateDailyShopPicks = () => {
         const picks = {};
-        const picked = new Set();
-        const values = (valuesMap && typeof valuesMap === 'object') ? valuesMap : (marketValues || {});
-
-        DAILY_SHOP_TIERS.forEach(tier => {
-          let candidates = ALL_CARDS_GLOBAL.filter(c => !picked.has(String(c.id)) && inDailyShopTier(values[c.id], tier));
-
-          // Fallbacks to guarantee we always pick something
-          if (!candidates.length) {
-            if (tier.max === Infinity) {
-              candidates = [...ALL_CARDS_GLOBAL]
-                .filter(c => !picked.has(String(c.id)) && Number.isFinite(Number(values[c.id])))
-                .sort((a, b) => (Number(values[b.id]) || 0) - (Number(values[a.id]) || 0))
-                .slice(0, Math.min(50, ALL_CARDS_GLOBAL.length));
-            } else {
-              candidates = ALL_CARDS_GLOBAL.filter(c =>
-                !picked.has(String(c.id)) &&
-                Number.isFinite(Number(values[c.id])) &&
-                Number(values[c.id]) <= tier.max
-              );
-            }
-          }
-
-          if (!candidates.length) candidates = ALL_CARDS_GLOBAL.filter(c => !picked.has(String(c.id)));
-          if (!candidates.length) return;
-
-          const pick = candidates[Math.floor(rand() * candidates.length)];
-          if (pick && pick.id !== undefined && pick.id !== null) {
-            picks[tier.key] = pick.id;
-            picked.add(String(pick.id));
-          }
+        RARITY_ORDER.forEach(rarity => {
+          const cards = CARDS_BY_RARITY[rarity] || [];
+          if (!cards.length) return;
+          const pick = cards[Math.floor(rand() * cards.length)];
+          if (pick && pick.id) picks[rarity] = pick.id;
         });
-
         return picks;
       };
 
@@ -1554,16 +1477,15 @@ const getHoloRangeForCard = (card) => {
       // Apply daily market fluctuation
       const fluctuateMarket = (baseValues, currentValues, breakoutCards) => {
         const newValues = {};
-        const bo = Array.isArray(breakoutCards) ? breakoutCards : [];
-        for (const card of ALL_CARDS_GLOBAL) {
-          const baseValue = (baseValues && baseValues[card.id] != null) ? baseValues[card.id] : (currentValues?.[card.id] ?? 1);
-          const currentValue = (currentValues && currentValues[card.id] != null) ? currentValues[card.id] : baseValue;
-          const isBreakout = bo.includes(card.id);
-
+        ALL_CARDS.forEach(card => {
+          const baseValue = baseValues[card.id];
+          const currentValue = currentValues[card.id] || baseValue;
+          const isBreakout = breakoutCards.includes(card.id);
+          
           // Random fluctuation between -15% and +15%
           const fluctuation = (rand() * 0.30) - 0.15; // -0.15 to +0.15
           let newValue = currentValue * (1 + fluctuation);
-
+          
           // 90% of cards stay within 50-150% of base value
           if (!isBreakout) {
             const minBound = baseValue * 0.5;
@@ -1575,29 +1497,21 @@ const getHoloRangeForCard = (card) => {
             const maxBound = baseValue * 2.0;
             newValue = Math.max(minBound, Math.min(maxBound, newValue));
           }
-
+          
           newValues[card.id] = parseFloat(newValue.toFixed(2));
-        }
+        });
         return newValues;
       };
 
       // Select 10% of cards from each rarity to be "breakout" cards
-      const selectBreakoutCards = (cards = ALL_CARDS_GLOBAL) => {
+      const selectBreakoutCards = () => {
         const breakouts = [];
-        const groups = {};
-        (cards || []).forEach(c => {
-          const r = c.rarity || 'unknown';
-          if (!groups[r]) groups[r] = [];
-          groups[r].push(c);
-        });
-
-        Object.keys(groups).forEach(rarity => {
-          const arr = groups[rarity];
-          const count = Math.ceil(arr.length * 0.1);
-          const shuffled = [...arr].sort(() => rand() - 0.5);
+        Object.keys(CARDS_BY_RARITY).forEach(rarity => {
+          const cards = CARDS_BY_RARITY[rarity];
+          const count = Math.ceil(cards.length * 0.1);
+          const shuffled = [...cards].sort(() => rand() - 0.5);
           breakouts.push(...shuffled.slice(0, count).map(c => c.id));
         });
-
         return breakouts;
       };
 
@@ -1723,7 +1637,7 @@ const getHoloRangeForCard = (card) => {
           }
         }
 
-        // Initialize or load daily shop rotation (4 singles by market value tier)
+        // Initialize or load daily shop rotation (5 singles, 1 per rarity)
         let dsDate = localStorage.getItem('tcg-daily-shop-date');
         let dsPicksRaw = localStorage.getItem('tcg-daily-shop-picks');
         let dsPicks = null;
@@ -1742,77 +1656,26 @@ const getHoloRangeForCard = (card) => {
         const currentDay = bootDay;
 
         // Validate / rotate daily shop picks (advances by in-game Day, not real time)
-        // Daily Singles are 4 cards picked by current market value tiers across ALL games/sets.
         let dsDay = parseInt(localStorage.getItem('tcg-daily-shop-day') || '0', 10);
-
-        // Ensure we have a market map available for tier selection without overwriting existing prices.
-        let marketForShop = {};
-        if (currentValues) {
-          try {
-            const parsed = JSON.parse(currentValues);
-            if (parsed && typeof parsed === 'object') marketForShop = parsed;
-          } catch (e) {}
-        }
-
-        // If current market map is missing, fall back to base market map for tier selection.
-        if ((!marketForShop || Object.keys(marketForShop).length === 0) && baseValues) {
-          try {
-            const parsedBase = JSON.parse(baseValues);
-            if (parsedBase && typeof parsedBase === 'object') marketForShop = parsedBase;
-          } catch (e) {}
-        }
-
-        // If market is not initialized at all (first run), initialize now so tier selection works.
-        if (!baseValues) {
-          try {
-            const initBaseObj = generateMarketValues();
-            const initCurrentObj = { ...initBaseObj };
-            const initBreakoutsObj = selectBreakoutCards();
-            const initHistoryObj = {};
-            Object.keys(initCurrentObj).forEach(cardId => {
-              initHistoryObj[cardId] = [{ day: currentDay, value: initCurrentObj[cardId] }];
-            });
-
-            localStorage.setItem('tcg-market-base', JSON.stringify(initBaseObj));
-            localStorage.setItem('tcg-market-current', JSON.stringify(initCurrentObj));
-            localStorage.setItem('tcg-market-breakouts', JSON.stringify(initBreakoutsObj));
-            localStorage.setItem('tcg-market-last-day', String(currentDay));
-            localStorage.setItem('tcg-price-history', JSON.stringify(initHistoryObj));
-
-            // Update local variables so the market init block later doesn't reinitialize.
-            baseValues = JSON.stringify(initBaseObj);
-            currentValues = JSON.stringify(initCurrentObj);
-            breakoutCards = JSON.stringify(initBreakoutsObj);
-            history = JSON.stringify(initHistoryObj);
-            lastMarketDay = String(currentDay);
-            marketForShop = initCurrentObj;
-          } catch (e) {
-            marketForShop = {};
-          }
-        }
-
-        const picksAreValid = (p) => {
-          if (!p || typeof p !== 'object') return false;
-          return DAILY_SHOP_TIERS.every(t => p[t.key]);
-        };
-
-        if (!dsDay || dsDay !== currentDay || !picksAreValid(dsPicks)) {
-          dsPicks = generateDailyShopPicks(marketForShop);
+        if (!dsDay || dsDay !== currentDay || !dsPicks || typeof dsPicks !== 'object') {
+          dsPicks = generateDailyShopPicks();
           dsDay = currentDay;
           localStorage.setItem('tcg-daily-shop-day', String(dsDay));
           localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(dsPicks));
         } else {
-          // Patch missing tiers (in case schema changed)
+          // Patch missing rarities (in case data changed)
           let didPatch = false;
-          DAILY_SHOP_TIERS.forEach(tier => {
-            if (!dsPicks[tier.key]) didPatch = true;
+          DAILY_SHOP_RARITIES.forEach(rarity => {
+            if (!dsPicks[rarity]) {
+              const cards = CARDS_BY_RARITY[rarity] || [];
+              if (cards.length) {
+                dsPicks[rarity] = cards[Math.floor(rand() * cards.length)].id;
+                didPatch = true;
+              }
+            }
           });
-          if (didPatch) {
-            dsPicks = generateDailyShopPicks(marketForShop);
-            localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(dsPicks));
-          }
+          if (didPatch) localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(dsPicks));
         }
-
         setDailyShopDate(`Day ${dsDay || currentDay}`);
         setDailyShopPicks(dsPicks || {});
 
@@ -1844,11 +1707,9 @@ const getHoloRangeForCard = (card) => {
           }
           // Fill any missing card IDs (in case new cards were added)
           let didPatch = false;
-          ALL_CARDS_GLOBAL.forEach(card => {
-            if (holoMap[card.id] === undefined || holoMap[card.id] === null) {
-              const hr = getHoloRangeForCard(card);
-              const v = generateWeightedValue(hr.min, hr.max, hr.peak);
-              holoMap[card.id] = parseFloat(v.toFixed(2));
+          ALL_CARDS.forEach(card => {
+            if (!holoMap[card.id]) {
+              holoMap[card.id] = generateWeightedValue(1.10, 2.50, 1.50);
               didPatch = true;
             }
           });
@@ -1878,21 +1739,6 @@ const getHoloRangeForCard = (card) => {
           currentValues = JSON.parse(currentValues);
           breakoutCards = JSON.parse(breakoutCards);
           history = history ? JSON.parse(history) : {};
-          
-          // Patch missing entries for newly added cards/sets without resetting existing prices
-          try {
-            const patched = patchMissingMarketEntries(baseValues, currentValues, breakoutCards, history, currentDay);
-            baseValues = patched.base;
-            currentValues = patched.current;
-            breakoutCards = patched.breakouts;
-            history = patched.history;
-            if (patched.didPatch) {
-              localStorage.setItem('tcg-market-base', JSON.stringify(baseValues));
-              localStorage.setItem('tcg-market-current', JSON.stringify(currentValues));
-              localStorage.setItem('tcg-market-breakouts', JSON.stringify(breakoutCards));
-              localStorage.setItem('tcg-price-history', JSON.stringify(history));
-            }
-          } catch (e) {}
           
           // Prices only change when in-game Day advances (via the Advance Day button)
           let lastDayNum = parseInt(localStorage.getItem('tcg-market-last-day') || '0', 10);
@@ -1980,24 +1826,12 @@ const getHoloRangeForCard = (card) => {
         try { updateCoreSave({ rations: amount }); } catch (e) {}
       }, []);
 
+      // Save pack inventory globally (packs have their own gameId/setId)
       const savePackInventory = useCallback((packs) => {
-        try { localStorage.setItem('tcg-pack-inventory', JSON.stringify(packs)); } catch (e) {}
-        try { updateCoreSave({ packInventory: packs }); } catch (e) {}
+        try { localStorage.setItem('tcg-global-pack-inventory', JSON.stringify(packs)); } catch (e) {}
       }, []);
 
-      const saveSealedInventory = useCallback((inv) => {
-        try { localStorage.setItem('tcg-sealed-inventory', JSON.stringify(inv)); } catch (e) {}
-        try { updateCoreSave({ sealedInventory: inv }); } catch (e) {}
-      }, []);
-
-      const mutateSealedInventory = useCallback((fn) => {
-        setSealedInventory(prev => {
-          const base = prev && typeof prev === 'object' ? prev : { bundle: 0, booster: 0, case: 0 };
-          const next = fn({ ...base });
-          saveSealedInventory(next);
-          return next;
-        });
-      }, [saveSealedInventory]);
+      // mutateSealedInventory is no longer needed - use updateSealedCount instead
 
       const shuffleIndices = (n) => {
         const a = Array.from({ length: n }, (_, i) => i);
@@ -2010,27 +1844,43 @@ const getHoloRangeForCard = (card) => {
         return a;
       };
 
-      // Open sealed products into packs (no daily open limit)
-      const openBundleBox = () => {
-        if ((sealedInventory?.bundle || 0) <= 0) return;
-        const sealedConfig = currentSetConfig.sealedProducts?.bundle;
-        const packCount = sealedConfig?.packs || 8;
-        const guaranteed = sealedConfig?.guaranteed || [];
+      // Universal function to open any sealed product into packs
+      const openSealedProduct = useCallback((gameId, setId, productType) => {
+        const count = getSealedCount(gameId, setId, productType);
+        if (count <= 0) return;
         
-        const boxId = `bundle_${Date.now()}`;
+        // Get the set config for this game/set
+        const setConfig = setConfigs[gameId]?.[setId];
+        if (!setConfig) return;
+        
+        const sealedConfig = setConfig.sealedProducts?.[productType];
+        if (!sealedConfig) return;
+        
+        const packCount = sealedConfig.packs || 1;
+        const guaranteed = sealedConfig.guaranteed || [];
+        
+        const batchId = `${productType}_${Date.now()}`;
         const newPacks = [];
         for (let i = 0; i < packCount; i++) {
-          newPacks.push({ id: generatePackId(), type: 'bundle', boxId });
+          newPacks.push({ 
+            id: generatePackId(), 
+            type: productType, 
+            gameId: gameId,
+            setId: setId,
+            batchId 
+          });
         }
         
         // Apply guaranteed rarities
-        const shuffled = shuffleIndices(packCount);
-        let guaranteeIdx = 0;
-        for (const g of guaranteed) {
-          for (let i = 0; i < g.count; i++) {
-            if (guaranteeIdx < packCount) {
-              newPacks[shuffled[guaranteeIdx]].forceRarity = g.rarity;
-              guaranteeIdx++;
+        if (guaranteed.length > 0) {
+          const shuffled = shuffleIndices(packCount);
+          let guaranteeIdx = 0;
+          for (const g of guaranteed) {
+            for (let i = 0; i < g.count; i++) {
+              if (guaranteeIdx < packCount) {
+                newPacks[shuffled[guaranteeIdx]].forceRarity = g.rarity;
+                guaranteeIdx++;
+              }
             }
           }
         }
@@ -2038,71 +1888,15 @@ const getHoloRangeForCard = (card) => {
         const newInventory = [...packInventory, ...newPacks];
         setPackInventory(newInventory);
         savePackInventory(newInventory);
-
-        mutateSealedInventory(prev => ({ ...prev, bundle: Math.max(0, (prev.bundle || 0) - 1) }));
-      };
-
-      const openBoosterBox = () => {
-        if ((sealedInventory?.booster || 0) <= 0) return;
-        const sealedConfig = currentSetConfig.sealedProducts?.booster;
-        const packCount = sealedConfig?.packs || 24;
-        const guaranteed = sealedConfig?.guaranteed || [];
         
-        const boxId = `booster_${Date.now()}`;
-        const newPacks = [];
-        for (let i = 0; i < packCount; i++) {
-          newPacks.push({ id: generatePackId(), type: 'booster', boxId });
-        }
-        
-        // Apply guaranteed rarities
-        const shuffled = shuffleIndices(packCount);
-        let guaranteeIdx = 0;
-        for (const g of guaranteed) {
-          for (let i = 0; i < g.count; i++) {
-            if (guaranteeIdx < packCount) {
-              newPacks[shuffled[guaranteeIdx]].forceRarity = g.rarity;
-              guaranteeIdx++;
-            }
-          }
-        }
+        // Decrement sealed count
+        updateSealedCount(gameId, setId, productType, -1);
+      }, [getSealedCount, setConfigs, packInventory, savePackInventory, updateSealedCount]);
 
-        const newInventory = [...packInventory, ...newPacks];
-        setPackInventory(newInventory);
-        savePackInventory(newInventory);
-
-        mutateSealedInventory(prev => ({ ...prev, booster: Math.max(0, (prev.booster || 0) - 1) }));
-      };
-
-      const openBoosterCase = () => {
-        if ((sealedInventory?.case || 0) <= 0) return;
-        const sealedConfig = currentSetConfig.sealedProducts?.case;
-        const packCount = sealedConfig?.packs || 144;
-        const guaranteed = sealedConfig?.guaranteed || [];
-        
-        const caseId = `case_${Date.now()}`;
-        const newPacks = [];
-        for (let i = 0; i < packCount; i++) {
-          newPacks.push({ id: generatePackId(), type: 'case', caseId });
-        }
-        
-        // Apply guaranteed rarities
-        const shuffled = shuffleIndices(packCount);
-        let guaranteeIdx = 0;
-        for (const g of guaranteed) {
-          for (let i = 0; i < g.count; i++) {
-            if (guaranteeIdx < packCount) {
-              newPacks[shuffled[guaranteeIdx]].forceRarity = g.rarity;
-              guaranteeIdx++;
-            }
-          }
-        }
-
-        const newInventory = [...packInventory, ...newPacks];
-        setPackInventory(newInventory);
-        savePackInventory(newInventory);
-
-        mutateSealedInventory(prev => ({ ...prev, case: Math.max(0, (prev.case || 0) - 1) }));
-      };
+      // Legacy wrappers for backwards compatibility (used in some places)
+      const openBundleBox = () => openSealedProduct(currentGameId, currentSetId, 'bundle');
+      const openBoosterBox = () => openSealedProduct(currentGameId, currentSetId, 'booster');
+      const openBoosterCase = () => openSealedProduct(currentGameId, currentSetId, 'case');
 
 
       const saveFreeStarterClaimed = useCallback((claimed) => {
@@ -2142,21 +1936,6 @@ const getHoloRangeForCard = (card) => {
           }
           if (!current || Object.keys(current).length === 0) current = { ...base };
 
-          // Patch missing entries for newly added cards/sets without resetting existing prices
-          try {
-            const patched = patchMissingMarketEntries(base, current, breakout, history, nextDay);
-            base = patched.base;
-            current = patched.current;
-            breakout = patched.breakouts;
-            history = patched.history;
-            if (patched.didPatch) {
-              localStorage.setItem('tcg-market-base', JSON.stringify(base));
-              localStorage.setItem('tcg-market-breakouts', JSON.stringify(breakout));
-              localStorage.setItem('tcg-price-history', JSON.stringify(history));
-            }
-          } catch (e) {}
-
-
           const newValues = fluctuateMarket(base, current, breakout);
           localStorage.setItem('tcg-market-current', JSON.stringify(newValues));
           localStorage.setItem('tcg-market-last-day', String(nextDay));
@@ -2176,7 +1955,7 @@ const getHoloRangeForCard = (card) => {
 
         // Rotate daily shop picks for the new day
         try {
-          const picks = generateDailyShopPicks(newValues);
+          const picks = generateDailyShopPicks();
           localStorage.setItem('tcg-daily-shop-day', String(nextDay));
           localStorage.setItem('tcg-daily-shop-picks', JSON.stringify(picks));
           setDailyShopPicks(picks);
@@ -2323,14 +2102,77 @@ const getHoloRangeForCard = (card) => {
           prices
         };
       }, [marketValues, holoMultipliers, gameDay]);
-      // Buy single pack
-      const buySinglePack = () => {
-        const cost = (sealedMarket && sealedMarket.prices && Number.isFinite(sealedMarket.prices.single)) ? sealedMarket.prices.single : 10;
-        if (rations < cost) return;
 
+      // Calculate prices for any game/set's products (simplified pricing for non-current sets)
+      const getProductPrice = useCallback((gameId, setId, productType) => {
+        // For current set, use sealedMarket prices
+        if (gameId === currentGameId && setId === currentSetId && sealedMarket?.prices?.[productType]) {
+          return sealedMarket.prices[productType];
+        }
+        
+        // For other sets, use base pricing (could be enhanced later with per-set market simulation)
+        const setConfig = setConfigs[gameId]?.[setId];
+        if (!setConfig) return 10;
+        
+        const productConfig = setConfig.sealedProducts?.[productType];
+        if (!productConfig) return 10;
+        
+        const packCount = productConfig.packs || 1;
+        const basePricePerPack = 10; // Base price per pack
+        
+        // Apply simple discount for bulk
+        let multiplier = 1;
+        if (packCount >= 100) multiplier = 0.85;
+        else if (packCount >= 20) multiplier = 0.90;
+        else if (packCount >= 5) multiplier = 0.95;
+        
+        return Math.round(packCount * basePricePerPack * multiplier * 100) / 100;
+      }, [currentGameId, currentSetId, sealedMarket, setConfigs]);
+
+      // Get all products across all games/sets for shop display
+      const allShopProducts = useMemo(() => {
+        const products = [];
+        
+        for (const game of (gamesIndex?.games || [])) {
+          if (!game.enabled) continue;
+          const gameConfig = gameConfigs[game.id];
+          if (!gameConfig) continue;
+          
+          for (const setId of gameConfig.sets) {
+            const setConfig = setConfigs[game.id]?.[setId];
+            if (!setConfig) continue;
+            
+            const sealedProducts = setConfig.sealedProducts || {};
+            
+            for (const [productType, productConfig] of Object.entries(sealedProducts)) {
+              products.push({
+                gameId: game.id,
+                gameName: game.name,
+                setId: setId,
+                setName: setConfig.name,
+                productType,
+                productName: productConfig.name || productType,
+                packs: productConfig.packs || 1,
+                guaranteed: productConfig.guaranteed || [],
+                cardback: gameConfig.cardback,
+                packSize: setConfig.packStructure?.size || 8
+              });
+            }
+          }
+        }
+        
+        return products;
+      }, [gamesIndex, gameConfigs, setConfigs]);
+
+      // Universal function to buy any sealed product
+      const buyProduct = useCallback((gameId, setId, productType, cost) => {
+        if (rations < cost) return;
+        
         const newPack = {
           id: generatePackId(),
-          type: 'single'
+          type: productType,
+          gameId: gameId,
+          setId: setId
         };
 
         const newInventory = [...packInventory, newPack];
@@ -2340,16 +2182,38 @@ const getHoloRangeForCard = (card) => {
         setRations(newRations);
         savePackInventory(newInventory);
         saveRations(newRations);
+      }, [rations, packInventory, savePackInventory, saveRations]);
+
+      // Universal function to buy sealed products that go into sealed inventory
+      const buySealedProduct = useCallback((gameId, setId, productType, cost) => {
+        if (rations < cost) return;
+        
+        const newRations = parseFloat((rations - cost).toFixed(2));
+        setRations(newRations);
+        saveRations(newRations);
+        
+        updateSealedCount(gameId, setId, productType, 1);
+      }, [rations, saveRations, updateSealedCount]);
+
+      // Legacy: Buy single pack for current game/set
+      const buySinglePack = () => {
+        const cost = (sealedMarket && sealedMarket.prices && Number.isFinite(sealedMarket.prices.single)) ? sealedMarket.prices.single : 10;
+        buyProduct(currentGameId, currentSetId, 'single', cost);
       };
 
       
-      // Claim free starter box (5 packs, one-time)
+      // Claim free starter box (5 packs, one-time) - uses current game/set
       const claimFreeStarterBox = () => {
         if (freeStarterClaimed) return;
 
         const newPacks = [];
         for (let i = 0; i < 5; i++) {
-          newPacks.push({ id: generatePackId(), type: 'starter' });
+          newPacks.push({ 
+            id: generatePackId(), 
+            type: 'starter',
+            gameId: currentGameId,
+            setId: currentSetId
+          });
         }
 
         const newInventory = [...packInventory, ...newPacks];
@@ -2377,40 +2241,20 @@ const getHoloRangeForCard = (card) => {
         saveRations(newRations);
       };
 
-// Buy bundle box (8 packs, 1 guaranteed legendary)
+// Legacy buy functions - use buySealedProduct
       const buyBundleBox = () => {
         const cost = (sealedMarket && sealedMarket.prices && Number.isFinite(sealedMarket.prices.bundle)) ? sealedMarket.prices.bundle : 75;
-        if (rations < cost) return;
-
-        mutateSealedInventory(prev => ({ ...prev, bundle: (prev.bundle || 0) + 1 }));
-
-        const newRations = parseFloat((rations - cost).toFixed(2));
-        setRations(newRations);
-        saveRations(newRations);
+        buySealedProduct(currentGameId, currentSetId, 'bundle', cost);
       };
 
-// Buy booster box (24 packs, 4 guaranteed legendary)
       const buyBoosterBox = () => {
         const cost = (sealedMarket && sealedMarket.prices && Number.isFinite(sealedMarket.prices.booster)) ? sealedMarket.prices.booster : 200;
-        if (rations < cost) return;
-
-        mutateSealedInventory(prev => ({ ...prev, booster: (prev.booster || 0) + 1 }));
-
-        const newRations = parseFloat((rations - cost).toFixed(2));
-        setRations(newRations);
-        saveRations(newRations);
+        buySealedProduct(currentGameId, currentSetId, 'booster', cost);
       };
 
-// Buy booster box case (144 packs, 2 guaranteed ultra x rare)
       const buyBoosterCase = () => {
         const cost = (sealedMarket && sealedMarket.prices && Number.isFinite(sealedMarket.prices.case)) ? sealedMarket.prices.case : 1000;
-        if (rations < cost) return;
-
-        mutateSealedInventory(prev => ({ ...prev, case: (prev.case || 0) + 1 }));
-
-        const newRations = parseFloat((rations - cost).toFixed(2));
-        setRations(newRations);
-        saveRations(newRations);
+        buySealedProduct(currentGameId, currentSetId, 'case', cost);
       };
 
 const persistShopStock = (ss) => {
@@ -2447,6 +2291,23 @@ const persistShopStock = (ss) => {
 
       const confirmPurchase = () => {
         if (!purchaseConfirm) return;
+        
+        // Handle universal product purchases with gameId/setId
+        if (purchaseConfirm.gameId && purchaseConfirm.setId && purchaseConfirm.productType) {
+          const { gameId, setId, productType, cost, isSealedProduct } = purchaseConfirm;
+          if (isSealedProduct) {
+            // This goes into sealed inventory (bundles, boxes, cases)
+            buySealedProduct(gameId, setId, productType, cost);
+          } else {
+            // This goes directly into pack inventory (single packs)
+            buyProduct(gameId, setId, productType, cost);
+          }
+          setPurchaseConfirm(null);
+          persistRngState();
+          return;
+        }
+        
+        // Legacy handling for old purchase types
         switch (purchaseConfirm.type) {
           case 'single':
             if (!consumeShopStock('single')) break;
@@ -2493,11 +2354,9 @@ const persistShopStock = (ss) => {
       
       const getCardById = (cardId) => {
         const idStr = String(cardId);
-        const card = GLOBAL_CARD_INDEX[idStr];
+        const card = ALL_CARDS.find(c => String(c.id) === idStr);
         if (!card) return null;
-        const gid = card.__gameId || currentGameId;
-        const sid = card.__setId || currentSetId;
-        return { ...card, image: buildImageUrl(gid, sid, card) };
+        return { ...card, image: getImageUrl(card) };
       };
 
 const getRareSlotCard = () => {
@@ -2551,15 +2410,87 @@ const getRareSlotCard = () => {
 ;
 
       const openPack = () => {
-        // Check if we have packs
-        if (packInventory.length === 0) return;
+        // Check if we have packs for current game/set
+        if (currentGameSetPacks.length === 0) return;
 
-        // Take the first pack from inventory
-        const packToOpen = packInventory[0];
-        const newInventory = packInventory.slice(1);
+        // Take the first pack for current game/set from inventory
+        const packToOpen = currentGameSetPacks[0];
+        
+        // Remove this pack from the global inventory
+        const packIndex = packInventory.findIndex(p => p.id === packToOpen.id);
+        const newInventory = [...packInventory];
+        newInventory.splice(packIndex, 1);
+
+        // Get the pack's game/set config (should match current since we filtered)
+        const packGameId = packToOpen.gameId || currentGameId;
+        const packSetId = packToOpen.setId || currentSetId;
+        const packGameConfig = gameConfigs[packGameId];
+        const packSetConfig = setConfigs[packGameId]?.[packSetId];
+        
+        if (!packSetConfig || !packGameConfig) {
+          console.error('Missing config for pack', packGameId, packSetId);
+          return;
+        }
+
+        const packStructure = packSetConfig.packStructure;
+        const godPackConfig = packSetConfig.godPack;
+        const godPackChance = godPackConfig?.chance || (1 / 1000);
+        
+        // Build cards by rarity for this specific set
+        const packCardsByRarity = {};
+        packGameConfig.rarityOrder.forEach(r => {
+          packCardsByRarity[r] = packSetConfig.cards.filter(c => c.rarity === r);
+        });
+        
+        // Helper to get random card from this pack's card pool
+        const getPackCard = (rarity) => {
+          const pool = packCardsByRarity[rarity] || [];
+          if (pool.length === 0) return null;
+          const card = pool[Math.floor(rand() * pool.length)];
+          return {
+            ...card,
+            image: buildImageUrl(packGameId, packSetId, card)
+          };
+        };
+        
+        // Helper to get rare slot card for this pack
+        const getPackRareSlotCard = () => {
+          const weightedSlot = packStructure.slots.find(s => s.type === 'weighted' || s.type === 'rare-slot');
+          if (!weightedSlot || !weightedSlot.odds) {
+            return getPackCard('rare');
+          }
+          const odds = weightedSlot.odds;
+          const roll = rand() * 100;
+          let cumulative = 0;
+          for (const [rarity, chance] of Object.entries(odds)) {
+            cumulative += chance;
+            if (roll < cumulative) {
+              return getPackCard(rarity);
+            }
+          }
+          return getPackCard(Object.keys(odds)[0]);
+        };
+        
+        // Helper to get foil slot card for this pack
+        const getPackFoilSlotCard = () => {
+          const holoSlot = packStructure.slots.find(s => s.type === 'holo');
+          if (!holoSlot || !holoSlot.odds) {
+            return getPackCard('common');
+          }
+          const odds = holoSlot.odds;
+          const roll = rand() * 100;
+          let cumulative = 0;
+          for (const [rarity, chance] of Object.entries(odds)) {
+            cumulative += chance;
+            if (roll < cumulative) {
+              return getPackCard(rarity);
+            }
+          }
+          return getPackCard(Object.keys(odds)[0]);
+        };
 
         // Determine if this is a God Pack
-        const isGodPack = !!packToOpen.isGodPack || (rand() < GOD_PACK_CHANCE);
+        const isGodPack = !!packToOpen.isGodPack || (rand() < godPackChance);
         setLastPackWasGod(isGodPack);
         if (isGodPack) {
           setShowGodPackGate(true);
@@ -2567,8 +2498,6 @@ const getRareSlotCard = () => {
         }
 
         const newPack = [];
-        const packStructure = currentSetConfig.packStructure;
-        const godPackConfig = currentSetConfig.godPack;
 
         if (isGodPack && godPackConfig) {
           // God Pack: use config distribution
@@ -2577,7 +2506,7 @@ const getRareSlotCard = () => {
           
           for (const dist of distribution) {
             for (let i = 0; i < dist.count; i++) {
-              const card = getRandomCard(dist.rarity);
+              const card = getPackCard(dist.rarity);
               if (card) {
                 newPack.push({ 
                   ...card, 
@@ -2593,7 +2522,7 @@ const getRareSlotCard = () => {
           const targetSize = godPackConfig.size || packStructure.size;
           while (newPack.length < targetSize) {
             const fallbackRarity = distribution.length > 0 ? distribution[0].rarity : 'rare';
-            const fallback = getRandomCard(fallbackRarity);
+            const fallback = getPackCard(fallbackRarity);
             if (!fallback) break;
             newPack.push({ ...fallback, slot: slot++, isHolo: true, isGodPack: true });
           }
@@ -2611,7 +2540,7 @@ const getRareSlotCard = () => {
             if (slotConfig.type === 'guaranteed') {
               // Guaranteed rarity cards
               for (let i = 0; i < count; i++) {
-                const card = getRandomCard(slotConfig.rarity);
+                const card = getPackCard(slotConfig.rarity);
                 if (card) newPack.push({ ...card, slot: slotIndex++ });
               }
             } else if (slotConfig.type === 'weighted' || slotConfig.type === 'rare-slot') {
@@ -2619,10 +2548,10 @@ const getRareSlotCard = () => {
               for (let i = 0; i < count; i++) {
                 if (packToOpen.forceRarity) {
                   // Guaranteed rarity from sealed product
-                  const guaranteedCard = getRandomCard(packToOpen.forceRarity);
+                  const guaranteedCard = getPackCard(packToOpen.forceRarity);
                   if (guaranteedCard) newPack.push({ ...guaranteedCard, slot: slotIndex++ });
                 } else {
-                  const card = getRareSlotCard();
+                  const card = getPackRareSlotCard();
                   if (card) {
                     // Check if this slot has a holo chance (for SP-style rare slots)
                     const isHolo = slotConfig.holoChance && rand() < slotConfig.holoChance;
@@ -2633,7 +2562,7 @@ const getRareSlotCard = () => {
             } else if (slotConfig.type === 'holo') {
               // Holo slot - always holo
               for (let i = 0; i < count; i++) {
-                const foilCard = getFoilSlotCard();
+                const foilCard = getPackFoilSlotCard();
                 if (foilCard) newPack.push({ ...foilCard, slot: slotIndex++, isHolo: true, isFoilSlot: true });
               }
             }
@@ -2645,8 +2574,8 @@ const getRareSlotCard = () => {
           appendEvent({
             id: `gp-${gameDay || 1}-${packCount + 1}-${Math.floor(rand() * 1e9)}`,
             type: 'godpack',
-            game: currentGameId,
-            set: currentSetId,
+            game: packGameId,
+            set: packSetId,
             day: gameDay || 1,
             packIndex: packCount + 1,
             cards: newPack.map(c => ({ id: c.id, rarity: c.rarity, isHolo: !!c.isHolo, holoMult: c.holoMult || null }))
@@ -3441,69 +3370,53 @@ if (!isLoaded) {
                 <p style={{ color: '#9ca3af', marginBottom: 8 }}>Packs Opened: {packCount}</p>
                 <p style={{ color: '#9ca3af', marginBottom: 8 }}>Total Cards: {stats.totalOwned}</p>
                 <p style={{ color: '#fbbf24', fontSize: 20, fontWeight: 'bold', marginBottom: 32 }}>
-                  Packs Available: {packInventory.length}
+                  Packs Available ({currentGameConfig.name} - {currentSetConfig.name}): {currentGameSetPacks.length}
                 </p>
 
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
-                  <div style={{ color: '#d1d5db', fontSize: 13, padding: '6px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
-                    Bundles: {sealedInventory.bundle || 0}
-                  </div>
-                  <div style={{ color: '#d1d5db', fontSize: 13, padding: '6px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
-                    Booster Boxes: {sealedInventory.booster || 0}
-                  </div>
-                  <div style={{ color: '#d1d5db', fontSize: 13, padding: '6px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
-                    Cases: {sealedInventory.case || 0}
-                  </div>
-                </div>
+                {/* Sealed inventory for current game/set */}
+                {(() => {
+                  const currentSealed = sealedInventory?.[currentGameId]?.[currentSetId] || {};
+                  const products = currentSetConfig.sealedProducts || {};
+                  const sealedTypes = Object.keys(products).filter(t => t !== 'single');
+                  if (sealedTypes.length === 0) return null;
+                  return (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+                        {sealedTypes.map(type => (
+                          <div key={type} style={{ color: '#d1d5db', fontSize: 13, padding: '6px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                            {products[type]?.name || type}: {currentSealed[type] || 0}
+                          </div>
+                        ))}
+                      </div>
 
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 28 }}>
-                  <button
-                    onClick={openBundleBox}
-                    disabled={(sealedInventory.bundle || 0) <= 0}
-                    style={{
-                      padding: '10px 14px',
-                      borderRadius: 12,
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      background: (sealedInventory.bundle || 0) > 0 ? 'rgba(59,130,246,0.25)' : 'rgba(107,114,128,0.25)',
-                      color: 'white',
-                      cursor: (sealedInventory.bundle || 0) > 0 ? 'pointer' : 'not-allowed'
-                    }}
-                  >
-                    Open Bundle (+{currentSetConfig.sealedProducts?.bundle?.packs || 8} Packs)
-                  </button>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 28 }}>
+                        {sealedTypes.map(type => {
+                          const count = currentSealed[type] || 0;
+                          const config = products[type];
+                          return (
+                            <button
+                              key={type}
+                              onClick={() => openSealedProduct(currentGameId, currentSetId, type)}
+                              disabled={count <= 0}
+                              style={{
+                                padding: '10px 14px',
+                                borderRadius: 12,
+                                border: '1px solid rgba(255,255,255,0.12)',
+                                background: count > 0 ? 'rgba(59,130,246,0.25)' : 'rgba(107,114,128,0.25)',
+                                color: 'white',
+                                cursor: count > 0 ? 'pointer' : 'not-allowed'
+                              }}
+                            >
+                              Open {config?.name || type} (+{config?.packs || 1} Packs)
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  );
+                })()}
 
-                  <button
-                    onClick={openBoosterBox}
-                    disabled={(sealedInventory.booster || 0) <= 0}
-                    style={{
-                      padding: '10px 14px',
-                      borderRadius: 12,
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      background: (sealedInventory.booster || 0) > 0 ? 'rgba(16,185,129,0.25)' : 'rgba(107,114,128,0.25)',
-                      color: 'white',
-                      cursor: (sealedInventory.booster || 0) > 0 ? 'pointer' : 'not-allowed'
-                    }}
-                  >
-                    Open Booster Box (+{currentSetConfig.sealedProducts?.booster?.packs || 24} Packs)
-                  </button>
-
-                  <button
-                    onClick={openBoosterCase}
-                    disabled={(sealedInventory.case || 0) <= 0}
-                    style={{
-                      padding: '10px 14px',
-                      borderRadius: 12,
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      background: (sealedInventory.case || 0) > 0 ? 'rgba(244,63,94,0.25)' : 'rgba(107,114,128,0.25)',
-                      color: 'white',
-                      cursor: (sealedInventory.case || 0) > 0 ? 'pointer' : 'not-allowed'
-                    }}
-                  >
-                    Open Case (+{currentSetConfig.sealedProducts?.case?.packs || 144} Packs)
-                  </button>
-                </div>
-
-                {packInventory.length > 0 ? (
+                {currentGameSetPacks.length > 0 ? (
                   <div onClick={openPack} style={{ width: 256, height: 384, margin: '0 auto', cursor: 'pointer', position: 'relative' }}>
                     <img 
                       src={getCardbackUrl()} 
@@ -3603,15 +3516,14 @@ if (!isLoaded) {
                   <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 14px' }}>Need a specific missing card? Buy it directly — but it costs more than pulling it from packs.</p>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-                    {DAILY_SHOP_TIERS.map(tier => {
-                      const cardId = dailyShopPicks[tier.key];
+                    {DAILY_SHOP_RARITIES.map(rarity => {
+                      const cardId = dailyShopPicks[rarity];
                       const card = getCardById(cardId);
                       if (!card) return null;
                       const price = getDailyShopPrice(card.id);
-                      const colorMap = rarityColorsByGame[card.__gameId] || RARITY_COLORS;
-                      const colors = colorMap[card.rarity] || colorMap.common || RARITY_COLORS.common;
+                      const colors = RARITY_COLORS[card.rarity] || RARITY_COLORS.common;
                       return (
-                        <div key={tier.key} style={{
+                        <div key={rarity} style={{
                           background: 'rgba(31,41,55,0.75)',
                           borderRadius: 14,
                           padding: 12,
@@ -3630,7 +3542,7 @@ if (!isLoaded) {
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ color: 'white', fontWeight: 800, fontSize: 14, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.name}</div>
                               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 8px', borderRadius: 999, background: colors.bg, border: `1px solid ${colors.border}` }}>
-                                <span style={{ color: colors.text, fontSize: 11, fontWeight: 800, textTransform: 'capitalize' }}>{tier.label}</span>
+                                <span style={{ color: colors.text, fontSize: 11, fontWeight: 800, textTransform: 'capitalize' }}>{rarity}</span>
                               </div>
                             </div>
                           </div>
@@ -3646,7 +3558,7 @@ if (!isLoaded) {
                                 title: `Buy ${card.name}`,
                                 cost: price,
                                 cardId: card.id,
-                                details: `Daily single (${tier.label}) • 25% markup. Adds 1 copy of ${card.name} to your collection.`
+                                details: `Daily single • 25% markup. Adds 1 copy of ${card.name} to your collection.`
                               })}
                               disabled={rations < price}
                               style={{
@@ -3670,281 +3582,224 @@ if (!isLoaded) {
                 </div>
 
                 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, maxWidth: 1200 }}>
-                                    {/* Free Starter Box */}
-                  <div style={{
-                    background: 'rgba(31,41,55,0.8)',
-                    borderRadius: 16,
-                    padding: 24,
-                    border: '2px solid rgba(245,158,11,0.55)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center'
-                  }}>
-                    <img
-                      src={getCardbackUrl()}
-                      alt="Free Starter Box"
-                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
-                    />
-                    <h3 style={{ color: '#fbbf24', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Free Starter Box</h3>
-                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>5 packs (free)</p>
-                    <p style={{ color: '#fbbf24', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
-                      One-time claim
-                    </p>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                      <img src="./rations.png" alt="" style={{ width: 24, height: 24, opacity: 0.8 }} />
-                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>0</span>
-                    </div>
-
-                    <button
-                      onClick={() => setPurchaseConfirm({ type: 'freeStarter', title: 'Free Starter Box (5 Packs)', cost: 0, details: 'A one-time free claim. Adds 5 packs to your inventory.' })}
-                      disabled={freeStarterClaimed}
+                {/* Shop Game/Set Selector */}
+                <div style={{ maxWidth: 1200, margin: '0 auto 20px', padding: 16, borderRadius: 16, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(168,85,247,0.3)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <span style={{ color: '#9ca3af', fontSize: 14 }}>Shopping for:</span>
+                    <select
+                      value={effectiveShopGameId}
+                      onChange={(e) => {
+                        setShopGameId(e.target.value);
+                        // Reset set to first set of new game
+                        const gc = gameConfigs[e.target.value];
+                        if (gc && gc.sets && gc.sets.length > 0) {
+                          setShopSetId(gc.sets[0]);
+                        }
+                      }}
                       style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: freeStarterClaimed ? '#374151' : 'linear-gradient(90deg, #f59e0b, #f97316)',
-                        color: 'white',
-                        border: 'none',
+                        padding: '8px 12px',
                         borderRadius: 8,
-                        cursor: freeStarterClaimed ? 'not-allowed' : 'pointer',
-                        fontSize: 16,
-                        fontWeight: 'bold',
-                        opacity: freeStarterClaimed ? 0.5 : 1
+                        border: '1px solid rgba(168,85,247,0.4)',
+                        background: 'rgba(0,0,0,0.4)',
+                        color: 'white',
+                        fontSize: 14,
+                        cursor: 'pointer'
                       }}
                     >
-                      {freeStarterClaimed ? 'Claimed' : 'Claim Free Starter'}
-                    </button>
-                  </div>
-
-
-                  {/* God Pack (Testing) */}
-                  <div style={{
-                    background: 'rgba(31,41,55,0.8)',
-                    borderRadius: 16,
-                    padding: 24,
-                    border: '2px solid rgba(236,72,153,0.55)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center'
-                  }}>
-                    <img
-                      src={getCardbackUrl()}
-                      alt="God Pack"
-                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16, boxShadow: '0 0 40px rgba(236,72,153,0.25)' }}
-                    />
-                    <h3 style={{ color: '#f472b6', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>God Pack (Test)</h3>
-                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 6px', textAlign: 'center' }}>{currentSetConfig.godPack?.size || currentSetConfig.packStructure.size} holo cards</p>
-                    <p style={{ color: '#f472b6', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
-                      {(currentSetConfig.godPack?.distribution || []).map(d => {
-                        const rarityInfo = currentGameConfig.rarities.find(r => r.id === d.rarity);
-                        return `${d.count} ${rarityInfo?.name || d.rarity}`;
-                      }).join(' • ')}
-                    </p>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                      <img src="./rations.png" alt="" style={{ width: 24, height: 24, opacity: 0.85 }} />
-                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>0</span>
-                    </div>
-
-                    <button
-                      onClick={() => setPurchaseConfirm({ type: 'godpack', title: 'God Pack (Test)', cost: 0, details: `For testing. Adds 1 guaranteed God Pack to your inventory (${currentSetConfig.godPack?.allHolo !== false ? 'all holo' : ''}).` })}
+                      {gamesIndex.games.filter(g => g.enabled).map(game => (
+                        <option key={game.id} value={game.id}>{game.name}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={effectiveShopSetId}
+                      onChange={(e) => setShopSetId(e.target.value)}
                       style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: 'linear-gradient(90deg, #ec4899, #a855f7)',
-                        color: 'white',
-                        border: 'none',
+                        padding: '8px 12px',
                         borderRadius: 8,
-                        cursor: 'pointer',
-                        fontSize: 16,
-                        fontWeight: 'bold'
+                        border: '1px solid rgba(168,85,247,0.4)',
+                        background: 'rgba(0,0,0,0.4)',
+                        color: 'white',
+                        fontSize: 14,
+                        cursor: 'pointer'
                       }}
                     >
-                      Get God Pack
-                    </button>
+                      {(shopGameConfig?.sets || []).map(setId => {
+                        const sc = setConfigs[effectiveShopGameId]?.[setId];
+                        return (
+                          <option key={setId} value={setId}>
+                            {sc?.name || setId}
+                          </option>
+                        );
+                      })}
+                    </select>
                   </div>
+                </div>
 
-{/* Single Pack */}
-                  <div style={{
-                    background: 'rgba(31,41,55,0.8)',
-                    borderRadius: 16,
-                    padding: 24,
-                    border: '2px solid rgba(168,85,247,0.3)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center'
-                  }}>
-                    <img 
-                      src={getCardbackUrl()} 
-                      alt="Single Pack"
-                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
-                    />
-                    <h3 style={{ color: 'white', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Single Pack</h3>
-                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 16px', textAlign: 'center' }}>{currentSetConfig.packStructure?.size || 8} cards</p>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                      <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
-                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>{sealedMarket.prices.single.toFixed(2)}</span>
+                {/* Products Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20, maxWidth: 1200, margin: '0 auto' }}>
+                  
+                  {/* Free Starter Box - only show for current game/set */}
+                  {effectiveShopGameId === currentGameId && effectiveShopSetId === currentSetId && (
+                    <div style={{
+                      background: 'rgba(31,41,55,0.8)',
+                      borderRadius: 14,
+                      padding: 20,
+                      border: '2px solid rgba(245,158,11,0.55)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center'
+                    }}>
+                      <img
+                        src={`${GITHUB_BASE}/${shopGameConfig?.cardback || 'cardback.png'}`}
+                        alt="Free Starter"
+                        style={{ width: 140, height: 210, objectFit: 'cover', borderRadius: 10, marginBottom: 14 }}
+                      />
+                      <div style={{ color: '#fbbf24', fontSize: 16, fontWeight: 'bold', marginBottom: 4 }}>Free Starter</div>
+                      <div style={{ color: '#9ca3af', fontSize: 12, marginBottom: 12, textAlign: 'center' }}>5 packs (one-time)</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                        <img src="./rations.png" alt="" style={{ width: 20, height: 20 }} />
+                        <span style={{ color: '#fbbf24', fontSize: 20, fontWeight: 'bold' }}>0</span>
+                      </div>
+                      <button
+                        onClick={() => setPurchaseConfirm({ type: 'freeStarter', title: 'Free Starter Box', cost: 0, details: '5 free packs for the current game/set.' })}
+                        disabled={freeStarterClaimed}
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          background: freeStarterClaimed ? '#374151' : 'linear-gradient(90deg, #f59e0b, #f97316)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 8,
+                          cursor: freeStarterClaimed ? 'not-allowed' : 'pointer',
+                          fontWeight: 'bold',
+                          opacity: freeStarterClaimed ? 0.5 : 1
+                        }}
+                      >
+                        {freeStarterClaimed ? 'Claimed' : 'Claim Free'}
+                      </button>
                     </div>
-                    
-                    <button
-                      onClick={() => setPurchaseConfirm({ type: 'single', title: 'Single Pack', cost: sealedMarket.prices.single, details: `${currentSetConfig.packStructure?.size || 8} cards per pack.` })}
-                      disabled={rations < sealedMarket.prices.single || ((shopStock && shopStock.single) ? shopStock.single.remaining <= 0 : false)}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: rations >= sealedMarket.prices.single ? 'linear-gradient(90deg, #9333ea, #ec4899)' : '#374151',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 8,
-                        cursor: rations >= sealedMarket.prices.single ? 'pointer' : 'not-allowed',
-                        fontSize: 16,
-                        fontWeight: 'bold',
-                        opacity: rations >= sealedMarket.prices.single ? 1 : 0.5
-                      }}
-                    >
-                      {((shopStock && shopStock.single) ? (shopStock.single.remaining <= 0 ? 'Sold Out Today' : (rations >= sealedMarket.prices.single ? `Buy Pack (${shopStock.single.remaining}/${shopStock.single.limit})` : `Not Enough Rations (${shopStock.single.remaining}/${shopStock.single.limit})`)) : (rations >= sealedMarket.prices.single ? 'Buy Pack' : 'Not Enough Rations'))}
-                    </button>
-                  </div>
+                  )}
 
-                  {/* Bundle Box */}
-                  <div style={{
-                    background: 'rgba(31,41,55,0.8)',
-                    borderRadius: 16,
-                    padding: 24,
-                    border: '2px solid rgba(16,185,129,0.5)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center'
-                  }}>
-                    <img 
-                      src={getCardbackUrl()} 
-                      alt="Bundle Box"
-                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
-                    />
-                    <h3 style={{ color: '#10b981', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Bundle Box</h3>
-                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>{getSealedInfo('bundle').packs} packs ({getSealedInfo('bundle').cards} cards)</p>
-                    <p style={{ color: '#10b981', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
-                      ⭐ {getSealedInfo('bundle').guaranteed || 'Bonus included'}
-                    </p>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                      <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
-                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>{sealedMarket.prices.bundle.toFixed(2)}</span>
+                  {/* God Pack Test - only show for current game/set */}
+                  {effectiveShopGameId === currentGameId && effectiveShopSetId === currentSetId && (
+                    <div style={{
+                      background: 'rgba(31,41,55,0.8)',
+                      borderRadius: 14,
+                      padding: 20,
+                      border: '2px solid rgba(236,72,153,0.55)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center'
+                    }}>
+                      <img
+                        src={`${GITHUB_BASE}/${shopGameConfig?.cardback || 'cardback.png'}`}
+                        alt="God Pack"
+                        style={{ width: 140, height: 210, objectFit: 'cover', borderRadius: 10, marginBottom: 14, boxShadow: '0 0 30px rgba(236,72,153,0.3)' }}
+                      />
+                      <div style={{ color: '#f472b6', fontSize: 16, fontWeight: 'bold', marginBottom: 4 }}>God Pack (Test)</div>
+                      <div style={{ color: '#9ca3af', fontSize: 12, marginBottom: 12, textAlign: 'center' }}>
+                        {shopSetConfig?.godPack?.size || shopSetConfig?.packStructure?.size || 8} holo cards
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                        <img src="./rations.png" alt="" style={{ width: 20, height: 20 }} />
+                        <span style={{ color: '#fbbf24', fontSize: 20, fontWeight: 'bold' }}>0</span>
+                      </div>
+                      <button
+                        onClick={() => setPurchaseConfirm({ type: 'godpack', title: 'God Pack (Test)', cost: 0, details: 'Free god pack for testing.' })}
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          background: 'linear-gradient(90deg, #ec4899, #a855f7)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        Get God Pack
+                      </button>
                     </div>
-                    
-                    <button
-                      onClick={() => setPurchaseConfirm({ type: 'bundle', title: 'Bundle Box (8 Packs)', cost: sealedMarket.prices.bundle, details: '8 packs. One pack is guaranteed a Legendary in a rare slot.' })}
-                      disabled={rations < sealedMarket.prices.bundle || ((shopStock && shopStock.bundle) ? shopStock.bundle.remaining <= 0 : false)}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: rations >= sealedMarket.prices.bundle ? 'linear-gradient(90deg, #10b981, #059669)' : '#374151',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 8,
-                        cursor: rations >= sealedMarket.prices.bundle ? 'pointer' : 'not-allowed',
-                        fontSize: 16,
-                        fontWeight: 'bold',
-                        opacity: rations >= sealedMarket.prices.bundle ? 1 : 0.5
-                      }}
-                    >
-                      {((shopStock && shopStock.bundle) ? (shopStock.bundle.remaining <= 0 ? 'Sold Out Today' : (rations >= sealedMarket.prices.bundle ? `Buy Bundle (${shopStock.bundle.remaining}/${shopStock.bundle.limit})` : `Not Enough Rations (${shopStock.bundle.remaining}/${shopStock.bundle.limit})`)) : (rations >= sealedMarket.prices.bundle ? 'Buy Bundle' : 'Not Enough Rations'))}
-                    </button>
-                  </div>
+                  )}
 
-                  {/* Booster Box */}
-                  <div style={{
-                    background: 'rgba(31,41,55,0.8)',
-                    borderRadius: 16,
-                    padding: 24,
-                    border: '2px solid rgba(59,130,246,0.5)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center'
-                  }}>
-                    <img 
-                      src={getCardbackUrl()} 
-                      alt="Booster Box"
-                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
-                    />
-                    <h3 style={{ color: '#3b82f6', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Booster Box</h3>
-                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>{getSealedInfo('booster').packs} packs ({getSealedInfo('booster').cards} cards)</p>
-                    <p style={{ color: '#3b82f6', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
-                      ⭐ {getSealedInfo('booster').guaranteed || 'Bonus included'}
-                    </p>
+                  {/* Dynamic Products from Config */}
+                  {shopSetConfig && Object.entries(shopSetConfig.sealedProducts || {}).map(([productType, productConfig]) => {
+                    const price = getProductPrice(effectiveShopGameId, effectiveShopSetId, productType);
+                    const canAfford = rations >= price;
+                    const packs = productConfig.packs || 1;
+                    const packSize = shopSetConfig.packStructure?.size || 8;
+                    const isSinglePack = packs === 1;
                     
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                      <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
-                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>{sealedMarket.prices.booster.toFixed(2)}</span>
-                    </div>
+                    // Format guaranteed text
+                    const guaranteedText = (productConfig.guaranteed || []).map(g => {
+                      const rarityName = shopGameConfig?.rarities?.find(r => r.id === g.rarity)?.name || g.rarity;
+                      return `${g.count} ${rarityName}`;
+                    }).join(', ');
                     
-                    <button
-                      onClick={() => setPurchaseConfirm({ type: 'booster', title: 'Booster Box (24 Packs)', cost: sealedMarket.prices.booster, details: '24 packs. One pack is guaranteed an Ultra X Rare in a rare slot.' })}
-                      disabled={rations < sealedMarket.prices.booster || ((shopStock && shopStock.booster) ? shopStock.booster.remaining <= 0 : false)}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: (rations >= sealedMarket.prices.booster && ((shopStock && shopStock.booster) ? shopStock.booster.remaining > 0 : true)) ? 'linear-gradient(90deg, #3b82f6, #2563eb)' : '#374151',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 8,
-                        cursor: (rations >= sealedMarket.prices.booster && ((shopStock && shopStock.booster) ? shopStock.booster.remaining > 0 : true)) ? 'pointer' : 'not-allowed',
-                        fontSize: 16,
-                        fontWeight: 'bold',
-                        opacity: (rations >= sealedMarket.prices.booster && ((shopStock && shopStock.booster) ? shopStock.booster.remaining > 0 : true)) ? 1 : 0.5
-                      }}
-                    >
-                      {((shopStock && shopStock.booster) ? (shopStock.booster.remaining <= 0 ? 'Sold Out Today' : (rations >= sealedMarket.prices.booster ? `Buy Box (${shopStock.booster.remaining}/${shopStock.booster.limit})` : 'Not Enough Rations')) : (rations >= sealedMarket.prices.booster ? 'Buy Box' : 'Not Enough Rations'))}
-                    </button>
-                  </div>
-
-                  {/* Booster Box Case */}
-                  <div style={{
-                    background: 'rgba(31,41,55,0.8)',
-                    borderRadius: 16,
-                    padding: 24,
-                    border: '2px solid rgba(251,191,36,0.5)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center'
-                  }}>
-                    <img 
-                      src={getCardbackUrl()} 
-                      alt="Booster Box Case"
-                      style={{ width: 180, height: 270, objectFit: 'cover', borderRadius: 12, marginBottom: 16 }}
-                    />
-                    <h3 style={{ color: '#fbbf24', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>Booster Case</h3>
-                    <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 4px', textAlign: 'center' }}>{getSealedInfo('case').packs} packs ({getSealedInfo('case').cards} cards)</p>
-                    <p style={{ color: '#fbbf24', fontSize: 12, fontWeight: 'bold', margin: '0 0 16px', textAlign: 'center' }}>
-                      🌟 {getSealedInfo('case').guaranteed || 'Bonus included'}
-                    </p>
+                    // Different border colors based on product size
+                    let borderColor = 'rgba(168,85,247,0.4)';
+                    if (packs >= 100) borderColor = 'rgba(251,191,36,0.5)';
+                    else if (packs >= 20) borderColor = 'rgba(59,130,246,0.5)';
+                    else if (packs >= 5) borderColor = 'rgba(16,185,129,0.5)';
                     
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                      <img src="./rations.png" alt="R" style={{ width: 24, height: 24 }} />
-                      <span style={{ color: '#fbbf24', fontSize: 24, fontWeight: 'bold' }}>{sealedMarket.prices.case.toFixed(2)}</span>
-                    </div>
-                    
-                    <button
-                      onClick={() => setPurchaseConfirm({ type: 'case', title: 'Booster Case (144 Packs)', cost: sealedMarket.prices.case, details: '144 packs (6 boxes). Two packs are guaranteed an Ultra X Rare in a rare slot.' })}
-                      disabled={rations < sealedMarket.prices.case || ((shopStock && shopStock.case) ? shopStock.case.remaining <= 0 : false)}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: rations >= sealedMarket.prices.case ? 'linear-gradient(90deg, #fbbf24, #f59e0b)' : '#374151',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 8,
-                        cursor: rations >= sealedMarket.prices.case ? 'pointer' : 'not-allowed',
-                        fontSize: 16,
-                        fontWeight: 'bold',
-                        opacity: rations >= sealedMarket.prices.case ? 1 : 0.5
-                      }}
-                    >
-                      {((shopStock && shopStock.case) ? (shopStock.case.remaining <= 0 ? 'Sold Out Today' : (rations >= sealedMarket.prices.case ? `Buy Case (${shopStock.case.remaining}/${shopStock.case.limit})` : `Not Enough Rations (${shopStock.case.remaining}/${shopStock.case.limit})`)) : (rations >= sealedMarket.prices.case ? 'Buy Case' : 'Not Enough Rations'))}
-                    </button>
-                  </div>
+                    return (
+                      <div key={productType} style={{
+                        background: 'rgba(31,41,55,0.8)',
+                        borderRadius: 14,
+                        padding: 20,
+                        border: `2px solid ${borderColor}`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center'
+                      }}>
+                        <img 
+                          src={`${GITHUB_BASE}/${shopGameConfig?.cardback || 'cardback.png'}`}
+                          alt={productConfig.name || productType}
+                          style={{ width: 140, height: 210, objectFit: 'cover', borderRadius: 10, marginBottom: 14 }}
+                        />
+                        <div style={{ color: 'white', fontSize: 16, fontWeight: 'bold', marginBottom: 4, textAlign: 'center' }}>
+                          {productConfig.name || productType}
+                        </div>
+                        <div style={{ color: '#9ca3af', fontSize: 12, marginBottom: 4, textAlign: 'center' }}>
+                          {packs} pack{packs > 1 ? 's' : ''} ({packs * packSize} cards)
+                        </div>
+                        {guaranteedText && (
+                          <div style={{ color: '#10b981', fontSize: 11, marginBottom: 8, textAlign: 'center' }}>
+                            ⭐ {guaranteedText}
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                          <img src="./rations.png" alt="" style={{ width: 20, height: 20 }} />
+                          <span style={{ color: '#fbbf24', fontSize: 20, fontWeight: 'bold' }}>{price.toFixed(2)}</span>
+                        </div>
+                        <button
+                          onClick={() => setPurchaseConfirm({
+                            gameId: effectiveShopGameId,
+                            setId: effectiveShopSetId,
+                            productType,
+                            isSealedProduct: !isSinglePack,
+                            title: `${productConfig.name || productType}`,
+                            cost: price,
+                            details: `${packs} pack${packs > 1 ? 's' : ''} for ${shopGameConfig?.name} - ${shopSetConfig?.name}.${guaranteedText ? ` Guaranteed: ${guaranteedText}.` : ''}`
+                          })}
+                          disabled={!canAfford}
+                          style={{
+                            width: '100%',
+                            padding: '10px',
+                            background: canAfford ? 'linear-gradient(90deg, #9333ea, #6366f1)' : '#374151',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 8,
+                            cursor: canAfford ? 'pointer' : 'not-allowed',
+                            fontWeight: 'bold',
+                            opacity: canAfford ? 1 : 0.5
+                          }}
+                        >
+                          {canAfford ? 'Buy' : 'Not Enough'}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
                   </>
                 )}
@@ -4270,7 +4125,7 @@ if (!isLoaded) {
                         </button>
                       </>
                     )}
-                    {packPhase === 'revealed' && packInventory.length > 0 && (
+                    {packPhase === 'revealed' && currentGameSetPacks.length > 0 && (
                       <button onClick={openPack} style={{ padding: '8px 16px', background: 'linear-gradient(90deg, #9333ea, #ec4899)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
                         Open Another Pack
                       </button>
