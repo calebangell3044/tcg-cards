@@ -57,7 +57,13 @@
     ]
   },
   "sealedProducts": {
+    "single": {
+      "name": "Single Pack",
+      "packs": 1,
+      "guaranteed": []
+    },
     "bundle": {
+      "name": "Bundle Box",
       "packs": 8,
       "guaranteed": [
         {
@@ -67,6 +73,7 @@
       ]
     },
     "booster": {
+      "name": "Booster Box",
       "packs": 24,
       "guaranteed": [
         {
@@ -76,6 +83,7 @@
       ]
     },
     "case": {
+      "name": "Case",
       "packs": 144,
       "guaranteed": [
         {
