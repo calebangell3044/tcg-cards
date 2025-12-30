@@ -857,6 +857,10 @@ body{
       const [collectionGameFilter, setCollectionGameFilter] = useState('all');
       const [collectionSetFilter, setCollectionSetFilter] = useState('all');
       
+      // Sell tab filters
+      const [sellGameFilter, setSellGameFilter] = useState('all');
+      const [sellSetFilter, setSellSetFilter] = useState('all');
+      
       // Track which game/sets have claimed free starter
       const [freeStartersClaimed, setFreeStartersClaimed] = useState(() => {
         try {
@@ -1326,31 +1330,77 @@ body{
       // Generate initial market values for all cards using config ranges
       const generateMarketValues = () => {
         const values = {};
-        const ranges = currentSetConfig.marketValueRanges || {};
         
+        // Generate market values for ALL cards across ALL games/sets
+        for (const [gameId, gameSets] of Object.entries(setConfigs)) {
+          for (const [setId, setConfig] of Object.entries(gameSets)) {
+            if (!setConfig || !setConfig.cards) continue;
+            
+            const ranges = setConfig.marketValueRanges || {};
+            
+            setConfig.cards.forEach(card => {
+              // Skip if we already have a value for this card ID
+              if (values[card.id] !== undefined) return;
+              
+              const range = ranges[card.rarity];
+              let value;
+              
+              if (range) {
+                value = generateWeightedValue(range.min, range.max, range.peak);
+              } else {
+                // Fallback for unknown rarities
+                value = 1.0;
+              }
+              values[card.id] = value;
+            });
+          }
+        }
+        
+        // Also include current set for backwards compatibility
+        const ranges = currentSetConfig?.marketValueRanges || {};
         ALL_CARDS.forEach(card => {
+          if (values[card.id] !== undefined) return;
+          
           const range = ranges[card.rarity];
           let value;
           
           if (range) {
             value = generateWeightedValue(range.min, range.max, range.peak);
           } else {
-            // Fallback for unknown rarities
             value = 1.0;
           }
           values[card.id] = value;
         });
+        
         return values;
       }
 
       // Generate per-card holo multipliers using config ranges
       const generateHoloMultipliers = () => {
         const multipliers = {};
-        const holoRange = currentGameConfig.holoMultiplierRange || { min: 1.10, max: 2.50, peak: 1.50 };
         
+        // Generate for ALL cards across ALL games/sets
+        for (const [gameId, gameSets] of Object.entries(setConfigs)) {
+          const gameConfig = gameConfigs[gameId];
+          const holoRange = gameConfig?.holoMultiplierRange || { min: 1.10, max: 2.50, peak: 1.50 };
+          
+          for (const [setId, setConfig] of Object.entries(gameSets)) {
+            if (!setConfig || !setConfig.cards) continue;
+            
+            setConfig.cards.forEach(card => {
+              if (multipliers[card.id] !== undefined) return;
+              multipliers[card.id] = generateWeightedValue(holoRange.min, holoRange.max, holoRange.peak);
+            });
+          }
+        }
+        
+        // Also include current game for backwards compatibility
+        const holoRange = currentGameConfig?.holoMultiplierRange || { min: 1.10, max: 2.50, peak: 1.50 };
         ALL_CARDS.forEach(card => {
+          if (multipliers[card.id] !== undefined) return;
           multipliers[card.id] = generateWeightedValue(holoRange.min, holoRange.max, holoRange.peak);
         });
+        
         return multipliers;
       };
 
@@ -1776,14 +1826,23 @@ body{
           } catch (e) {
             holoMap = {};
           }
-          // Fill any missing card IDs (in case new cards were added)
+          // Fill any missing card IDs from ALL games/sets
           let didPatch = false;
-          ALL_CARDS.forEach(card => {
-            if (!holoMap[card.id]) {
-              holoMap[card.id] = generateWeightedValue(1.10, 2.50, 1.50);
-              didPatch = true;
+          for (const [gameId, gameSets] of Object.entries(setConfigs)) {
+            const gameConfig = gameConfigs[gameId];
+            const holoRange = gameConfig?.holoMultiplierRange || { min: 1.10, max: 2.50, peak: 1.50 };
+            
+            for (const [setId, setConfig] of Object.entries(gameSets)) {
+              if (!setConfig || !setConfig.cards) continue;
+              
+              setConfig.cards.forEach(card => {
+                if (!holoMap[card.id]) {
+                  holoMap[card.id] = generateWeightedValue(holoRange.min, holoRange.max, holoRange.peak);
+                  didPatch = true;
+                }
+              });
             }
-          });
+          }
           if (didPatch) localStorage.setItem('tcg-holo-multipliers', JSON.stringify(holoMap));
         }
         
@@ -1810,6 +1869,33 @@ body{
           currentValues = JSON.parse(currentValues);
           breakoutCards = JSON.parse(breakoutCards);
           history = history ? JSON.parse(history) : {};
+          
+          // Patch in any missing cards from other games/sets
+          let didPatchMarket = false;
+          for (const [gameId, gameSets] of Object.entries(setConfigs)) {
+            for (const [setId, setConfig] of Object.entries(gameSets)) {
+              if (!setConfig || !setConfig.cards) continue;
+              const ranges = setConfig.marketValueRanges || {};
+              
+              setConfig.cards.forEach(card => {
+                if (baseValues[card.id] === undefined) {
+                  const range = ranges[card.rarity];
+                  const value = range 
+                    ? generateWeightedValue(range.min, range.max, range.peak)
+                    : 1.0;
+                  baseValues[card.id] = value;
+                  currentValues[card.id] = value;
+                  history[card.id] = [{ day: currentDay, value }];
+                  didPatchMarket = true;
+                }
+              });
+            }
+          }
+          if (didPatchMarket) {
+            localStorage.setItem('tcg-market-base', JSON.stringify(baseValues));
+            localStorage.setItem('tcg-market-current', JSON.stringify(currentValues));
+            localStorage.setItem('tcg-price-history', JSON.stringify(history));
+          }
           
           // Prices only change when in-game Day advances (via the Advance Day button)
           let lastDayNum = parseInt(localStorage.getItem('tcg-market-last-day') || '0', 10);
@@ -2724,6 +2810,7 @@ const getRareSlotCard = () => {
         setPackCards(newPack);
         setRevealedCards([]);
         setPackPhase('sealed');
+        setRipProgress(0);
         setPackCount(prev => {
           const next = prev + 1;
           savePackCount(next);
@@ -3579,8 +3666,9 @@ if (!isLoaded) {
                   Market
                 </button>
                 <button onClick={() => navigate('collection')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'collection' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
-                  Collection (N {stats.uniqueNormalOwned}/{stats.totalCards} • H {stats.uniqueHoloOwned}/{stats.totalCards})
+                  Collection
                 </button>
+                
                 <button onClick={() => navigate('settings')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'settings' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
                   Settings
                 </button>
@@ -4436,6 +4524,49 @@ if (!isLoaded) {
                       Select a card below to sell. The shop pays <b>{Math.round(SELL_TO_SHOP_RATE * 100)}%</b> of the current market value (and <b>{Math.round(SELL_TO_SHOP_RATE * 100)}%</b> of holo value for foils).
                     </div>
 
+                    {/* Filters */}
+                    <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+                      <select
+                        value={sellGameFilter}
+                        onChange={(e) => {
+                          setSellGameFilter(e.target.value);
+                          setSellSetFilter('all');
+                        }}
+                        style={{ 
+                          padding: '8px 12px',
+                          borderRadius: 8,
+                          border: '1px solid rgba(168,85,247,0.4)',
+                          background: 'rgba(17,24,39,0.85)',
+                          color: 'white',
+                          fontSize: 13
+                        }}
+                      >
+                        <option value="all">All Games</option>
+                        {gamesIndex.games.filter(g => g.enabled).map(game => (
+                          <option key={game.id} value={game.id}>{game.name}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={sellSetFilter}
+                        onChange={(e) => setSellSetFilter(e.target.value)}
+                        style={{ 
+                          padding: '8px 12px',
+                          borderRadius: 8,
+                          border: '1px solid rgba(168,85,247,0.4)',
+                          background: 'rgba(17,24,39,0.85)',
+                          color: 'white',
+                          fontSize: 13
+                        }}
+                      >
+                        <option value="all">All Sets</option>
+                        {sellGameFilter !== 'all' && gameConfigs[sellGameFilter]?.sets.map(setId => {
+                          const sc = setConfigs[sellGameFilter]?.[setId];
+                          return (
+                            <option key={setId} value={setId}>{sc?.name || setId}</option>
+                          );
+                        })}
+                      </select>
+                    </div>
 
                     <div style={{ marginBottom: 14, padding: '12px 12px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(0,0,0,0.18)' }}>
                       <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 8 }}>Sealed Product</div>
@@ -4451,19 +4582,24 @@ if (!isLoaded) {
                         // First, add single packs from packInventory (grouped by game/set)
                         const packsByGameSet = {};
                         packInventory.forEach(pack => {
-                          if (pack.type === 'single') {
-                            const key = `${pack.gameId || currentGameId}|${pack.setId || currentSetId}`;
-                            if (!packsByGameSet[key]) {
-                              packsByGameSet[key] = {
-                                gameId: pack.gameId || currentGameId,
-                                setId: pack.setId || currentSetId,
-                                count: 0,
-                                packs: []
-                              };
-                            }
-                            packsByGameSet[key].count++;
-                            packsByGameSet[key].packs.push(pack);
+                          const gameId = pack.gameId || 'tta';
+                          const setId = pack.setId || 'base-set';
+                          
+                          // Apply filters
+                          if (sellGameFilter !== 'all' && gameId !== sellGameFilter) return;
+                          if (sellSetFilter !== 'all' && setId !== sellSetFilter) return;
+                          
+                          const key = `${gameId}|${setId}`;
+                          if (!packsByGameSet[key]) {
+                            packsByGameSet[key] = {
+                              gameId,
+                              setId,
+                              count: 0,
+                              packs: []
+                            };
                           }
+                          packsByGameSet[key].count++;
+                          packsByGameSet[key].packs.push(pack);
                         });
                         
                         Object.values(packsByGameSet).forEach(group => {
@@ -4486,7 +4622,13 @@ if (!isLoaded) {
                         
                         // Then add sealed inventory items
                         Object.entries(sealedInventory).forEach(([gameId, sets]) => {
+                          // Apply game filter
+                          if (sellGameFilter !== 'all' && gameId !== sellGameFilter) return;
+                          
                           Object.entries(sets).forEach(([setId, products]) => {
+                            // Apply set filter
+                            if (sellSetFilter !== 'all' && setId !== sellSetFilter) return;
+                            
                             Object.entries(products).forEach(([productType, count]) => {
                               if (count > 0 && productType !== 'single') {
                                 const gc = gameConfigs[gameId];
@@ -4512,7 +4654,9 @@ if (!isLoaded) {
                         if (ownedProducts.length === 0) {
                           return (
                             <div style={{ color: '#6b7280', fontSize: 13, textAlign: 'center', padding: 20 }}>
-                              You don't own any sealed products to sell.
+                              {sellGameFilter === 'all' && sellSetFilter === 'all' 
+                                ? "You don't own any sealed products to sell."
+                                : "No sealed products match your filter."}
                             </div>
                           );
                         }
@@ -4752,9 +4896,9 @@ if (!isLoaded) {
                         </button>
                       </>
                     )}
-                    {packPhase === 'revealed' && currentGameSetPacks.length > 0 && (
-                      <button onClick={openPack} style={{ padding: '8px 16px', background: 'linear-gradient(90deg, #9333ea, #ec4899)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
-                        Open Another Pack
+                    {packPhase === 'revealed' && packInventory.length > 0 && (
+                      <button onClick={() => navigate('home')} style={{ padding: '8px 16px', background: 'linear-gradient(90deg, #9333ea, #ec4899)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
+                        Open Another Pack ({packInventory.length} available)
                       </button>
                     )}
                     <button onClick={() => setView('home')} style={{ padding: '8px 16px', background: '#374151', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
