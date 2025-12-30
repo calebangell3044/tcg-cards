@@ -3532,40 +3532,64 @@ const getRareSlotCard = () => {
 
 const movers7d = useMemo(() => {
         const fromDay = Math.max(1, (gameDay || 1) - 7);
-        const changes = [];
-        if (!marketValues || !priceHistory) return { fromDay, gainers: [], losers: [] };
+        const result = {};
+        
+        if (!marketValues || !priceHistory) return { fromDay, byGameSet: {} };
 
-        for (let i = 0; i < ALL_CARDS.length; i++) {
-          const card = ALL_CARDS[i];
-          const arr = priceHistory[card.id];
-          const curVal = marketValues[card.id];
+        // Calculate movers for each game/set
+        for (const [gameId, gameSets] of Object.entries(setConfigs)) {
+          const gameConfig = gameConfigs[gameId];
+          if (!gameConfig) continue;
+          
+          for (const [setId, setConfig] of Object.entries(gameSets)) {
+            if (!setConfig || !setConfig.cards) continue;
+            
+            const changes = [];
+            
+            for (const card of setConfig.cards) {
+              const arr = priceHistory[card.id];
+              const curVal = marketValues[card.id];
 
-          if (curVal === undefined || curVal === null) continue;
+              if (curVal === undefined || curVal === null) continue;
 
-          let oldVal = null;
-          if (Array.isArray(arr) && arr.length) {
-            // Prefer exact match, else last value at/before fromDay, else first.
-            let candidate = arr[0];
-            for (let j = 0; j < arr.length; j++) {
-              const e = arr[j];
-              if (!e || typeof e.value !== 'number') continue;
-              if (typeof e.day === 'number' && e.day <= fromDay) candidate = e;
-              if (typeof e.day === 'number' && e.day === fromDay) { candidate = e; break; }
+              let oldVal = null;
+              if (Array.isArray(arr) && arr.length) {
+                let candidate = arr[0];
+                for (let j = 0; j < arr.length; j++) {
+                  const e = arr[j];
+                  if (!e || typeof e.value !== 'number') continue;
+                  if (typeof e.day === 'number' && e.day <= fromDay) candidate = e;
+                  if (typeof e.day === 'number' && e.day === fromDay) { candidate = e; break; }
+                }
+                oldVal = candidate && typeof candidate.value === 'number' ? candidate.value : null;
+              }
+
+              if (oldVal === null || oldVal <= 0) continue;
+
+              const pct = ((curVal - oldVal) / oldVal) * 100;
+              changes.push({ 
+                card: { ...card, gameId, setId }, 
+                pct, 
+                curVal, 
+                oldVal 
+              });
             }
-            oldVal = candidate && typeof candidate.value === 'number' ? candidate.value : null;
+
+            const gainers = changes.slice().sort((a, b) => b.pct - a.pct).slice(0, 5);
+            const losers = changes.slice().sort((a, b) => a.pct - b.pct).slice(0, 5);
+
+            if (!result[gameId]) result[gameId] = {};
+            result[gameId][setId] = {
+              gameName: gameConfig.name,
+              setName: setConfig.name,
+              gainers,
+              losers
+            };
           }
-
-          if (oldVal === null || oldVal <= 0) continue;
-
-          const pct = ((curVal - oldVal) / oldVal) * 100;
-          changes.push({ card, pct, curVal, oldVal });
         }
 
-        const gainers = changes.slice().sort((a, b) => b.pct - a.pct).slice(0, 10);
-        const losers = changes.slice().sort((a, b) => a.pct - b.pct).slice(0, 10);
-
-        return { fromDay, gainers, losers };
-      }, [priceHistory, marketValues, gameDay]);
+        return { fromDay, byGameSet: result };
+      }, [priceHistory, marketValues, gameDay, setConfigs, gameConfigs]);
 
       const totalCollectionValue = useMemo(() => {
         let sum = 0;
@@ -5126,102 +5150,124 @@ if (!isLoaded) {
             {view === 'market' && (
               <div>
                 <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 12, padding: 24, marginBottom: 24 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
                     <h2 style={{ margin: 0, fontSize: 22, color: 'white' }}>Market</h2>
                     <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>
                       7-day movers (Day {movers7d.fromDay} → Day {gameDay})
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 18 }}>
-                    <div style={{ flex: '1 1 320px', minWidth: 280 }}>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: 'white', marginBottom: 10 }}>Top Gainers</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {movers7d.gainers.map((row, idx) => (
-                          <button
-                            key={'g7-' + row.card.id}
-                            onClick={() => setEnlargedCard({
-                              ...row.card,
-                              image: getImageUrl(row.card),
-                              marketValue: row.curVal
-                            })}
-                            style={{
-                              width: '100%',
-                              textAlign: 'left',
-                              borderRadius: 12,
-                              padding: '10px 12px',
-                              border: '1px solid rgba(255,255,255,0.10)',
-                              background: 'rgba(0,0,0,0.25)',
-                              cursor: 'pointer',
-                              color: 'white'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                                <span style={{ fontWeight: 700, opacity: 0.9 }}>{idx + 1}.</span>
-                                <span style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.card.name}</span>
-                                <span style={{ fontSize: 12, opacity: 0.75 }}>({row.card.rarity})</span>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                                <span style={{ fontWeight: 800, color: '#34d399' }}>{row.pct >= 0 ? '+' : ''}{row.pct.toFixed(1)}%</span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <img src="./rations.png" alt="Rations" style={{ width: 16, height: 16 }} />
-                                  <span style={{ fontWeight: 700, color: '#fbbf24' }}>{row.curVal.toFixed(2)}</span>
-                                </span>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                        {movers7d.gainers.length === 0 && (
-                          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>Not enough market history yet.</div>
-                        )}
-                      </div>
-                    </div>
+                  {/* Render each game/set */}
+                  {Object.entries(movers7d.byGameSet || {}).map(([gameId, sets]) => (
+                    <div key={gameId} style={{ marginBottom: 32 }}>
+                      {Object.entries(sets).map(([setId, data]) => (
+                        <div key={setId} style={{ marginBottom: 24 }}>
+                          <h3 style={{ 
+                            color: '#a855f7', 
+                            fontSize: 18, 
+                            fontWeight: 'bold', 
+                            margin: '0 0 16px',
+                            padding: '8px 12px',
+                            background: 'rgba(168,85,247,0.15)',
+                            borderRadius: 8,
+                            borderLeft: '4px solid #a855f7'
+                          }}>
+                            {data.gameName} - {data.setName}
+                          </h3>
 
-                    <div style={{ flex: '1 1 320px', minWidth: 280 }}>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: 'white', marginBottom: 10 }}>Top Losers</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {movers7d.losers.map((row, idx) => (
-                          <button
-                            key={'l7-' + row.card.id}
-                            onClick={() => setEnlargedCard({
-                              ...row.card,
-                              image: getImageUrl(row.card),
-                              marketValue: row.curVal
-                            })}
-                            style={{
-                              width: '100%',
-                              textAlign: 'left',
-                              borderRadius: 12,
-                              padding: '10px 12px',
-                              border: '1px solid rgba(255,255,255,0.10)',
-                              background: 'rgba(0,0,0,0.25)',
-                              cursor: 'pointer',
-                              color: 'white'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                                <span style={{ fontWeight: 700, opacity: 0.9 }}>{idx + 1}.</span>
-                                <span style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.card.name}</span>
-                                <span style={{ fontSize: 12, opacity: 0.75 }}>({row.card.rarity})</span>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                                <span style={{ fontWeight: 800, color: '#f87171' }}>{row.pct >= 0 ? '+' : ''}{row.pct.toFixed(1)}%</span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <img src="./rations.png" alt="Rations" style={{ width: 16, height: 16 }} />
-                                  <span style={{ fontWeight: 700, color: '#fbbf24' }}>{row.curVal.toFixed(2)}</span>
-                                </span>
+                          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                            <div style={{ flex: '1 1 320px', minWidth: 280 }}>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#34d399', marginBottom: 10 }}>Top 5 Gainers</div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                {data.gainers.map((row, idx) => (
+                                  <button
+                                    key={'g7-' + row.card.id}
+                                    onClick={() => setEnlargedCard({
+                                      ...row.card,
+                                      image: buildImageUrl(row.card.gameId, row.card.setId, row.card),
+                                      marketValue: row.curVal
+                                    })}
+                                    style={{
+                                      width: '100%',
+                                      textAlign: 'left',
+                                      borderRadius: 10,
+                                      padding: '8px 10px',
+                                      border: '1px solid rgba(52,211,153,0.2)',
+                                      background: 'rgba(0,0,0,0.25)',
+                                      cursor: 'pointer',
+                                      color: 'white',
+                                      fontSize: 13
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                                        <span style={{ fontWeight: 700, opacity: 0.7, fontSize: 12 }}>{idx + 1}.</span>
+                                        <span style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.card.name}</span>
+                                      </div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                                        <span style={{ fontWeight: 800, color: '#34d399', fontSize: 12 }}>+{row.pct.toFixed(1)}%</span>
+                                        <span style={{ fontWeight: 700, color: '#fbbf24', fontSize: 12 }}>{row.curVal.toFixed(2)}R</span>
+                                      </div>
+                                    </div>
+                                  </button>
+                                ))}
+                                {data.gainers.length === 0 && (
+                                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>No data yet</div>
+                                )}
                               </div>
                             </div>
-                          </button>
-                        ))}
-                        {movers7d.losers.length === 0 && (
-                          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>Not enough market history yet.</div>
-                        )}
-                      </div>
+
+                            <div style={{ flex: '1 1 320px', minWidth: 280 }}>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#f87171', marginBottom: 10 }}>Top 5 Losers</div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                {data.losers.map((row, idx) => (
+                                  <button
+                                    key={'l7-' + row.card.id}
+                                    onClick={() => setEnlargedCard({
+                                      ...row.card,
+                                      image: buildImageUrl(row.card.gameId, row.card.setId, row.card),
+                                      marketValue: row.curVal
+                                    })}
+                                    style={{
+                                      width: '100%',
+                                      textAlign: 'left',
+                                      borderRadius: 10,
+                                      padding: '8px 10px',
+                                      border: '1px solid rgba(248,113,113,0.2)',
+                                      background: 'rgba(0,0,0,0.25)',
+                                      cursor: 'pointer',
+                                      color: 'white',
+                                      fontSize: 13
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                                        <span style={{ fontWeight: 700, opacity: 0.7, fontSize: 12 }}>{idx + 1}.</span>
+                                        <span style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.card.name}</span>
+                                      </div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                                        <span style={{ fontWeight: 800, color: '#f87171', fontSize: 12 }}>{row.pct.toFixed(1)}%</span>
+                                        <span style={{ fontWeight: 700, color: '#fbbf24', fontSize: 12 }}>{row.curVal.toFixed(2)}R</span>
+                                      </div>
+                                    </div>
+                                  </button>
+                                ))}
+                                {data.losers.length === 0 && (
+                                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>No data yet</div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
+                  ))}
+                  
+                  {Object.keys(movers7d.byGameSet || {}).length === 0 && (
+                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, textAlign: 'center', padding: 20 }}>
+                      Not enough market history yet. Advance a few days to see price movements.
+                    </div>
+                  )}
                 </div>
               </div>
             )}
