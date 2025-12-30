@@ -8,7 +8,7 @@
       {
         "type": "guaranteed",
         "rarity": "common",
-        "count": 4
+        "count": 3
       },
       {
         "type": "guaranteed",
@@ -18,15 +18,25 @@
       {
         "type": "rare-slot",
         "count": 1,
+        "odds": {
+          "rare": 85,
+          "legendary": 10,
+          "x-rare": 3.5,
+          "ghost-rare": 1.4,
+          "x-special-rare": 0.1
+        }
+      },
+      {
+        "type": "holo",
+        "count": 1,
         "holoChance": 0.25,
         "odds": {
-          "common": 40,
-          "uncommon": 32,
-          "rare": 18,
-          "legendary": 6,
-          "x-rare": 3,
-          "ghost-rare": 0.9,
-          "x-special-rare": 0.1
+          "common": 50,
+          "uncommon": 30,
+          "rare": 15,
+          "legendary": 4,
+          "x-rare": 0.9,
+          "ghost-rare": 0.1
         }
       }
     ]
