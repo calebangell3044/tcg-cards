@@ -201,7 +201,7 @@
       "faction": "Spirits",
       "power": 505,
       "defense": 370,
-      "rarity": "uncommon",
+      "rarity": "legendary",
       "file": "Band-Aid Mummy.png"
     },
     {
@@ -581,7 +581,7 @@
       "faction": "Spirits",
       "power": 200,
       "defense": 100,
-      "rarity": "common",
+      "rarity": "legendary",
       "file": "Cotton Ball Cloud Fox.png"
     },
     {
@@ -1131,7 +1131,7 @@
       "faction": "Golems",
       "power": 465,
       "defense": 500,
-      "rarity": "uncommon",
+      "rarity": "legendary",
       "file": "Marble Golem.png"
     },
     {
@@ -1261,7 +1261,7 @@
       "faction": "Serpents",
       "power": 850,
       "defense": 700,
-      "rarity": "rare",
+      "rarity": "legendary",
       "file": "Origami Dragon.png"
     },
     {
@@ -1521,7 +1521,7 @@
       "faction": "Sea Monsters",
       "power": 135,
       "defense": 140,
-      "rarity": "common",
+      "rarity": "legendary",
       "file": "Ribbon Eel.png"
     },
     {
@@ -1731,7 +1731,7 @@
       "faction": "Insects",
       "power": 650,
       "defense": 430,
-      "rarity": "uncommon",
+      "rarity": "legendary",
       "file": "Straw Mantis.png"
     },
     {
