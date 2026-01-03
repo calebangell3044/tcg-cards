@@ -834,6 +834,7 @@ body{
 
       const [collection, setCollection] = useState({});
       const [packCards, setPackCards] = useState([]);
+      const [packNewCards, setPackNewCards] = useState(new Set()); // Track which cards in current pack are new
       const [revealedCards, setRevealedCards] = useState([]);
       const [view, setView] = useState('home');
       const [menuOpen, setMenuOpen] = useState(false);
@@ -1313,6 +1314,81 @@ body{
         setSettingsMsg('Deterministic RNG stream reset.');
         setTimeout(() => setSettingsMsg(''), 1500);
       }, [getActiveSeed]);
+
+      // ===== Developer Cheat Functions =====
+      const devAddAllCards = useCallback(() => {
+        const newCollection = { ...collection };
+        // Add 1 of each card (normal) from all games/sets
+        for (const [gameId, gameSets] of Object.entries(setConfigs)) {
+          for (const [setId, setConfig] of Object.entries(gameSets)) {
+            if (!setConfig || !setConfig.cards) continue;
+            setConfig.cards.forEach(card => {
+              const entry = newCollection[card.id] || { normal: 0, holo: 0 };
+              entry.normal = Math.max(entry.normal, 1);
+              newCollection[card.id] = entry;
+            });
+          }
+        }
+        setCollection(newCollection);
+        saveCollection(newCollection);
+        setSettingsMsg('Added 1 of every card to collection!');
+        setTimeout(() => setSettingsMsg(''), 2000);
+      }, [collection, setConfigs]);
+
+      const devAddRations = useCallback((amount) => {
+        const newRations = rations + amount;
+        setRations(newRations);
+        localStorage.setItem('tcg-rations', String(newRations));
+        try { updateCoreSave({ rations: newRations }); } catch (e) {}
+        setSettingsMsg(`Added ${amount} rations!`);
+        setTimeout(() => setSettingsMsg(''), 2000);
+      }, [rations]);
+
+      const devAddAllSealed = useCallback(() => {
+        const newSealed = { ...sealedInventory };
+        // Add 1 of each sealed product from all games/sets
+        for (const [gameId, gameSets] of Object.entries(setConfigs)) {
+          for (const [setId, setConfig] of Object.entries(gameSets)) {
+            if (!setConfig || !setConfig.sealedProducts) continue;
+            
+            if (!newSealed[gameId]) newSealed[gameId] = {};
+            if (!newSealed[gameId][setId]) newSealed[gameId][setId] = {};
+            
+            Object.keys(setConfig.sealedProducts).forEach(productType => {
+              // Skip single packs, add sealed products
+              if (productType !== 'single') {
+                newSealed[gameId][setId][productType] = (newSealed[gameId][setId][productType] || 0) + 1;
+              }
+            });
+          }
+        }
+        setSealedInventory(newSealed);
+        saveSealedInventory(newSealed);
+        setSettingsMsg('Added 1 of every sealed product!');
+        setTimeout(() => setSettingsMsg(''), 2000);
+      }, [sealedInventory, setConfigs]);
+
+      const devAddPacks = useCallback((count) => {
+        const newPacks = [];
+        // Add packs from all games/sets
+        for (const [gameId, gameSets] of Object.entries(setConfigs)) {
+          for (const [setId, setConfig] of Object.entries(gameSets)) {
+            if (!setConfig) continue;
+            for (let i = 0; i < count; i++) {
+              newPacks.push({
+                id: generatePackId(),
+                gameId,
+                setId
+              });
+            }
+          }
+        }
+        const newInventory = [...packInventory, ...newPacks];
+        setPackInventory(newInventory);
+        savePackInventory(newInventory);
+        setSettingsMsg(`Added ${count} packs from each set!`);
+        setTimeout(() => setSettingsMsg(''), 2000);
+      }, [packInventory, setConfigs]);
 
 
       const handleImportFile = useCallback((file) => {
@@ -2931,10 +3007,21 @@ const getRareSlotCard = () => {
           img.src = card.image;
         });
 
+        // Determine which cards in this pack are NEW (not already in collection)
+        const newCardsSet = new Set();
+        newPack.forEach((card, index) => {
+          const entry = collection[card.id] || { normal: 0, holo: 0 };
+          const alreadyOwned = card.isHolo ? entry.holo > 0 : entry.normal > 0;
+          if (!alreadyOwned) {
+            newCardsSet.add(index);
+          }
+        });
+
         // Update state
         setPackInventory(newInventory);
         savePackInventory(newInventory);
         setPackCards(newPack);
+        setPackNewCards(newCardsSet);
         setRevealedCards([]);
         setPackPhase('sealed');
         setRipProgress(0);
@@ -2951,6 +3038,16 @@ const getRareSlotCard = () => {
           return next;
         });
         navigate('opening');
+      };
+
+      // Open the next available pack (any game/set)
+      const openNextPack = () => {
+        if (packInventory.length === 0) {
+          navigate('home');
+          return;
+        }
+        // Open the first pack in inventory
+        openSpecificPack(packInventory[0].id);
       };
 
       const openPack = () => {
@@ -5118,7 +5215,7 @@ if (!isLoaded) {
                       </>
                     )}
                     {packPhase === 'revealed' && packInventory.length > 0 && (
-                      <button onClick={() => navigate('home')} style={{ padding: '8px 16px', background: 'linear-gradient(90deg, #9333ea, #ec4899)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
+                      <button onClick={openNextPack} style={{ padding: '8px 16px', background: 'linear-gradient(90deg, #9333ea, #ec4899)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
                         Open Another Pack ({packInventory.length} available)
                       </button>
                     )}
@@ -5195,10 +5292,8 @@ if (!isLoaded) {
                         const stackPosition = index - currentCardIndex;
                         const isTopCard = index === currentCardIndex;
                         
-                        // Check if this card is new (not in collection before this pack)
-                        const collectionEntry = collection[card.id] || { normal: 0, holo: 0 };
-                        const wasInCollection = card.isHolo ? collectionEntry.holo > 0 : collectionEntry.normal > 0;
-                        const isNewCard = !wasInCollection;
+                        // Check if this card is new (using pre-calculated set from pack opening)
+                        const isNewCard = packNewCards.has(index);
                         
                         if (!isVisible && !isSliding) return null;
                         
@@ -5280,21 +5375,14 @@ if (!isLoaded) {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
                     <p style={{ color: '#10b981', fontSize: 16, fontWeight: 'bold', margin: 0 }}>
                       Pack Complete! {packCards.filter(c => c.isHolo).length > 0 && `✨ ${packCards.filter(c => c.isHolo).length} Holo`}
-                      {packCards.filter(c => {
-                        const entry = collection[c.id] || { normal: 0, holo: 0 };
-                        return c.isHolo ? entry.holo === 0 : entry.normal === 0;
-                      }).length > 0 && ` • ${packCards.filter(c => {
-                        const entry = collection[c.id] || { normal: 0, holo: 0 };
-                        return c.isHolo ? entry.holo === 0 : entry.normal === 0;
-                      }).length} New`}
+                      {packNewCards.size > 0 && ` • ${packNewCards.size} New`}
                     </p>
                     
                     <div className="cards-grid-reveal">
                       {packCards.map((card, index) => {
                         const colors = RARITY_COLORS[card.rarity] || { bg: '#374151', border: '#6b7280', text: '#d1d5db' };
-                        const collectionEntry = collection[card.id] || { normal: 0, holo: 0 };
-                        const wasInCollection = card.isHolo ? collectionEntry.holo > 0 : collectionEntry.normal > 0;
-                        const isNewCard = !wasInCollection;
+                        // Use pre-calculated set from pack opening
+                        const isNewCard = packNewCards.has(index);
                         
                         return (
                           <div
@@ -5954,6 +6042,51 @@ return (
                         ))}
                       </div>
                     )}
+                  </div>
+
+                  <div style={{ padding: 16, borderRadius: 14, background: 'rgba(17,24,39,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <h3 style={{ margin: 0, marginBottom: 12, fontSize: 18, color: '#f59e0b' }}>🛠️ Developer Menu</h3>
+                    <div style={{ color: '#9ca3af', fontSize: 12, marginBottom: 12 }}>
+                      Cheat buttons for testing. Use responsibly!
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button
+                        onClick={devAddAllCards}
+                        style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #f59e0b, #d97706)', color: 'white', fontWeight: 700 }}
+                      >
+                        Add All Cards to Collection
+                      </button>
+                      <button
+                        onClick={() => devAddRations(1000)}
+                        style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #f59e0b, #d97706)', color: 'white', fontWeight: 700 }}
+                      >
+                        +1000 Rations
+                      </button>
+                      <button
+                        onClick={() => devAddRations(10000)}
+                        style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #f59e0b, #d97706)', color: 'white', fontWeight: 700 }}
+                      >
+                        +10,000 Rations
+                      </button>
+                      <button
+                        onClick={devAddAllSealed}
+                        style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #f59e0b, #d97706)', color: 'white', fontWeight: 700 }}
+                      >
+                        Add All Sealed Products
+                      </button>
+                      <button
+                        onClick={() => devAddPacks(5)}
+                        style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #f59e0b, #d97706)', color: 'white', fontWeight: 700 }}
+                      >
+                        +5 Packs (each set)
+                      </button>
+                      <button
+                        onClick={() => devAddPacks(20)}
+                        style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #f59e0b, #d97706)', color: 'white', fontWeight: 700 }}
+                      >
+                        +20 Packs (each set)
+                      </button>
+                    </div>
                   </div>
 
                   <div style={{ padding: 16, borderRadius: 14, background: 'rgba(17,24,39,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
