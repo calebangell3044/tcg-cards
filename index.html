@@ -155,6 +155,41 @@ html, body {
   z-index: 4;
 }
 
+/* General holo overlay for any card container */
+.holo-overlay {
+  position: relative;
+  overflow: hidden;
+}
+
+.holo-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg,
+    rgba(255, 0, 128, 0.28),
+    rgba(0, 255, 255, 0.26),
+    rgba(255, 255, 0, 0.24),
+    rgba(128, 0, 255, 0.26),
+    rgba(255, 0, 128, 0.28)
+  );
+  opacity: 0.5;
+  filter: saturate(1.4) contrast(1.05);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.holo-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.25), rgba(255,255,255,0.0) 50%);
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 11;
+}
+
 .holo-badge {
   background: linear-gradient(90deg,
     rgba(255, 0, 128, 0.40),
@@ -492,6 +527,66 @@ body{
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Holo effect for stacked cards */
+.stacked-card.foil-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg,
+    rgba(255, 0, 128, 0.28),
+    rgba(0, 255, 255, 0.26),
+    rgba(255, 255, 0, 0.24),
+    rgba(128, 0, 255, 0.26),
+    rgba(255, 0, 128, 0.28)
+  );
+  opacity: 0.5;
+  filter: saturate(1.4) contrast(1.05);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.stacked-card.foil-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.25), rgba(255,255,255,0.0) 50%);
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 11;
+}
+
+/* Holo effect for grid cards */
+.grid-card.foil-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg,
+    rgba(255, 0, 128, 0.28),
+    rgba(0, 255, 255, 0.26),
+    rgba(255, 255, 0, 0.24),
+    rgba(128, 0, 255, 0.26),
+    rgba(255, 0, 128, 0.28)
+  );
+  opacity: 0.5;
+  filter: saturate(1.4) contrast(1.05);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.grid-card.foil-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.25), rgba(255,255,255,0.0) 50%);
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 11;
 }
 
 @keyframes cardSlideOff {
@@ -1226,6 +1321,7 @@ body{
 
       // State for grade reveal modal
       const [revealingGrade, setRevealingGrade] = useState(null);
+      const [inspectingGradedCard, setInspectingGradedCard] = useState(null);
 
       // Crack a slab (return graded card to collection as raw)
       const crackSlab = useCallback((gradedCardId) => {
@@ -5768,20 +5864,6 @@ if (!isLoaded) {
                                 New!
                               </div>
                             )}
-                            {card.isHolo && (
-                              <div style={{
-                                position: 'absolute',
-                                top: 8,
-                                right: 8,
-                                padding: '4px 8px',
-                                borderRadius: 6,
-                                fontSize: 10,
-                                fontWeight: 'bold',
-                                textTransform: 'uppercase'
-                              }} className="holo-badge">
-                                Holo
-                              </div>
-                            )}
                             {isTopCard && !isSliding && (
                               <div style={{
                                 position: 'absolute',
@@ -5840,19 +5922,6 @@ if (!isLoaded) {
                                 fontWeight: 'bold'
                               }}>
                                 New!
-                              </div>
-                            )}
-                            {card.isHolo && (
-                              <div style={{
-                                position: 'absolute',
-                                top: 4,
-                                right: 4,
-                                padding: '2px 6px',
-                                borderRadius: 4,
-                                fontSize: 9,
-                                fontWeight: 'bold'
-                              }} className="holo-badge">
-                                Holo
                               </div>
                             )}
                           </div>
@@ -6709,24 +6778,13 @@ return (
                               position: 'relative'
                             }}
                           >
-                            <img
-                              src={card.image}
-                              alt={card.name}
-                              style={{ width: '100%', aspectRatio: '2.5/3.5', objectFit: 'cover' }}
-                            />
-                            {card.isHolo && (
-                              <div className="holo-badge" style={{
-                                position: 'absolute',
-                                top: 6,
-                                right: 6,
-                                padding: '2px 6px',
-                                borderRadius: 4,
-                                fontSize: 9,
-                                fontWeight: 'bold'
-                              }}>
-                                Holo
-                              </div>
-                            )}
+                            <div className={card.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative' }}>
+                              <img
+                                src={card.image}
+                                alt={card.name}
+                                style={{ width: '100%', aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block' }}
+                              />
+                            </div>
                             <div style={{
                               position: 'absolute',
                               bottom: 6,
@@ -6868,13 +6926,18 @@ return (
                             : getGradedValue(graded.cardId, graded.grade);
                           
                           return (
-                            <div key={graded.id} style={{
-                              borderRadius: 12,
-                              overflow: 'hidden',
-                              background: '#1f2937',
-                              border: `3px solid ${colors.border}`,
-                              position: 'relative'
-                            }}>
+                            <div 
+                              key={graded.id} 
+                              onClick={() => setInspectingGradedCard(graded)}
+                              style={{
+                                borderRadius: 12,
+                                overflow: 'hidden',
+                                background: '#1f2937',
+                                border: `3px solid ${colors.border}`,
+                                position: 'relative',
+                                cursor: 'pointer'
+                              }}
+                            >
                               {/* Grade Banner */}
                               <div style={{
                                 background: gradeColors.bg,
@@ -6888,25 +6951,12 @@ return (
                                 {gradeLabel}
                               </div>
                               
-                              <div style={{ position: 'relative' }}>
+                              <div className={graded.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative' }}>
                                 <img
                                   src={buildImageUrl(graded.gameId, graded.setId, cardData)}
                                   alt={cardData?.name}
-                                  style={{ width: '100%', aspectRatio: '2.5/3.5', objectFit: 'cover' }}
+                                  style={{ width: '100%', aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block' }}
                                 />
-                                {graded.isHolo && (
-                                  <div className="holo-badge" style={{
-                                    position: 'absolute',
-                                    top: 6,
-                                    right: 6,
-                                    padding: '2px 6px',
-                                    borderRadius: 4,
-                                    fontSize: 9,
-                                    fontWeight: 'bold'
-                                  }}>
-                                    Holo
-                                  </div>
-                                )}
                               </div>
                               
                               <div style={{ padding: 8 }}>
@@ -6918,7 +6968,8 @@ return (
                                     {value.toFixed(2)} R
                                   </div>
                                   <button
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       if (window.confirm('Crack this slab? The card will return to your collection as ungraded.')) {
                                         crackSlab(graded.id);
                                       }
@@ -7268,11 +7319,13 @@ return (
                         {gradeLabel}
                       </div>
                       
-                      <img
-                        src={buildImageUrl(revealingGrade.gameId, revealingGrade.setId, cardData)}
-                        alt={cardData?.name}
-                        style={{ width: 200, aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block' }}
-                      />
+                      <div className={revealingGrade.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative' }}>
+                        <img
+                          src={buildImageUrl(revealingGrade.gameId, revealingGrade.setId, cardData)}
+                          alt={cardData?.name}
+                          style={{ width: 200, aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block' }}
+                        />
+                      </div>
                     </div>
                     
                     <div style={{ marginBottom: 16 }}>
@@ -7319,6 +7372,218 @@ return (
                     >
                       View in Collection
                     </button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Graded Card Inspect Modal */}
+            {inspectingGradedCard && (() => {
+              const graded = inspectingGradedCard;
+              const setConfig = setConfigs[graded.gameId]?.[graded.setId];
+              const cardData = setConfig?.cards?.find(c => c.id === graded.cardId);
+              const gameConfig = gameConfigs[graded.gameId];
+              const gradeColors = GRADE_COLORS[graded.grade] || { bg: '#6b7280', text: '#000' };
+              const gradeLabel = graded.grade === 'IM10' ? 'TMSG IM10' : `TMSG ${graded.grade}`;
+              const multiplier = GRADE_MULTIPLIERS[graded.grade] || 1;
+              const baseValue = marketValues[graded.cardId] || 1;
+              const holoMult = graded.isHolo ? (holoMultipliers[graded.cardId] || 1.5) : 1;
+              const value = baseValue * holoMult * multiplier;
+              const colors = RARITY_COLORS[cardData?.rarity] || { border: '#6b7280' };
+              const history = priceHistory[graded.cardId] || [];
+              
+              return (
+                <div
+                  onClick={() => setInspectingGradedCard(null)}
+                  style={{
+                    position: 'fixed',
+                    inset: 0,
+                    background: 'rgba(0,0,0,0.92)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1100,
+                    padding: 20
+                  }}
+                >
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      background: 'rgba(17,24,39,0.98)',
+                      borderRadius: 20,
+                      padding: 24,
+                      maxWidth: 600,
+                      width: '100%',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      maxHeight: '90vh',
+                      overflowY: 'auto'
+                    }}
+                  >
+                    <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                      {/* Card with Grade Banner */}
+                      <div style={{ 
+                        borderRadius: 14,
+                        overflow: 'hidden',
+                        border: `4px solid ${colors.border}`,
+                        boxShadow: `0 0 30px ${gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg}40`,
+                        flexShrink: 0
+                      }}>
+                        {/* Grade Banner */}
+                        <div style={{
+                          background: gradeColors.bg,
+                          color: gradeColors.text,
+                          padding: '10px 16px',
+                          fontWeight: 900,
+                          fontSize: 16,
+                          textAlign: 'center',
+                          letterSpacing: '1px'
+                        }}>
+                          {gradeLabel}
+                        </div>
+                        
+                        <div className={graded.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative' }}>
+                          <img
+                            src={buildImageUrl(graded.gameId, graded.setId, cardData)}
+                            alt={cardData?.name}
+                            style={{ width: 200, aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block' }}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Info Panel */}
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <h3 style={{ margin: 0, marginBottom: 4, fontSize: 22, fontWeight: 800, color: 'white' }}>
+                          {cardData?.name}
+                        </h3>
+                        {graded.isHolo && (
+                          <div style={{ color: '#f0abfc', fontSize: 14, marginBottom: 8 }}>✨ Holographic</div>
+                        )}
+                        <div style={{ color: '#9ca3af', fontSize: 13, marginBottom: 16 }}>
+                          {gameConfig?.name} • {setConfig?.name}
+                        </div>
+                        
+                        {/* Value Breakdown */}
+                        <div style={{ 
+                          padding: 16, 
+                          borderRadius: 12, 
+                          background: 'rgba(0,0,0,0.3)',
+                          marginBottom: 16
+                        }}>
+                          <div style={{ color: '#9ca3af', fontSize: 11, marginBottom: 8, textTransform: 'uppercase' }}>Value Breakdown</div>
+                          <div style={{ display: 'grid', gap: 6, fontSize: 13 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e5e7eb' }}>
+                              <span>Base Value</span>
+                              <span>{baseValue.toFixed(2)} R</span>
+                            </div>
+                            {graded.isHolo && (
+                              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f0abfc' }}>
+                                <span>Holo Multiplier</span>
+                                <span>×{holoMult.toFixed(2)}</span>
+                              </div>
+                            )}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg }}>
+                              <span>Grade Multiplier ({graded.grade})</span>
+                              <span>×{multiplier.toFixed(2)}</span>
+                            </div>
+                            <div style={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between', 
+                              color: '#fbbf24',
+                              fontWeight: 700,
+                              paddingTop: 8,
+                              borderTop: '1px solid rgba(255,255,255,0.1)',
+                              fontSize: 16
+                            }}>
+                              <span>Total Value</span>
+                              <span>{value.toFixed(2)} R</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Price History Chart */}
+                        {history.length > 1 && (
+                          <div style={{ 
+                            padding: 16, 
+                            borderRadius: 12, 
+                            background: 'rgba(0,0,0,0.3)',
+                            marginBottom: 16
+                          }}>
+                            <div style={{ color: '#9ca3af', fontSize: 11, marginBottom: 8, textTransform: 'uppercase' }}>
+                              Base Price History (30 days)
+                            </div>
+                            <div style={{ height: 80, display: 'flex', alignItems: 'flex-end', gap: 2 }}>
+                              {history.slice(-30).map((h, i) => {
+                                const min = Math.min(...history.slice(-30).map(x => x.value));
+                                const max = Math.max(...history.slice(-30).map(x => x.value));
+                                const range = max - min || 1;
+                                const height = ((h.value - min) / range) * 60 + 20;
+                                const isLast = i === history.slice(-30).length - 1;
+                                return (
+                                  <div
+                                    key={i}
+                                    style={{
+                                      flex: 1,
+                                      height: `${height}%`,
+                                      background: isLast ? '#fbbf24' : 'rgba(147,51,234,0.6)',
+                                      borderRadius: 2,
+                                      minWidth: 4
+                                    }}
+                                    title={`Day ${h.day}: ${h.value.toFixed(2)} R`}
+                                  />
+                                );
+                              })}
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: '#9ca3af' }}>
+                              <span>{Math.min(...history.slice(-30).map(x => x.value)).toFixed(2)} R</span>
+                              <span>{Math.max(...history.slice(-30).map(x => x.value)).toFixed(2)} R</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Info */}
+                        <div style={{ color: '#9ca3af', fontSize: 12, marginBottom: 16 }}>
+                          Graded on Day {graded.gradedDay}
+                        </div>
+                        
+                        {/* Actions */}
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <button
+                            onClick={() => setInspectingGradedCard(null)}
+                            style={{
+                              flex: 1,
+                              padding: '12px',
+                              borderRadius: 10,
+                              border: 'none',
+                              background: 'rgba(107,114,128,0.4)',
+                              color: 'white',
+                              cursor: 'pointer',
+                              fontWeight: 700
+                            }}
+                          >
+                            Close
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Crack this slab? The card will return to your collection as ungraded.')) {
+                                crackSlab(graded.id);
+                                setInspectingGradedCard(null);
+                              }
+                            }}
+                            style={{
+                              padding: '12px 20px',
+                              borderRadius: 10,
+                              border: 'none',
+                              background: 'rgba(239,68,68,0.3)',
+                              color: '#fca5a5',
+                              cursor: 'pointer',
+                              fontWeight: 700
+                            }}
+                          >
+                            Crack Slab
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
