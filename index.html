@@ -5639,6 +5639,7 @@ if (!isLoaded) {
                       onChange={(e) => {
                         setCollectionGameFilter(e.target.value);
                         setCollectionSetFilter('all');
+                        setCollectionFilter('all'); // Reset rarity filter when changing game
                       }}
                       style={{ 
                         padding: '10px 12px',
@@ -5755,14 +5756,39 @@ if (!isLoaded) {
                       <button onClick={() => setCollectionFilter('all')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === 'all' ? '#9333ea' : '#374151', color: 'white' }}>
                         All
                       </button>
-                      {RARITY_ORDER.map(rarity => {
-                        const rarityConfig = currentGameConfig.rarities.find(r => r.id === rarity);
-                        return (
-                          <button key={rarity} onClick={() => setCollectionFilter(rarity)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === rarity ? (RARITY_COLORS[rarity]?.bg || '#374151') : '#374151', color: 'white' }}>
-                            {rarityConfig?.name || rarity}
+                      {(() => {
+                        // Get rarities based on selected game filter, or combine all if "all" selected
+                        let rarities = [];
+                        if (collectionGameFilter === 'all') {
+                          // Combine unique rarities from all enabled games
+                          const seen = new Set();
+                          gamesIndex.games.filter(g => g.enabled).forEach(game => {
+                            const gc = gameConfigs[game.id];
+                            if (gc?.rarityOrder) {
+                              gc.rarityOrder.forEach(r => {
+                                if (!seen.has(r)) {
+                                  seen.add(r);
+                                  rarities.push({ id: r, name: gc.rarities?.find(x => x.id === r)?.name || r });
+                                }
+                              });
+                            }
+                          });
+                        } else {
+                          // Use rarities from selected game
+                          const gc = gameConfigs[collectionGameFilter];
+                          if (gc?.rarityOrder) {
+                            rarities = gc.rarityOrder.map(r => ({
+                              id: r,
+                              name: gc.rarities?.find(x => x.id === r)?.name || r
+                            }));
+                          }
+                        }
+                        return rarities.map(rarity => (
+                          <button key={rarity.id} onClick={() => setCollectionFilter(rarity.id)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === rarity.id ? (RARITY_COLORS[rarity.id]?.bg || '#374151') : '#374151', color: 'white' }}>
+                            {rarity.name}
                           </button>
-                        );
-                      })}
+                        ));
+                      })()}
                     </div>
 
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#e5e7eb', fontSize: 13, userSelect: 'none' }}>
