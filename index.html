@@ -167,14 +167,14 @@ html, body {
   inset: 0;
   border-radius: inherit;
   background: linear-gradient(120deg,
-    rgba(255, 0, 128, 0.28),
-    rgba(0, 255, 255, 0.26),
-    rgba(255, 255, 0, 0.24),
-    rgba(128, 0, 255, 0.26),
-    rgba(255, 0, 128, 0.28)
+    rgba(255, 0, 128, 0.35),
+    rgba(0, 255, 255, 0.32),
+    rgba(255, 255, 0, 0.30),
+    rgba(128, 0, 255, 0.32),
+    rgba(255, 0, 128, 0.35)
   );
-  opacity: 0.5;
-  filter: saturate(1.4) contrast(1.05);
+  opacity: 0.6;
+  filter: saturate(1.5) contrast(1.08);
   pointer-events: none;
   z-index: 10;
 }
@@ -184,8 +184,8 @@ html, body {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.25), rgba(255,255,255,0.0) 50%);
-  opacity: 0.3;
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35), rgba(255,255,255,0.0) 55%);
+  opacity: 0.4;
   pointer-events: none;
   z-index: 11;
 }
@@ -536,14 +536,14 @@ body{
   inset: 0;
   border-radius: inherit;
   background: linear-gradient(120deg,
-    rgba(255, 0, 128, 0.28),
-    rgba(0, 255, 255, 0.26),
-    rgba(255, 255, 0, 0.24),
-    rgba(128, 0, 255, 0.26),
-    rgba(255, 0, 128, 0.28)
+    rgba(255, 0, 128, 0.35),
+    rgba(0, 255, 255, 0.32),
+    rgba(255, 255, 0, 0.30),
+    rgba(128, 0, 255, 0.32),
+    rgba(255, 0, 128, 0.35)
   );
-  opacity: 0.5;
-  filter: saturate(1.4) contrast(1.05);
+  opacity: 0.6;
+  filter: saturate(1.5) contrast(1.08);
   pointer-events: none;
   z-index: 10;
 }
@@ -553,8 +553,8 @@ body{
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.25), rgba(255,255,255,0.0) 50%);
-  opacity: 0.3;
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35), rgba(255,255,255,0.0) 55%);
+  opacity: 0.4;
   pointer-events: none;
   z-index: 11;
 }
@@ -566,14 +566,14 @@ body{
   inset: 0;
   border-radius: inherit;
   background: linear-gradient(120deg,
-    rgba(255, 0, 128, 0.28),
-    rgba(0, 255, 255, 0.26),
-    rgba(255, 255, 0, 0.24),
-    rgba(128, 0, 255, 0.26),
-    rgba(255, 0, 128, 0.28)
+    rgba(255, 0, 128, 0.35),
+    rgba(0, 255, 255, 0.32),
+    rgba(255, 255, 0, 0.30),
+    rgba(128, 0, 255, 0.32),
+    rgba(255, 0, 128, 0.35)
   );
-  opacity: 0.5;
-  filter: saturate(1.4) contrast(1.05);
+  opacity: 0.6;
+  filter: saturate(1.5) contrast(1.08);
   pointer-events: none;
   z-index: 10;
 }
@@ -583,8 +583,8 @@ body{
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.25), rgba(255,255,255,0.0) 50%);
-  opacity: 0.3;
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35), rgba(255,255,255,0.0) 55%);
+  opacity: 0.4;
   pointer-events: none;
   z-index: 11;
 }
@@ -1064,6 +1064,10 @@ body{
       const [gradingTab, setGradingTab] = useState('submit'); // submit | queue | graded
       const [gradingGameFilter, setGradingGameFilter] = useState('all');
       const [gradingSetFilter, setGradingSetFilter] = useState('all');
+      const [gradingRarityFilter, setGradingRarityFilter] = useState('all');
+      const [gradingHoloFilter, setGradingHoloFilter] = useState('all'); // all | holo | normal
+      const [gradingSortKey, setGradingSortKey] = useState('value'); // value | name | rarity
+      const [gradingSortDir, setGradingSortDir] = useState('desc');
       const [selectedCardForGrading, setSelectedCardForGrading] = useState(null);
 
       // TMSG Grading constants
@@ -1247,9 +1251,11 @@ body{
         
         if (rations < totalCost) return false;
         
-        // Remove card from collection
+        // Remove card from collection - deep copy the entry
         const newCollection = { ...collection };
-        const entry = newCollection[cardId] || { normal: 0, holo: 0 };
+        const existingEntry = newCollection[cardId] || { normal: 0, holo: 0 };
+        const entry = { normal: existingEntry.normal, holo: existingEntry.holo };
+        
         if (isHolo) {
           if (entry.holo <= 0) return false;
           entry.holo -= 1;
@@ -1289,35 +1295,42 @@ body{
 
       // Receive a completed grading (called by user clicking receive button)
       const receiveGradedCard = useCallback((queueItemId) => {
-        const item = gradingQueue.find(q => q.id === queueItemId);
-        if (!item || gameDay < item.completionDay) return null;
+        let resultCard = null;
         
-        // Generate grade using prediction if available
-        const grade = generateGrade(item.preGradePrediction);
+        setGradingQueue(prevQueue => {
+          const item = prevQueue.find(q => q.id === queueItemId);
+          if (!item || gameDay < item.completionDay) return prevQueue;
+          
+          // Generate grade using prediction if available
+          const grade = generateGrade(item.preGradePrediction);
+          
+          const gradedCard = {
+            id: `graded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            cardId: item.cardId,
+            gameId: item.gameId,
+            setId: item.setId,
+            isHolo: item.isHolo,
+            grade,
+            gradedDay: gameDay
+          };
+          
+          resultCard = gradedCard;
+          
+          // Add to graded cards
+          setGradedCards(prevGraded => {
+            const newGraded = [...prevGraded, gradedCard];
+            saveGradedCards(newGraded);
+            return newGraded;
+          });
+          
+          // Remove from queue
+          const newQueue = prevQueue.filter(q => q.id !== queueItemId);
+          saveGradingQueue(newQueue);
+          return newQueue;
+        });
         
-        const gradedCard = {
-          id: `graded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          cardId: item.cardId,
-          gameId: item.gameId,
-          setId: item.setId,
-          isHolo: item.isHolo,
-          grade,
-          gradedDay: gameDay
-        };
-        
-        // Remove from queue
-        const newQueue = gradingQueue.filter(q => q.id !== queueItemId);
-        
-        // Add to graded cards
-        const newGraded = [...gradedCards, gradedCard];
-        
-        setGradingQueue(newQueue);
-        saveGradingQueue(newQueue);
-        setGradedCards(newGraded);
-        saveGradedCards(newGraded);
-        
-        return gradedCard;
-      }, [gradingQueue, gradedCards, gameDay, generateGrade, saveGradingQueue, saveGradedCards]);
+        return resultCard;
+      }, [gameDay, generateGrade, saveGradingQueue, saveGradedCards]);
 
       // State for grade reveal modal
       const [revealingGrade, setRevealingGrade] = useState(null);
@@ -1386,7 +1399,8 @@ body{
                     setName: setConfig.name,
                     isHolo: false,
                     available,
-                    image: buildImageUrl(gameId, setId, card)
+                    image: buildImageUrl(gameId, setId, card),
+                    marketValue: marketValues[card.id] || 1
                   });
                 }
               }
@@ -1396,6 +1410,7 @@ body{
                 const queueCount = gradingQueue.filter(q => q.cardId === card.id && q.isHolo).length;
                 const available = entry.holo - queueCount;
                 if (available > 0) {
+                  const holoMult = holoMultipliers[card.id] || 1.5;
                   cards.push({
                     ...card,
                     gameId,
@@ -1404,7 +1419,8 @@ body{
                     setName: setConfig.name,
                     isHolo: true,
                     available,
-                    image: buildImageUrl(gameId, setId, card)
+                    image: buildImageUrl(gameId, setId, card),
+                    marketValue: (marketValues[card.id] || 1) * holoMult
                   });
                 }
               }
@@ -1412,8 +1428,35 @@ body{
           });
         });
         
-        return cards;
-      }, [gradingQueue, gradingGameFilter, gradingSetFilter, collection, gamesIndex, gameConfigs, setConfigs]);
+        // Apply rarity filter
+        let filtered = cards;
+        if (gradingRarityFilter !== 'all') {
+          filtered = filtered.filter(c => c.rarity === gradingRarityFilter);
+        }
+        
+        // Apply holo filter
+        if (gradingHoloFilter === 'holo') {
+          filtered = filtered.filter(c => c.isHolo);
+        } else if (gradingHoloFilter === 'normal') {
+          filtered = filtered.filter(c => !c.isHolo);
+        }
+        
+        // Sort
+        const RARITY_ORDER = { SP: 5, UR: 4, SR: 3, R: 2, UC: 1, C: 0 };
+        filtered.sort((a, b) => {
+          let cmp = 0;
+          if (gradingSortKey === 'value') {
+            cmp = a.marketValue - b.marketValue;
+          } else if (gradingSortKey === 'name') {
+            cmp = a.name.localeCompare(b.name);
+          } else if (gradingSortKey === 'rarity') {
+            cmp = (RARITY_ORDER[a.rarity] || 0) - (RARITY_ORDER[b.rarity] || 0);
+          }
+          return gradingSortDir === 'desc' ? -cmp : cmp;
+        });
+        
+        return filtered;
+      }, [gradingQueue, gradingGameFilter, gradingSetFilter, gradingRarityFilter, gradingHoloFilter, gradingSortKey, gradingSortDir, collection, gamesIndex, gameConfigs, setConfigs, marketValues, holoMultipliers]);
 
       // Get packs for current game/set only
       const currentGameSetPacks = useMemo(() => {
@@ -6759,6 +6802,78 @@ return (
                           ))}
                         </select>
                       )}
+                      <select
+                        value={gradingRarityFilter}
+                        onChange={(e) => setGradingRarityFilter(e.target.value)}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: 10,
+                          border: '1px solid rgba(168,85,247,0.4)',
+                          background: 'rgba(17,24,39,0.85)',
+                          color: 'white'
+                        }}
+                      >
+                        <option value="all">All Rarities</option>
+                        <option value="C">Common</option>
+                        <option value="UC">Uncommon</option>
+                        <option value="R">Rare</option>
+                        <option value="SR">Super Rare</option>
+                        <option value="UR">Ultra Rare</option>
+                        <option value="SP">Special</option>
+                      </select>
+                      <select
+                        value={gradingHoloFilter}
+                        onChange={(e) => setGradingHoloFilter(e.target.value)}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: 10,
+                          border: '1px solid rgba(168,85,247,0.4)',
+                          background: 'rgba(17,24,39,0.85)',
+                          color: 'white'
+                        }}
+                      >
+                        <option value="all">All Types</option>
+                        <option value="holo">Holo Only</option>
+                        <option value="normal">Normal Only</option>
+                      </select>
+                    </div>
+                    
+                    {/* Sorting */}
+                    <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+                      <span style={{ color: '#9ca3af', fontSize: 13, alignSelf: 'center' }}>Sort:</span>
+                      <select
+                        value={gradingSortKey}
+                        onChange={(e) => setGradingSortKey(e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: 8,
+                          border: '1px solid rgba(168,85,247,0.4)',
+                          background: 'rgba(17,24,39,0.85)',
+                          color: 'white',
+                          fontSize: 13
+                        }}
+                      >
+                        <option value="value">Value</option>
+                        <option value="name">Name</option>
+                        <option value="rarity">Rarity</option>
+                      </select>
+                      <button
+                        onClick={() => setGradingSortDir(prev => prev === 'desc' ? 'asc' : 'desc')}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: 8,
+                          border: '1px solid rgba(168,85,247,0.4)',
+                          background: 'rgba(17,24,39,0.85)',
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontSize: 13
+                        }}
+                      >
+                        {gradingSortDir === 'desc' ? '↓ High→Low' : '↑ Low→High'}
+                      </button>
+                      <span style={{ color: '#6b7280', fontSize: 12, alignSelf: 'center' }}>
+                        {getGradableCards().length} cards
+                      </span>
                     </div>
 
                     {/* Card Grid */}
@@ -6778,7 +6893,7 @@ return (
                               position: 'relative'
                             }}
                           >
-                            <div className={card.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative' }}>
+                            <div className={card.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative', lineHeight: 0 }}>
                               <img
                                 src={card.image}
                                 alt={card.name}
@@ -7426,7 +7541,8 @@ return (
                         overflow: 'hidden',
                         border: `4px solid ${colors.border}`,
                         boxShadow: `0 0 30px ${gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg}40`,
-                        flexShrink: 0
+                        flexShrink: 0,
+                        alignSelf: 'flex-start'
                       }}>
                         {/* Grade Banner */}
                         <div style={{
@@ -7441,7 +7557,7 @@ return (
                           {gradeLabel}
                         </div>
                         
-                        <div className={graded.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative' }}>
+                        <div className={graded.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative', lineHeight: 0 }}>
                           <img
                             src={buildImageUrl(graded.gameId, graded.setId, cardData)}
                             alt={cardData?.name}
@@ -7500,7 +7616,7 @@ return (
                           </div>
                         </div>
                         
-                        {/* Price History Chart */}
+                        {/* Price History Chart - Line/Dot style */}
                         {history.length > 1 && (
                           <div style={{ 
                             padding: 16, 
@@ -7509,33 +7625,52 @@ return (
                             marginBottom: 16
                           }}>
                             <div style={{ color: '#9ca3af', fontSize: 11, marginBottom: 8, textTransform: 'uppercase' }}>
-                              Base Price History (30 days)
+                              Base Price History ({Math.min(history.length, 30)} days)
                             </div>
-                            <div style={{ height: 80, display: 'flex', alignItems: 'flex-end', gap: 2 }}>
-                              {history.slice(-30).map((h, i) => {
-                                const min = Math.min(...history.slice(-30).map(x => x.value));
-                                const max = Math.max(...history.slice(-30).map(x => x.value));
-                                const range = max - min || 1;
-                                const height = ((h.value - min) / range) * 60 + 20;
-                                const isLast = i === history.slice(-30).length - 1;
-                                return (
-                                  <div
-                                    key={i}
-                                    style={{
-                                      flex: 1,
-                                      height: `${height}%`,
-                                      background: isLast ? '#fbbf24' : 'rgba(147,51,234,0.6)',
-                                      borderRadius: 2,
-                                      minWidth: 4
-                                    }}
-                                    title={`Day ${h.day}: ${h.value.toFixed(2)} R`}
-                                  />
-                                );
-                              })}
+                            <div style={{ background: '#1f2937', borderRadius: 8, padding: 12, height: 100, position: 'relative' }}>
+                              <svg width="100%" height="100%" viewBox="0 0 300 80" preserveAspectRatio="none">
+                                {(() => {
+                                  const chartHistory = history.slice(-30);
+                                  const values = chartHistory.map(h => h.value);
+                                  const min = Math.min(...values) * 0.95;
+                                  const max = Math.max(...values) * 1.05;
+                                  const range = max - min || 1;
+                                  
+                                  const points = chartHistory.map((h, i) => {
+                                    const x = chartHistory.length === 1 ? 150 : (i / (chartHistory.length - 1)) * 300;
+                                    const y = 80 - ((h.value - min) / range) * 80;
+                                    return `${x},${y}`;
+                                  }).join(' ');
+                                  
+                                  return (
+                                    <>
+                                      <polyline
+                                        points={points}
+                                        fill="none"
+                                        stroke="#10b981"
+                                        strokeWidth="2"
+                                      />
+                                      {chartHistory.map((h, i) => {
+                                        const x = chartHistory.length === 1 ? 150 : (i / (chartHistory.length - 1)) * 300;
+                                        const y = 80 - ((h.value - min) / range) * 80;
+                                        return (
+                                          <circle
+                                            key={i}
+                                            cx={x}
+                                            cy={y}
+                                            r="3"
+                                            fill="#10b981"
+                                          />
+                                        );
+                                      })}
+                                    </>
+                                  );
+                                })()}
+                              </svg>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: '#9ca3af' }}>
-                              <span>{Math.min(...history.slice(-30).map(x => x.value)).toFixed(2)} R</span>
-                              <span>{Math.max(...history.slice(-30).map(x => x.value)).toFixed(2)} R</span>
+                              <span>{history[0]?.value.toFixed(2)} R</span>
+                              <span>{history[history.length - 1]?.value.toFixed(2)} R</span>
                             </div>
                           </div>
                         )}
