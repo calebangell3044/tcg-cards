@@ -1310,14 +1310,30 @@ body{
       }, [rations, collection, gradingQueue, gameDay, saveCollection, saveRations, saveGradingQueue]);
 
       // Receive a completed grading (called by user clicking receive button)
+      // Note: We read gameDay from localStorage to avoid stale closure issues
       const receiveGradedCard = useCallback((queueItemId) => {
-        console.log('=== receiveGradedCard called ===');
-        console.log('Looking for queueItemId:', queueItemId);
-        console.log('Current gradingQueue in closure:', gradingQueue);
-        console.log('gradingQueue.length:', gradingQueue.length);
+        // Read fresh gameDay from localStorage to avoid stale closure
+        let currentGameDay = gameDay;
+        try {
+          const stored = localStorage.getItem('tcg-game-day');
+          if (stored) currentGameDay = parseInt(stored, 10) || gameDay;
+        } catch (e) {}
         
-        // Find the item in current queue state
-        const item = gradingQueue.find(q => q.id === queueItemId);
+        console.log('=== receiveGradedCard called ===');
+        console.log('Fresh gameDay from localStorage:', currentGameDay);
+        console.log('Closure gameDay:', gameDay);
+        
+        // Find the item in current queue state - also read fresh from localStorage
+        let currentQueue = gradingQueue;
+        try {
+          const storedQueue = localStorage.getItem('tcg-grading-queue');
+          if (storedQueue) currentQueue = JSON.parse(storedQueue) || gradingQueue;
+        } catch (e) {}
+        
+        console.log('Looking for queueItemId:', queueItemId);
+        console.log('Queue length:', currentQueue.length);
+        
+        const item = currentQueue.find(q => q.id === queueItemId);
         console.log('Found item:', item);
         
         if (!item) {
@@ -1325,8 +1341,8 @@ body{
           return null;
         }
         
-        if (gameDay < item.completionDay) {
-          console.log('ERROR: gameDay < completionDay', gameDay, '<', item.completionDay);
+        if (currentGameDay < item.completionDay) {
+          console.log('ERROR: gameDay < completionDay', currentGameDay, '<', item.completionDay);
           return null;
         }
         
@@ -1341,19 +1357,25 @@ body{
           setId: item.setId,
           isHolo: item.isHolo,
           grade,
-          gradedDay: gameDay
+          gradedDay: currentGameDay
         };
         console.log('Created gradedCard:', gradedCard);
         
         // Remove from queue
-        const newQueue = gradingQueue.filter(q => q.id !== queueItemId);
+        const newQueue = currentQueue.filter(q => q.id !== queueItemId);
         console.log('New queue after filter:', newQueue);
         setGradingQueue(newQueue);
         saveGradingQueue(newQueue);
         
-        // Add to graded cards
-        const newGraded = [...gradedCards, gradedCard];
-        console.log('New graded cards:', newGraded);
+        // Add to graded cards - also read fresh
+        let currentGraded = gradedCards;
+        try {
+          const storedGraded = localStorage.getItem('tcg-graded-cards');
+          if (storedGraded) currentGraded = JSON.parse(storedGraded) || gradedCards;
+        } catch (e) {}
+        
+        const newGraded = [...currentGraded, gradedCard];
+        console.log('New graded cards count:', newGraded.length);
         setGradedCards(newGraded);
         saveGradedCards(newGraded);
         
