@@ -1311,12 +1311,28 @@ body{
 
       // Receive a completed grading (called by user clicking receive button)
       const receiveGradedCard = useCallback((queueItemId) => {
+        console.log('=== receiveGradedCard called ===');
+        console.log('Looking for queueItemId:', queueItemId);
+        console.log('Current gradingQueue in closure:', gradingQueue);
+        console.log('gradingQueue.length:', gradingQueue.length);
+        
         // Find the item in current queue state
         const item = gradingQueue.find(q => q.id === queueItemId);
-        if (!item || gameDay < item.completionDay) return null;
+        console.log('Found item:', item);
+        
+        if (!item) {
+          console.log('ERROR: Item not found in queue!');
+          return null;
+        }
+        
+        if (gameDay < item.completionDay) {
+          console.log('ERROR: gameDay < completionDay', gameDay, '<', item.completionDay);
+          return null;
+        }
         
         // Generate grade using prediction if available
         const grade = generateGrade(item.preGradePrediction);
+        console.log('Generated grade:', grade);
         
         const gradedCard = {
           id: `graded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -1327,14 +1343,17 @@ body{
           grade,
           gradedDay: gameDay
         };
+        console.log('Created gradedCard:', gradedCard);
         
         // Remove from queue
         const newQueue = gradingQueue.filter(q => q.id !== queueItemId);
+        console.log('New queue after filter:', newQueue);
         setGradingQueue(newQueue);
         saveGradingQueue(newQueue);
         
         // Add to graded cards
         const newGraded = [...gradedCards, gradedCard];
+        console.log('New graded cards:', newGraded);
         setGradedCards(newGraded);
         saveGradedCards(newGraded);
         
@@ -1347,6 +1366,7 @@ body{
           savePreGradePredictions(newPreds);
         }
         
+        console.log('Returning gradedCard:', gradedCard);
         return gradedCard;
       }, [gradingQueue, gradedCards, gameDay, generateGrade, saveGradingQueue, saveGradedCards, preGradePredictions, savePreGradePredictions]);
 
@@ -6997,10 +7017,23 @@ return (
                               <div style={{ textAlign: 'right' }}>
                                 {isReady ? (
                                   <button
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      console.log('=== RECEIVE BUTTON CLICKED ===');
+                                      console.log('item.id:', item.id);
+                                      console.log('gradingQueue length:', gradingQueue.length);
+                                      console.log('gradingQueue:', JSON.stringify(gradingQueue));
+                                      console.log('gameDay:', gameDay);
+                                      console.log('item.completionDay:', item.completionDay);
+                                      
                                       const result = receiveGradedCard(item.id);
+                                      console.log('receiveGradedCard result:', result);
+                                      
                                       if (result) {
+                                        console.log('Setting revealingGrade to:', result);
                                         setRevealingGrade(result);
+                                      } else {
+                                        console.log('Result was null/undefined, not showing reveal');
                                       }
                                     }}
                                     style={{
