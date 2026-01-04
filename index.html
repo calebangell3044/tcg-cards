@@ -298,7 +298,8 @@ html, body {
 
 
 /* ===== Mobile Navigation ===== */
-.hamburger-btn { display: none; }
+.hamburger-btn { display: inline-flex; align-items: center; justify-content: center; }
+.topbar-nav { display: none !important; }
 .menu-overlay {
   position: fixed;
   inset: 0;
@@ -319,8 +320,6 @@ html, body {
   backdrop-filter: blur(10px);
 }
 @media (max-width: 720px) {
-  .topbar-nav { display: none !important; }
-  .hamburger-btn { display: inline-flex !important; align-items: center; justify-content: center; }
   .topbar-title { font-size: 18px !important; }
   .topbar { padding: 10px 12px !important; }
 }
@@ -776,7 +775,25 @@ body{
       // Derived values from config
       const ALL_CARDS = currentSetConfig.cards;
       const RARITY_ORDER = currentGameConfig.rarityOrder;
-      const RARITY_COLORS = useMemo(() => buildRarityColors(currentGameConfig), [currentGameConfig]);
+      // Build RARITY_COLORS from ALL games (so SP colors work when viewing collection with TTA selected)
+      const RARITY_COLORS = useMemo(() => {
+        const colors = {};
+        Object.values(gameConfigs).forEach(gc => {
+          if (gc?.rarities) {
+            gc.rarities.forEach(r => {
+              if (!colors[r.id]) {
+                colors[r.id] = {
+                  bg: r.bgColor,
+                  border: r.borderColor,
+                  text: r.color,
+                  isRainbow: r.isRainbow || false
+                };
+              }
+            });
+          }
+        });
+        return colors;
+      }, [gameConfigs]);
       const CARDS_BY_RARITY = useMemo(() => buildCardsByRarity(currentSetConfig, RARITY_ORDER), [currentSetConfig, RARITY_ORDER]);
       
       const getImageUrl = useCallback((card) => {
@@ -5753,42 +5770,26 @@ if (!isLoaded) {
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <button onClick={() => setCollectionFilter('all')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === 'all' ? '#9333ea' : '#374151', color: 'white' }}>
-                        All
-                      </button>
-                      {(() => {
-                        // Get rarities based on selected game filter, or combine all if "all" selected
-                        let rarities = [];
-                        if (collectionGameFilter === 'all') {
-                          // Combine unique rarities from all enabled games
-                          const seen = new Set();
-                          gamesIndex.games.filter(g => g.enabled).forEach(game => {
-                            const gc = gameConfigs[game.id];
-                            if (gc?.rarityOrder) {
-                              gc.rarityOrder.forEach(r => {
-                                if (!seen.has(r)) {
-                                  seen.add(r);
-                                  rarities.push({ id: r, name: gc.rarities?.find(x => x.id === r)?.name || r });
-                                }
-                              });
-                            }
-                          });
-                        } else {
-                          // Use rarities from selected game
-                          const gc = gameConfigs[collectionGameFilter];
-                          if (gc?.rarityOrder) {
-                            rarities = gc.rarityOrder.map(r => ({
+                      {collectionGameFilter !== 'all' && (
+                        <>
+                          <button onClick={() => setCollectionFilter('all')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === 'all' ? '#9333ea' : '#374151', color: 'white' }}>
+                            All
+                          </button>
+                          {(() => {
+                            // Use rarities from selected game
+                            const gc = gameConfigs[collectionGameFilter];
+                            const rarities = gc?.rarityOrder?.map(r => ({
                               id: r,
                               name: gc.rarities?.find(x => x.id === r)?.name || r
-                            }));
-                          }
-                        }
-                        return rarities.map(rarity => (
-                          <button key={rarity.id} onClick={() => setCollectionFilter(rarity.id)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === rarity.id ? (RARITY_COLORS[rarity.id]?.bg || '#374151') : '#374151', color: 'white' }}>
-                            {rarity.name}
-                          </button>
-                        ));
-                      })()}
+                            })) || [];
+                            return rarities.map(rarity => (
+                              <button key={rarity.id} onClick={() => setCollectionFilter(rarity.id)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: collectionFilter === rarity.id ? (RARITY_COLORS[rarity.id]?.bg || '#374151') : '#374151', color: 'white' }}>
+                                {rarity.name}
+                              </button>
+                            ));
+                          })()}
+                        </>
+                      )}
                     </div>
 
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#e5e7eb', fontSize: 13, userSelect: 'none' }}>
