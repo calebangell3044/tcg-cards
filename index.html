@@ -1113,17 +1113,42 @@ body{
 
       // Grade colors: { bg, text }
       const GRADE_COLORS = {
-        'IM10': { bg: '#000000', text: '#fbbf24' },  // Black with gold
-        10: { bg: '#fbbf24', text: '#000000' },      // Gold with black
-        9: { bg: '#ffffff', text: '#b8860b' },       // White with gold
-        8: { bg: '#6b7280', text: '#fbbf24' },       // Gray with gold
-        7: { bg: '#6b7280', text: '#000000' },       // Gray with black
-        6: { bg: '#6b7280', text: '#000000' },
-        5: { bg: '#6b7280', text: '#000000' },
-        4: { bg: '#6b7280', text: '#000000' },
-        3: { bg: '#6b7280', text: '#000000' },
-        2: { bg: '#3b82f6', text: '#ffffff' },       // Blue with white
-        1: { bg: '#ffffff', text: '#000000' }        // White with black
+        'IM10': { bg: '#000000', text: '#fbbf24', border: '#fbbf24' },  // Black with gold, gold border
+        10: { bg: '#fbbf24', text: '#000000', border: '#fbbf24' },      // Gold with black, gold border
+        9: { bg: '#ffffff', text: '#b8860b', border: '#c0c0c0' },       // White with gold, silver border
+        8: { bg: '#6b7280', text: '#fbbf24', border: '#9ca3af' },       // Gray with gold
+        7: { bg: '#6b7280', text: '#000000', border: '#6b7280' },       // Gray with black
+        6: { bg: '#6b7280', text: '#000000', border: '#6b7280' },
+        5: { bg: '#6b7280', text: '#000000', border: '#6b7280' },
+        4: { bg: '#6b7280', text: '#000000', border: '#6b7280' },
+        3: { bg: '#6b7280', text: '#000000', border: '#6b7280' },
+        2: { bg: '#3b82f6', text: '#ffffff', border: '#3b82f6' },       // Blue with white
+        1: { bg: '#ffffff', text: '#000000', border: '#9ca3af' }        // White with black
+      };
+
+      const GRADE_LABELS = {
+        'IM10': 'IMMACULATE',
+        10: 'GEM MINT',
+        9: 'MINT+',
+        8: 'MINT',
+        7: 'NM/MINT',
+        6: 'NEAR MINT',
+        5: 'EXCELLENT',
+        4: 'VERY GOOD',
+        3: 'GOOD',
+        2: 'POOR',
+        1: 'BAD'
+      };
+
+      // Generate a consistent fake serial number from card data
+      const generateSlabSerial = (gradedCardId) => {
+        let hash = 0;
+        for (let i = 0; i < gradedCardId.length; i++) {
+          const char = gradedCardId.charCodeAt(i);
+          hash = ((hash << 5) - hash) + char;
+          hash = hash & hash;
+        }
+        return Math.abs(hash).toString().padStart(8, '0').slice(0, 8);
       };
 
       // Grade distribution weights (higher = more likely)
@@ -7166,9 +7191,11 @@ return (
                           }).map(graded => {
                             const setConfig = setConfigs[graded.gameId]?.[graded.setId];
                             const cardData = setConfig?.cards?.find(c => c.id === graded.cardId);
-                            const colors = RARITY_COLORS[cardData?.rarity] || { border: '#6b7280' };
-                            const gradeColors = GRADE_COLORS[graded.grade] || { bg: '#6b7280', text: '#000' };
-                            const gradeLabel = graded.grade === 'IM10' ? 'TMSG IM10' : `TMSG ${graded.grade}`;
+                            const gameConfig = gameConfigs[graded.gameId];
+                            const gradeColors = GRADE_COLORS[graded.grade] || { bg: '#6b7280', text: '#000', border: '#6b7280' };
+                            const gradeLabel = GRADE_LABELS[graded.grade] || '';
+                            const gradeNum = graded.grade === 'IM10' ? '10' : graded.grade.toString();
+                            const serialNum = generateSlabSerial(graded.id);
                             const value = graded.isHolo 
                               ? getGradedHoloValue(graded.cardId, graded.grade)
                               : getGradedValue(graded.cardId, graded.grade);
@@ -7180,39 +7207,104 @@ return (
                                 style={{
                                   borderRadius: 12,
                                   overflow: 'hidden',
-                                  background: '#1f2937',
-                                  border: `3px solid ${colors.border}`,
+                                  background: '#1a1a2e',
+                                  border: `4px solid ${gradeColors.border || gradeColors.bg}`,
                                   position: 'relative',
-                                  cursor: 'pointer'
+                                  cursor: 'pointer',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)'
                                 }}
                               >
-                                {/* Grade Banner */}
+                                {/* Slab Header */}
                                 <div style={{
-                                  background: gradeColors.bg,
-                                  color: gradeColors.text,
-                                  padding: '6px 8px',
-                                  fontWeight: 800,
-                                  fontSize: 12,
-                                textAlign: 'center',
-                                letterSpacing: '0.5px'
-                              }}>
-                                {gradeLabel}
-                              </div>
-                              
-                              <div className={graded.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative' }}>
-                                <img
-                                  src={buildImageUrl(graded.gameId, graded.setId, cardData)}
-                                  alt={cardData?.name}
-                                  style={{ width: '100%', aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block' }}
-                                />
-                              </div>
-                              
-                              <div style={{ padding: 8 }}>
-                                <div style={{ color: 'white', fontWeight: 700, fontSize: 12, marginBottom: 4 }}>
-                                  {cardData?.name}
+                                  background: 'linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%)',
+                                  padding: '8px 10px',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'flex-start',
+                                  minHeight: 60,
+                                  borderBottom: `2px solid ${gradeColors.border || gradeColors.bg}`
+                                }}>
+                                  {/* Left side - Card info */}
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ 
+                                      color: 'white', 
+                                      fontWeight: 700, 
+                                      fontSize: 11, 
+                                      lineHeight: 1.2,
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      {cardData?.name}
+                                    </div>
+                                    <div style={{ color: '#9ca3af', fontSize: 9, marginTop: 2 }}>
+                                      {gameConfig?.name}
+                                    </div>
+                                    <div style={{ color: '#9ca3af', fontSize: 9 }}>
+                                      {setConfig?.name}
+                                    </div>
+                                    <div style={{ color: '#6b7280', fontSize: 8, fontFamily: 'monospace', marginTop: 2 }}>
+                                      SN: {serialNum}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Right side - Grade */}
+                                  <div style={{ textAlign: 'right', marginLeft: 8 }}>
+                                    <div style={{ 
+                                      color: gradeColors.text === '#000000' ? '#9ca3af' : gradeColors.text, 
+                                      fontSize: 10, 
+                                      fontWeight: 700,
+                                      letterSpacing: '1px'
+                                    }}>
+                                      TMSG
+                                    </div>
+                                    <div style={{ 
+                                      color: gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg,
+                                      fontSize: 26, 
+                                      fontWeight: 900,
+                                      lineHeight: 1,
+                                      textShadow: `0 0 10px ${gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg}40`,
+                                      WebkitTextStroke: gradeColors.bg === '#ffffff' ? '1px #000' : 'none'
+                                    }}>
+                                      {gradeNum}
+                                    </div>
+                                    <div style={{ 
+                                      color: gradeColors.bg === '#000000' ? '#fbbf24' : (gradeColors.text === '#000000' ? '#6b7280' : gradeColors.text),
+                                      fontSize: 7, 
+                                      fontWeight: 700,
+                                      letterSpacing: '0.5px',
+                                      textTransform: 'uppercase'
+                                    }}>
+                                      {gradeLabel}
+                                    </div>
+                                  </div>
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <div style={{ color: '#fbbf24', fontSize: 12, fontWeight: 600 }}>
+                              
+                                {/* Card Image */}
+                                <div className={graded.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative', padding: 8, background: '#111' }}>
+                                  <img
+                                    src={buildImageUrl(graded.gameId, graded.setId, cardData)}
+                                    alt={cardData?.name}
+                                    style={{ 
+                                      width: '100%', 
+                                      aspectRatio: '2.5/3.5', 
+                                      objectFit: 'cover', 
+                                      display: 'block',
+                                      borderRadius: 4
+                                    }}
+                                  />
+                                </div>
+                              
+                                {/* Footer with value */}
+                                <div style={{ 
+                                  padding: '6px 10px', 
+                                  background: 'linear-gradient(180deg, #1a1a2e 0%, #2a2a3e 100%)',
+                                  display: 'flex', 
+                                  justifyContent: 'space-between', 
+                                  alignItems: 'center',
+                                  borderTop: `1px solid ${gradeColors.border || gradeColors.bg}30`
+                                }}>
+                                  <div style={{ color: '#fbbf24', fontSize: 11, fontWeight: 700 }}>
                                     {value.toFixed(2)} R
                                   </div>
                                   <button
@@ -7223,12 +7315,12 @@ return (
                                       }
                                     }}
                                     style={{
-                                      padding: '4px 8px',
-                                      borderRadius: 6,
+                                      padding: '3px 6px',
+                                      borderRadius: 4,
                                       border: 'none',
-                                      background: 'rgba(239,68,68,0.3)',
+                                      background: 'rgba(239,68,68,0.25)',
                                       color: '#fca5a5',
-                                      fontSize: 10,
+                                      fontSize: 9,
                                       cursor: 'pointer'
                                     }}
                                   >
@@ -7236,9 +7328,8 @@ return (
                                   </button>
                                 </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
                       </div>
                       </>
                     )}
@@ -7532,13 +7623,14 @@ return (
               const setConfig = setConfigs[revealingGrade.gameId]?.[revealingGrade.setId];
               const cardData = setConfig?.cards?.find(c => c.id === revealingGrade.cardId);
               const gameConfig = gameConfigs[revealingGrade.gameId];
-              const gradeColors = GRADE_COLORS[revealingGrade.grade] || { bg: '#6b7280', text: '#000' };
-              const gradeLabel = revealingGrade.grade === 'IM10' ? 'TMSG IM10' : `TMSG ${revealingGrade.grade}`;
+              const gradeColors = GRADE_COLORS[revealingGrade.grade] || { bg: '#6b7280', text: '#000', border: '#6b7280' };
+              const gradeLabel = GRADE_LABELS[revealingGrade.grade] || '';
+              const gradeNum = revealingGrade.grade === 'IM10' ? '10' : revealingGrade.grade.toString();
+              const serialNum = generateSlabSerial(revealingGrade.id);
               const multiplier = GRADE_MULTIPLIERS[revealingGrade.grade] || 1;
               const value = revealingGrade.isHolo 
                 ? getGradedHoloValue(revealingGrade.cardId, revealingGrade.grade)
                 : getGradedValue(revealingGrade.cardId, revealingGrade.grade);
-              const colors = RARITY_COLORS[cardData?.rarity] || { border: '#6b7280' };
               
               return (
                 <div
@@ -7560,54 +7652,98 @@ return (
                       background: 'rgba(17,24,39,0.98)',
                       borderRadius: 20,
                       padding: 32,
-                      maxWidth: 380,
+                      maxWidth: 340,
                       width: '100%',
                       border: '1px solid rgba(255,255,255,0.15)',
                       textAlign: 'center'
                     }}
                   >
-                    <h3 style={{ margin: 0, marginBottom: 8, fontSize: 14, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>
+                    <h3 style={{ margin: 0, marginBottom: 16, fontSize: 14, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>
                       Grading Complete
                     </h3>
                     
-                    {/* Card with Grade Banner */}
+                    {/* Slab Card */}
                     <div style={{ 
                       display: 'inline-block',
-                      borderRadius: 14,
+                      borderRadius: 16,
                       overflow: 'hidden',
-                      border: `4px solid ${colors.border}`,
-                      boxShadow: `0 0 30px ${gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg}`,
+                      background: '#1a1a2e',
+                      border: `5px solid ${gradeColors.border || gradeColors.bg}`,
+                      boxShadow: `0 0 50px ${gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg}70`,
                       marginBottom: 20
                     }}>
-                      {/* Grade Banner */}
+                      {/* Slab Header */}
                       <div style={{
-                        background: gradeColors.bg,
-                        color: gradeColors.text,
-                        padding: '10px 16px',
-                        fontWeight: 900,
-                        fontSize: 18,
-                        textAlign: 'center',
-                        letterSpacing: '1px'
+                        background: 'linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%)',
+                        padding: '12px 14px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        minHeight: 80,
+                        borderBottom: `3px solid ${gradeColors.border || gradeColors.bg}`,
+                        textAlign: 'left'
                       }}>
-                        {gradeLabel}
+                        {/* Left side - Card info */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ 
+                            color: 'white', 
+                            fontWeight: 700, 
+                            fontSize: 12, 
+                            lineHeight: 1.2,
+                            marginBottom: 4
+                          }}>
+                            {cardData?.name}
+                          </div>
+                          <div style={{ color: '#9ca3af', fontSize: 10 }}>
+                            {gameConfig?.name}
+                          </div>
+                          <div style={{ color: '#9ca3af', fontSize: 10 }}>
+                            {setConfig?.name}
+                          </div>
+                          <div style={{ color: '#6b7280', fontSize: 9, fontFamily: 'monospace', marginTop: 4 }}>
+                            SN: {serialNum}
+                          </div>
+                        </div>
+                        
+                        {/* Right side - Grade */}
+                        <div style={{ textAlign: 'right', marginLeft: 10 }}>
+                          <div style={{ 
+                            color: gradeColors.text === '#000000' ? '#9ca3af' : gradeColors.text, 
+                            fontSize: 11, 
+                            fontWeight: 700,
+                            letterSpacing: '1px'
+                          }}>
+                            TMSG
+                          </div>
+                          <div style={{ 
+                            color: gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg,
+                            fontSize: 36, 
+                            fontWeight: 900,
+                            lineHeight: 1,
+                            textShadow: `0 0 15px ${gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg}60`,
+                            WebkitTextStroke: gradeColors.bg === '#ffffff' ? '1px #000' : 'none'
+                          }}>
+                            {gradeNum}
+                          </div>
+                          <div style={{ 
+                            color: gradeColors.bg === '#000000' ? '#fbbf24' : (gradeColors.text === '#000000' ? '#6b7280' : gradeColors.text),
+                            fontSize: 8, 
+                            fontWeight: 700,
+                            letterSpacing: '0.5px',
+                            textTransform: 'uppercase'
+                          }}>
+                            {gradeLabel}
+                          </div>
+                        </div>
                       </div>
                       
-                      <div className={revealingGrade.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative' }}>
+                      {/* Card Image */}
+                      <div className={revealingGrade.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative', padding: 10, background: '#111', lineHeight: 0 }}>
                         <img
                           src={buildImageUrl(revealingGrade.gameId, revealingGrade.setId, cardData)}
                           alt={cardData?.name}
-                          style={{ width: 200, aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block' }}
+                          style={{ width: 200, aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block', borderRadius: 6 }}
                         />
-                      </div>
-                    </div>
-                    
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontWeight: 800, color: 'white', fontSize: 20, marginBottom: 4 }}>
-                        {cardData?.name}
-                        {revealingGrade.isHolo && <span style={{ color: '#f0abfc' }}> (Holo)</span>}
-                      </div>
-                      <div style={{ color: '#9ca3af', fontSize: 13 }}>
-                        {gameConfig?.name} • {setConfig?.name}
                       </div>
                     </div>
                     
@@ -7656,13 +7792,14 @@ return (
               const setConfig = setConfigs[graded.gameId]?.[graded.setId];
               const cardData = setConfig?.cards?.find(c => c.id === graded.cardId);
               const gameConfig = gameConfigs[graded.gameId];
-              const gradeColors = GRADE_COLORS[graded.grade] || { bg: '#6b7280', text: '#000' };
-              const gradeLabel = graded.grade === 'IM10' ? 'TMSG IM10' : `TMSG ${graded.grade}`;
+              const gradeColors = GRADE_COLORS[graded.grade] || { bg: '#6b7280', text: '#000', border: '#6b7280' };
+              const gradeLabel = GRADE_LABELS[graded.grade] || '';
+              const gradeNum = graded.grade === 'IM10' ? '10' : graded.grade.toString();
+              const serialNum = generateSlabSerial(graded.id);
               const multiplier = GRADE_MULTIPLIERS[graded.grade] || 1;
               const baseValue = marketValues[graded.cardId] || 1;
               const holoMult = graded.isHolo ? (holoMultipliers[graded.cardId] || 1.5) : 1;
               const value = baseValue * holoMult * multiplier;
-              const colors = RARITY_COLORS[cardData?.rarity] || { border: '#6b7280' };
               const history = priceHistory[graded.cardId] || [];
               
               return (
@@ -7685,7 +7822,7 @@ return (
                       background: 'rgba(17,24,39,0.98)',
                       borderRadius: 20,
                       padding: 24,
-                      maxWidth: 600,
+                      maxWidth: 650,
                       width: '100%',
                       border: '1px solid rgba(255,255,255,0.15)',
                       maxHeight: '90vh',
@@ -7693,33 +7830,87 @@ return (
                     }}
                   >
                     <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-                      {/* Card with Grade Banner */}
+                      {/* Slab Card */}
                       <div style={{ 
-                        borderRadius: 14,
+                        borderRadius: 16,
                         overflow: 'hidden',
-                        border: `4px solid ${colors.border}`,
-                        boxShadow: `0 0 30px ${gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg}40`,
+                        background: '#1a1a2e',
+                        border: `5px solid ${gradeColors.border || gradeColors.bg}`,
+                        boxShadow: `0 0 40px ${gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg}50`,
                         flexShrink: 0,
-                        alignSelf: 'flex-start'
+                        alignSelf: 'flex-start',
+                        width: 220
                       }}>
-                        {/* Grade Banner */}
+                        {/* Slab Header */}
                         <div style={{
-                          background: gradeColors.bg,
-                          color: gradeColors.text,
-                          padding: '10px 16px',
-                          fontWeight: 900,
-                          fontSize: 16,
-                          textAlign: 'center',
-                          letterSpacing: '1px'
+                          background: 'linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%)',
+                          padding: '12px 14px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          minHeight: 80,
+                          borderBottom: `3px solid ${gradeColors.border || gradeColors.bg}`
                         }}>
-                          {gradeLabel}
+                          {/* Left side - Card info */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ 
+                              color: 'white', 
+                              fontWeight: 700, 
+                              fontSize: 12, 
+                              lineHeight: 1.2,
+                              marginBottom: 4
+                            }}>
+                              {cardData?.name}
+                            </div>
+                            <div style={{ color: '#9ca3af', fontSize: 10 }}>
+                              {gameConfig?.name}
+                            </div>
+                            <div style={{ color: '#9ca3af', fontSize: 10 }}>
+                              {setConfig?.name}
+                            </div>
+                            <div style={{ color: '#6b7280', fontSize: 9, fontFamily: 'monospace', marginTop: 4 }}>
+                              SN: {serialNum}
+                            </div>
+                          </div>
+                          
+                          {/* Right side - Grade */}
+                          <div style={{ textAlign: 'right', marginLeft: 10 }}>
+                            <div style={{ 
+                              color: gradeColors.text === '#000000' ? '#9ca3af' : gradeColors.text, 
+                              fontSize: 11, 
+                              fontWeight: 700,
+                              letterSpacing: '1px'
+                            }}>
+                              TMSG
+                            </div>
+                            <div style={{ 
+                              color: gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg,
+                              fontSize: 36, 
+                              fontWeight: 900,
+                              lineHeight: 1,
+                              textShadow: `0 0 15px ${gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg}60`,
+                              WebkitTextStroke: gradeColors.bg === '#ffffff' ? '1px #000' : 'none'
+                            }}>
+                              {gradeNum}
+                            </div>
+                            <div style={{ 
+                              color: gradeColors.bg === '#000000' ? '#fbbf24' : (gradeColors.text === '#000000' ? '#6b7280' : gradeColors.text),
+                              fontSize: 8, 
+                              fontWeight: 700,
+                              letterSpacing: '0.5px',
+                              textTransform: 'uppercase'
+                            }}>
+                              {gradeLabel}
+                            </div>
+                          </div>
                         </div>
                         
-                        <div className={graded.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative', lineHeight: 0 }}>
+                        {/* Card Image */}
+                        <div className={graded.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative', padding: 10, background: '#111', lineHeight: 0 }}>
                           <img
                             src={buildImageUrl(graded.gameId, graded.setId, cardData)}
                             alt={cardData?.name}
-                            style={{ width: 200, aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block' }}
+                            style={{ width: '100%', aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block', borderRadius: 6 }}
                           />
                         </div>
                       </div>
