@@ -3995,7 +3995,7 @@ if (!isLoaded) {
                   <div className="menu-panel" role="menu" aria-label="Navigation menu">
                     <button
                       className="menu-item"
-                      onClick={() => navigate('home')}
+                      onClick={() => { navigate('home'); setMenuOpen(false); }}
                       style={{
                         width: '100%',
                         padding: '12px 14px',
@@ -4006,6 +4006,7 @@ if (!isLoaded) {
                         cursor: 'pointer',
                         textAlign: 'left',
                         fontWeight: 700,
+                        fontSize: 14,
                         marginBottom: 8
                       }}
                     >
@@ -4013,7 +4014,7 @@ if (!isLoaded) {
                     </button>
                     <button
                       className="menu-item"
-                      onClick={() => navigate('shop')}
+                      onClick={() => { navigate('shop'); setMenuOpen(false); }}
                       style={{
                         width: '100%',
                         padding: '12px 14px',
@@ -4024,6 +4025,7 @@ if (!isLoaded) {
                         cursor: 'pointer',
                         textAlign: 'left',
                         fontWeight: 700,
+                        fontSize: 14,
                         marginBottom: 8
                       }}
                     >
@@ -4031,24 +4033,26 @@ if (!isLoaded) {
                     </button>
                     <button
                       className="menu-item"
-                      onClick={() => navigate('market')}
+                      onClick={() => { navigate('market'); setMenuOpen(false); }}
                       style={{
                         width: '100%',
                         padding: '12px 14px',
                         borderRadius: 12,
                         border: '1px solid rgba(255,255,255,0.10)',
-                        background: view === 'market' ? 'rgba(147,51,234,0.35)' : 'rgba(0,0,0,0.2)',
+                        background: view === 'market' ? 'rgba(147,51,234,0.35)' : 'rgba(17,24,39,0.85)',
                         color: 'white',
-                        fontSize: 15,
+                        cursor: 'pointer',
                         textAlign: 'left',
-                        cursor: 'pointer'
+                        fontWeight: 700,
+                        fontSize: 14,
+                        marginBottom: 8
                       }}
                     >
                       Market
                     </button>
                     <button
                       className="menu-item"
-                      onClick={() => navigate('collection')}
+                      onClick={() => { navigate('collection'); setMenuOpen(false); }}
                       style={{
                         width: '100%',
                         padding: '12px 14px',
@@ -4059,17 +4063,53 @@ if (!isLoaded) {
                         cursor: 'pointer',
                         textAlign: 'left',
                         fontWeight: 700,
+                        fontSize: 14,
                         marginBottom: 8
                       }}
                     >
                       Collection
-                      <span style={{ display: 'block', marginTop: 4, color: 'rgba(255,255,255,0.75)', fontWeight: 600, fontSize: 12 }}>
-                        N {stats.uniqueNormalOwned}/{stats.totalCards} • H {stats.uniqueHoloOwned}/{stats.totalCards}
-                      </span>
                     </button>
                     <button
                       className="menu-item"
-                      onClick={() => navigate('settings')}
+                      onClick={() => { navigate('community'); setMenuOpen(false); }}
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        borderRadius: 12,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: view === 'community' ? 'rgba(147,51,234,0.35)' : 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontWeight: 700,
+                        fontSize: 14,
+                        marginBottom: 8
+                      }}
+                    >
+                      Community
+                    </button>
+                    <button
+                      className="menu-item"
+                      onClick={() => { navigate('grading'); setMenuOpen(false); }}
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        borderRadius: 12,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: view === 'grading' ? 'rgba(147,51,234,0.35)' : 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontWeight: 700,
+                        fontSize: 14,
+                        marginBottom: 8
+                      }}
+                    >
+                      Grading
+                    </button>
+                    <button
+                      className="menu-item"
+                      onClick={() => { navigate('settings'); setMenuOpen(false); }}
                       style={{
                         width: '100%',
                         padding: '12px 14px',
@@ -4079,7 +4119,8 @@ if (!isLoaded) {
                         color: 'white',
                         cursor: 'pointer',
                         textAlign: 'left',
-                        fontWeight: 700
+                        fontWeight: 700,
+                        fontSize: 14
                       }}
                     >
                       Settings
@@ -6130,6 +6171,44 @@ return (
                       This clears all <code style={{ background: 'rgba(0,0,0,0.35)', padding: '2px 6px', borderRadius: 8 }}>tcg-*</code> keys from localStorage.
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {view === 'community' && (
+              <div style={{ maxWidth: 980, margin: '0 auto', textAlign: 'center', padding: '60px 20px' }}>
+                <h2 style={{ fontSize: 32, fontWeight: 800, marginBottom: 16 }}>🌐 Community</h2>
+                <p style={{ color: '#9ca3af', fontSize: 16, marginBottom: 24 }}>
+                  Coming soon! Connect with other collectors, trade cards, and share your pulls.
+                </p>
+                <div style={{ 
+                  padding: 32, 
+                  borderRadius: 16, 
+                  background: 'rgba(17,24,39,0.6)', 
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: '#6b7280'
+                }}>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>
+                  <div>This feature is under construction</div>
+                </div>
+              </div>
+            )}
+
+            {view === 'grading' && (
+              <div style={{ maxWidth: 980, margin: '0 auto', textAlign: 'center', padding: '60px 20px' }}>
+                <h2 style={{ fontSize: 32, fontWeight: 800, marginBottom: 16 }}>⭐ Grading</h2>
+                <p style={{ color: '#9ca3af', fontSize: 16, marginBottom: 24 }}>
+                  Coming soon! Submit your cards for professional grading and certification.
+                </p>
+                <div style={{ 
+                  padding: 32, 
+                  borderRadius: 16, 
+                  background: 'rgba(17,24,39,0.6)', 
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: '#6b7280'
+                }}>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>
+                  <div>This feature is under construction</div>
                 </div>
               </div>
             )}
