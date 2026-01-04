@@ -1060,6 +1060,20 @@ body{
         return [];
       });
 
+      // Pre-grade predictions storage: { "cardId-isHolo": prediction }
+      // This persists so you can't re-roll by closing the modal
+      const [preGradePredictions, setPreGradePredictions] = useState(() => {
+        try {
+          const raw = localStorage.getItem('tcg-pregrade-predictions');
+          if (raw) return JSON.parse(raw) || {};
+        } catch (e) {}
+        return {};
+      });
+
+      const savePreGradePredictions = useCallback((predictions) => {
+        try { localStorage.setItem('tcg-pregrade-predictions', JSON.stringify(predictions)); } catch (e) {}
+      }, []);
+
       // Grading tab state
       const [gradingTab, setGradingTab] = useState('submit'); // submit | queue | graded
       const [gradingGameFilter, setGradingGameFilter] = useState('all');
@@ -1068,6 +1082,8 @@ body{
       const [gradingHoloFilter, setGradingHoloFilter] = useState('all'); // all | holo | normal
       const [gradingSortKey, setGradingSortKey] = useState('value'); // value | name | rarity
       const [gradingSortDir, setGradingSortDir] = useState('desc');
+      const [gradedSortKey, setGradedSortKey] = useState('gradedDay'); // gradedDay | value | grade | name
+      const [gradedSortDir, setGradedSortDir] = useState('desc');
       const [selectedCardForGrading, setSelectedCardForGrading] = useState(null);
 
       // TMSG Grading constants
@@ -1295,42 +1311,44 @@ body{
 
       // Receive a completed grading (called by user clicking receive button)
       const receiveGradedCard = useCallback((queueItemId) => {
-        let resultCard = null;
+        // Find the item in current queue state
+        const item = gradingQueue.find(q => q.id === queueItemId);
+        if (!item || gameDay < item.completionDay) return null;
         
-        setGradingQueue(prevQueue => {
-          const item = prevQueue.find(q => q.id === queueItemId);
-          if (!item || gameDay < item.completionDay) return prevQueue;
-          
-          // Generate grade using prediction if available
-          const grade = generateGrade(item.preGradePrediction);
-          
-          const gradedCard = {
-            id: `graded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            cardId: item.cardId,
-            gameId: item.gameId,
-            setId: item.setId,
-            isHolo: item.isHolo,
-            grade,
-            gradedDay: gameDay
-          };
-          
-          resultCard = gradedCard;
-          
-          // Add to graded cards
-          setGradedCards(prevGraded => {
-            const newGraded = [...prevGraded, gradedCard];
-            saveGradedCards(newGraded);
-            return newGraded;
-          });
-          
-          // Remove from queue
-          const newQueue = prevQueue.filter(q => q.id !== queueItemId);
-          saveGradingQueue(newQueue);
-          return newQueue;
-        });
+        // Generate grade using prediction if available
+        const grade = generateGrade(item.preGradePrediction);
         
-        return resultCard;
-      }, [gameDay, generateGrade, saveGradingQueue, saveGradedCards]);
+        const gradedCard = {
+          id: `graded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          cardId: item.cardId,
+          gameId: item.gameId,
+          setId: item.setId,
+          isHolo: item.isHolo,
+          grade,
+          gradedDay: gameDay
+        };
+        
+        // Remove from queue
+        const newQueue = gradingQueue.filter(q => q.id !== queueItemId);
+        setGradingQueue(newQueue);
+        saveGradingQueue(newQueue);
+        
+        // Add to graded cards
+        const newGraded = [...gradedCards, gradedCard];
+        setGradedCards(newGraded);
+        saveGradedCards(newGraded);
+        
+        // Clear the pre-grade prediction for this card if it exists
+        const predKey = `${item.cardId}-${item.isHolo}`;
+        if (preGradePredictions[predKey]) {
+          const newPreds = { ...preGradePredictions };
+          delete newPreds[predKey];
+          setPreGradePredictions(newPreds);
+          savePreGradePredictions(newPreds);
+        }
+        
+        return gradedCard;
+      }, [gradingQueue, gradedCards, gameDay, generateGrade, saveGradingQueue, saveGradedCards, preGradePredictions, savePreGradePredictions]);
 
       // State for grade reveal modal
       const [revealingGrade, setRevealingGrade] = useState(null);
@@ -7029,37 +7047,97 @@ return (
                         No graded cards yet. Submit some cards for grading!
                       </div>
                     ) : (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
-                        {gradedCards.map(graded => {
-                          const setConfig = setConfigs[graded.gameId]?.[graded.setId];
-                          const cardData = setConfig?.cards?.find(c => c.id === graded.cardId);
-                          const colors = RARITY_COLORS[cardData?.rarity] || { border: '#6b7280' };
-                          const gradeColors = GRADE_COLORS[graded.grade] || { bg: '#6b7280', text: '#000' };
-                          const gradeLabel = graded.grade === 'IM10' ? 'TMSG IM10' : `TMSG ${graded.grade}`;
-                          const value = graded.isHolo 
-                            ? getGradedHoloValue(graded.cardId, graded.grade)
-                            : getGradedValue(graded.cardId, graded.grade);
-                          
-                          return (
-                            <div 
-                              key={graded.id} 
-                              onClick={() => setInspectingGradedCard(graded)}
-                              style={{
-                                borderRadius: 12,
-                                overflow: 'hidden',
-                                background: '#1f2937',
-                                border: `3px solid ${colors.border}`,
-                                position: 'relative',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              {/* Grade Banner */}
-                              <div style={{
-                                background: gradeColors.bg,
-                                color: gradeColors.text,
-                                padding: '6px 8px',
-                                fontWeight: 800,
-                                fontSize: 12,
+                      <>
+                        {/* Sorting Controls */}
+                        <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+                          <span style={{ color: '#9ca3af', fontSize: 13 }}>Sort:</span>
+                          <select
+                            value={gradedSortKey}
+                            onChange={(e) => setGradedSortKey(e.target.value)}
+                            style={{
+                              padding: '8px 12px',
+                              borderRadius: 8,
+                              border: '1px solid rgba(168,85,247,0.4)',
+                              background: 'rgba(17,24,39,0.85)',
+                              color: 'white',
+                              fontSize: 13
+                            }}
+                          >
+                            <option value="gradedDay">Date Graded</option>
+                            <option value="value">Value</option>
+                            <option value="grade">Grade</option>
+                            <option value="name">Name</option>
+                          </select>
+                          <button
+                            onClick={() => setGradedSortDir(prev => prev === 'desc' ? 'asc' : 'desc')}
+                            style={{
+                              padding: '8px 12px',
+                              borderRadius: 8,
+                              border: '1px solid rgba(168,85,247,0.4)',
+                              background: 'rgba(17,24,39,0.85)',
+                              color: 'white',
+                              cursor: 'pointer',
+                              fontSize: 13
+                            }}
+                          >
+                            {gradedSortDir === 'desc' ? '↓ High→Low' : '↑ Low→High'}
+                          </button>
+                          <span style={{ color: '#6b7280', fontSize: 12 }}>
+                            {gradedCards.length} cards
+                          </span>
+                        </div>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
+                          {[...gradedCards].sort((a, b) => {
+                            const setConfigA = setConfigs[a.gameId]?.[a.setId];
+                            const cardDataA = setConfigA?.cards?.find(c => c.id === a.cardId);
+                            const setConfigB = setConfigs[b.gameId]?.[b.setId];
+                            const cardDataB = setConfigB?.cards?.find(c => c.id === b.cardId);
+                            const valueA = a.isHolo ? getGradedHoloValue(a.cardId, a.grade) : getGradedValue(a.cardId, a.grade);
+                            const valueB = b.isHolo ? getGradedHoloValue(b.cardId, b.grade) : getGradedValue(b.cardId, b.grade);
+                            const GRADE_ORDER = { 'IM10': 11, 10: 10, 9: 9, 8: 8, 7: 7, 6: 6, 5: 5, 4: 4, 3: 3, 2: 2, 1: 1 };
+                            
+                            let cmp = 0;
+                            if (gradedSortKey === 'gradedDay') {
+                              cmp = a.gradedDay - b.gradedDay;
+                            } else if (gradedSortKey === 'value') {
+                              cmp = valueA - valueB;
+                            } else if (gradedSortKey === 'grade') {
+                              cmp = (GRADE_ORDER[a.grade] || 0) - (GRADE_ORDER[b.grade] || 0);
+                            } else if (gradedSortKey === 'name') {
+                              cmp = (cardDataA?.name || '').localeCompare(cardDataB?.name || '');
+                            }
+                            return gradedSortDir === 'desc' ? -cmp : cmp;
+                          }).map(graded => {
+                            const setConfig = setConfigs[graded.gameId]?.[graded.setId];
+                            const cardData = setConfig?.cards?.find(c => c.id === graded.cardId);
+                            const colors = RARITY_COLORS[cardData?.rarity] || { border: '#6b7280' };
+                            const gradeColors = GRADE_COLORS[graded.grade] || { bg: '#6b7280', text: '#000' };
+                            const gradeLabel = graded.grade === 'IM10' ? 'TMSG IM10' : `TMSG ${graded.grade}`;
+                            const value = graded.isHolo 
+                              ? getGradedHoloValue(graded.cardId, graded.grade)
+                              : getGradedValue(graded.cardId, graded.grade);
+                            
+                            return (
+                              <div 
+                                key={graded.id} 
+                                onClick={() => setInspectingGradedCard(graded)}
+                                style={{
+                                  borderRadius: 12,
+                                  overflow: 'hidden',
+                                  background: '#1f2937',
+                                  border: `3px solid ${colors.border}`,
+                                  position: 'relative',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {/* Grade Banner */}
+                                <div style={{
+                                  background: gradeColors.bg,
+                                  color: gradeColors.text,
+                                  padding: '6px 8px',
+                                  fontWeight: 800,
+                                  fontSize: 12,
                                 textAlign: 'center',
                                 letterSpacing: '0.5px'
                               }}>
@@ -7107,6 +7185,7 @@ return (
                           );
                         })}
                       </div>
+                      </>
                     )}
                   </div>
                 )}
@@ -7196,79 +7275,94 @@ return (
 
                   {/* Pre-Grade Option */}
                   <div style={{ marginBottom: 20 }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#e5e7eb', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedCardForGrading.usePreGrade || false}
-                        onChange={(e) => setSelectedCardForGrading(prev => ({ 
-                          ...prev, 
-                          usePreGrade: e.target.checked,
-                          preGradeTarget: e.target.checked ? (prev.preGradeTarget || 9) : null
-                        }))}
-                      />
-                      Pre-Grade (+{PRE_GRADE_COST}R) - See likely grade before submitting
-                    </label>
-                    {selectedCardForGrading.usePreGrade && !selectedCardForGrading.preGradePrediction && (
-                      <div style={{ marginTop: 8 }}>
-                        <button
-                          onClick={() => {
-                            if (rations < PRE_GRADE_COST) {
-                              alert('Not enough rations for pre-grade!');
-                              return;
-                            }
-                            const prediction = generatePreGradePrediction();
-                            setSelectedCardForGrading(prev => ({ ...prev, preGradePrediction: prediction }));
-                            // Deduct pre-grade cost immediately
-                            const newRations = rations - PRE_GRADE_COST;
-                            setRations(newRations);
-                            saveRations(newRations);
-                          }}
-                          style={{
-                            padding: '8px 16px',
-                            borderRadius: 8,
-                            border: 'none',
-                            background: 'linear-gradient(90deg, #a78bfa, #8b5cf6)',
-                            color: 'white',
-                            fontWeight: 700,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Pay {PRE_GRADE_COST}R to Pre-Grade
-                        </button>
-                      </div>
-                    )}
-                    {selectedCardForGrading.preGradePrediction && (
-                      <div style={{ 
-                        marginTop: 12, 
-                        padding: 12, 
-                        borderRadius: 8, 
-                        background: 'rgba(167,139,250,0.15)',
-                        border: '1px solid rgba(167,139,250,0.3)'
-                      }}>
-                        <div style={{ color: '#a78bfa', fontWeight: 700, marginBottom: 8, fontSize: 13 }}>
-                          Pre-Grade Prediction:
-                        </div>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          {Object.entries(selectedCardForGrading.preGradePrediction)
-                            .sort((a, b) => b[1] - a[1])
-                            .map(([grade, chance]) => {
-                              const gradeColors = GRADE_COLORS[grade] || { bg: '#6b7280', text: '#000' };
-                              return (
-                                <div key={grade} style={{
-                                  padding: '6px 10px',
-                                  borderRadius: 6,
-                                  background: gradeColors.bg,
-                                  color: gradeColors.text,
+                    {(() => {
+                      const predKey = `${selectedCardForGrading.id}-${selectedCardForGrading.isHolo}`;
+                      const storedPrediction = preGradePredictions[predKey];
+                      const currentPrediction = selectedCardForGrading.preGradePrediction || storedPrediction;
+                      
+                      return (
+                        <>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#e5e7eb', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={selectedCardForGrading.usePreGrade || !!storedPrediction}
+                              disabled={!!storedPrediction}
+                              onChange={(e) => setSelectedCardForGrading(prev => ({ 
+                                ...prev, 
+                                usePreGrade: e.target.checked
+                              }))}
+                            />
+                            Pre-Grade (+{PRE_GRADE_COST}R) - See likely grade before submitting
+                            {storedPrediction && <span style={{ color: '#10b981', fontSize: 11 }}>(Already purchased)</span>}
+                          </label>
+                          {(selectedCardForGrading.usePreGrade || storedPrediction) && !currentPrediction && (
+                            <div style={{ marginTop: 8 }}>
+                              <button
+                                onClick={() => {
+                                  if (rations < PRE_GRADE_COST) {
+                                    alert('Not enough rations for pre-grade!');
+                                    return;
+                                  }
+                                  const prediction = generatePreGradePrediction();
+                                  // Save prediction persistently
+                                  const newPreds = { ...preGradePredictions, [predKey]: prediction };
+                                  setPreGradePredictions(newPreds);
+                                  savePreGradePredictions(newPreds);
+                                  setSelectedCardForGrading(prev => ({ ...prev, preGradePrediction: prediction }));
+                                  // Deduct pre-grade cost immediately
+                                  const newRations = rations - PRE_GRADE_COST;
+                                  setRations(newRations);
+                                  saveRations(newRations);
+                                }}
+                                style={{
+                                  padding: '8px 16px',
+                                  borderRadius: 8,
+                                  border: 'none',
+                                  background: 'linear-gradient(90deg, #a78bfa, #8b5cf6)',
+                                  color: 'white',
                                   fontWeight: 700,
-                                  fontSize: 12
-                                }}>
-                                  {chance}% → {grade === 'IM10' ? 'IM10' : grade}
-                                </div>
-                              );
-                            })}
-                        </div>
-                      </div>
-                    )}
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                Pay {PRE_GRADE_COST}R to Pre-Grade
+                              </button>
+                            </div>
+                          )}
+                          {currentPrediction && (
+                            <div style={{ 
+                              marginTop: 12, 
+                              padding: 12, 
+                              borderRadius: 8, 
+                              background: 'rgba(167,139,250,0.15)',
+                              border: '1px solid rgba(167,139,250,0.3)'
+                            }}>
+                              <div style={{ color: '#a78bfa', fontWeight: 700, marginBottom: 8, fontSize: 13 }}>
+                                Pre-Grade Prediction:
+                              </div>
+                              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                {Object.entries(currentPrediction)
+                                  .sort((a, b) => b[1] - a[1])
+                                  .map(([grade, chance]) => {
+                                    const gradeColors = GRADE_COLORS[grade] || { bg: '#6b7280', text: '#000' };
+                                    return (
+                                      <div key={grade} style={{
+                                        padding: '6px 10px',
+                                        borderRadius: 6,
+                                        background: gradeColors.bg,
+                                        color: gradeColors.text,
+                                        fontWeight: 700,
+                                        fontSize: 12
+                                      }}>
+                                        {chance}% → {grade === 'IM10' ? 'IM10' : grade}
+                                      </div>
+                                    );
+                                  })}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {/* Cost Summary & Submit */}
@@ -7331,16 +7425,25 @@ return (
                               return;
                             }
                             
+                            const predKey = `${selectedCardForGrading.id}-${selectedCardForGrading.isHolo}`;
+                            const storedPrediction = preGradePredictions[predKey];
                             const success = submitForGrading(
                               selectedCardForGrading.id,
                               selectedCardForGrading.gameId,
                               selectedCardForGrading.setId,
                               selectedCardForGrading.isHolo,
                               selectedCardForGrading.selectedTier,
-                              selectedCardForGrading.preGradePrediction || null
+                              selectedCardForGrading.preGradePrediction || storedPrediction || null
                             );
                             
                             if (success) {
+                              // Clear the stored prediction since card is now submitted
+                              if (storedPrediction) {
+                                const newPreds = { ...preGradePredictions };
+                                delete newPreds[predKey];
+                                setPreGradePredictions(newPreds);
+                                savePreGradePredictions(newPreds);
+                              }
                               setSelectedCardForGrading(null);
                             } else {
                               alert('Failed to submit card for grading.');
