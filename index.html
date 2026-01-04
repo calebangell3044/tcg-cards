@@ -973,11 +973,12 @@ body{
         return packInventory.filter(p => p.gameId === currentGameId && p.setId === currentSetId);
       }, [packInventory, currentGameId, currentSetId]);
 
-      // Save pack inventory to localStorage (global, not game/set scoped)
-      const saveGlobalPackInventory = useCallback((packs) => {
+      // Save sealed inventory to localStorage
+      const saveSealedInventory = useCallback((inv) => {
         try {
-          localStorage.setItem('tcg-global-pack-inventory', JSON.stringify(packs));
+          localStorage.setItem('tcg-global-sealed-inventory', JSON.stringify(inv));
         } catch (e) {}
+        try { updateCoreSave({ sealedInventory: inv }); } catch (e) {}
       }, []);
 
       // Load pack inventory on mount
@@ -1858,6 +1859,7 @@ body{
         let bootFreeStarter = null;
         let bootEvents = null;
         let bootShopStock = null;
+        let bootSealedInventory = null;
 
         if (coreBoot) {
           const d = parseInt(coreBoot.gameDay || '1', 10);
@@ -1866,6 +1868,7 @@ body{
           bootPackCount = coreBoot.packCount;
           bootRations = coreBoot.rations;
           bootPackInventory = coreBoot.packInventory;
+          bootSealedInventory = coreBoot.sealedInventory;
           bootFreeStarter = coreBoot.freeStarterClaimed;
           bootEvents = Array.isArray(coreBoot.events) ? coreBoot.events : null;
 
@@ -1960,11 +1963,24 @@ body{
         if (Array.isArray(bootPackInventory)) {
           setPackInventory(bootPackInventory);
         } else {
-          const invRaw = localStorage.getItem('tcg-pack-inventory');
+          const invRaw = localStorage.getItem('tcg-global-pack-inventory');
           if (invRaw) {
             try {
               const inv = JSON.parse(invRaw);
               if (Array.isArray(inv)) setPackInventory(inv);
+            } catch (e) {}
+          }
+        }
+
+        // Load sealed inventory (fixes refresh losing sealed products)
+        if (bootSealedInventory && typeof bootSealedInventory === 'object') {
+          setSealedInventory(bootSealedInventory);
+        } else {
+          const sealedRaw = localStorage.getItem('tcg-global-sealed-inventory');
+          if (sealedRaw) {
+            try {
+              const sealed = JSON.parse(sealedRaw);
+              if (sealed && typeof sealed === 'object') setSealedInventory(sealed);
             } catch (e) {}
           }
         }
@@ -2143,7 +2159,7 @@ body{
 
           let coreInv = Array.isArray(bootPackInventory) ? bootPackInventory : null;
           if (!coreInv) {
-            const invRaw = localStorage.getItem('tcg-pack-inventory');
+            const invRaw = localStorage.getItem('tcg-global-pack-inventory');
             if (invRaw) { try { const inv = JSON.parse(invRaw); if (Array.isArray(inv)) coreInv = inv; } catch (e) {} }
           }
           if (!Array.isArray(coreInv)) coreInv = [];
@@ -2187,6 +2203,7 @@ body{
       // Save pack inventory globally (packs have their own gameId/setId)
       const savePackInventory = useCallback((packs) => {
         try { localStorage.setItem('tcg-global-pack-inventory', JSON.stringify(packs)); } catch (e) {}
+        try { updateCoreSave({ packInventory: packs }); } catch (e) {}
       }, []);
 
       // mutateSealedInventory is no longer needed - use updateSealedCount instead
