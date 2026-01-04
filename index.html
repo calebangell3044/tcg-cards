@@ -1131,11 +1131,11 @@ body{
         10: 'GEM MINT',
         9: 'MINT+',
         8: 'MINT',
-        7: 'NM/MINT',
-        6: 'NEAR MINT',
-        5: 'EXCELLENT',
-        4: 'VERY GOOD',
-        3: 'GOOD',
+        7: 'NEAR MINT',
+        6: 'EXCELLENT',
+        5: 'VERY GOOD',
+        4: 'GOOD',
+        3: 'FAIR',
         2: 'POOR',
         1: 'BAD'
       };
@@ -4311,18 +4311,61 @@ const getRareSlotCard = () => {
                 owned,
                 ownedNormal,
                 ownedHolo,
+                ownedGraded: 0,
                 marketValue,
                 holoValue,
                 payout,
-                holoPayout
+                holoPayout,
+                isGraded: false
               });
             });
+          });
+        });
+
+        // Add graded cards as separate entries
+        gradedCards.forEach(graded => {
+          // Filter by game/set if filters are active
+          if (sellGameFilter !== 'all' && graded.gameId !== sellGameFilter) return;
+          if (sellSetFilter !== 'all' && graded.setId !== sellSetFilter) return;
+          
+          const setConfig = setConfigs[graded.gameId]?.[graded.setId];
+          const cardData = setConfig?.cards?.find(c => c.id === graded.cardId);
+          const gameConfig = gameConfigs[graded.gameId];
+          if (!cardData || !gameConfig) return;
+          
+          const baseValue = marketValues[graded.cardId] || 1;
+          const holoMult = graded.isHolo ? (holoMultipliers[graded.cardId] || 1.5) : 1;
+          const gradeMultiplier = GRADE_MULTIPLIERS[graded.grade] || 1;
+          const gradedValue = baseValue * holoMult * gradeMultiplier;
+          const gradedPayout = gradedValue * SELL_TO_SHOP_RATE;
+          
+          cards.push({
+            ...cardData,
+            gameId: graded.gameId,
+            setId: graded.setId,
+            gameName: gameConfig.name,
+            setName: setConfig.name,
+            image: buildImageUrl(graded.gameId, graded.setId, cardData),
+            owned: 1,
+            ownedNormal: 0,
+            ownedHolo: 0,
+            ownedGraded: 1,
+            marketValue: gradedValue,
+            holoValue: gradedValue,
+            payout: gradedPayout,
+            holoPayout: gradedPayout,
+            isGraded: true,
+            gradedCardId: graded.id,
+            grade: graded.grade,
+            isHolo: graded.isHolo,
+            serialNum: generateSlabSerial(graded.id)
           });
         });
 
         // Variant filter
         if (shopSellVariant === 'normal') cards = cards.filter(c => c.ownedNormal > 0);
         else if (shopSellVariant === 'holo') cards = cards.filter(c => c.ownedHolo > 0);
+        else if (shopSellVariant === 'graded') cards = cards.filter(c => c.isGraded);
         else cards = cards.filter(c => c.owned > 0);
 
         // Rarity filter
@@ -4354,7 +4397,7 @@ const getRareSlotCard = () => {
         });
 
         return cards;
-      }, [sellGameFilter, sellSetFilter, shopSellVariant, shopSellFilter, shopSellSearch, shopSellSort, collection, marketValues, holoMultipliers, setConfigs, gameConfigs, gamesIndex]);
+      }, [sellGameFilter, sellSetFilter, shopSellVariant, shopSellFilter, shopSellSearch, shopSellSort, collection, marketValues, holoMultipliers, setConfigs, gameConfigs, gamesIndex, gradedCards]);
 
 
 const movers7d = useMemo(() => {
@@ -5737,6 +5780,7 @@ if (!isLoaded) {
                         <option value="any">Any owned</option>
                         <option value="normal">Normal only</option>
                         <option value="holo">Holo only</option>
+                        <option value="graded">Graded only</option>
                       </select>
 
                       <select
@@ -5760,64 +5804,138 @@ if (!isLoaded) {
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-                      {shopSellCards.map(card => {
+                      {shopSellCards.map((card, idx) => {
                         const colors = RARITY_COLORS[card.rarity] || RARITY_COLORS.common;
                         const canSellNormal = card.ownedNormal > 0;
                         const canSellHolo = card.ownedHolo > 0;
+                        const isGraded = card.isGraded;
+                        const gradeColors = isGraded ? (GRADE_COLORS[card.grade] || { bg: '#6b7280', text: '#000' }) : null;
+                        
                         return (
-                          <div key={card.id} style={{ borderRadius: 16, padding: 12, background: 'rgba(31,41,55,0.72)', border: `2px solid ${colors.border}55`, boxShadow: '0 10px 30px rgba(0,0,0,0.25)' }}>
+                          <div key={isGraded ? `graded-${card.gradedCardId}` : card.id} style={{ borderRadius: 16, padding: 12, background: 'rgba(31,41,55,0.72)', border: `2px solid ${isGraded ? (gradeColors.border || gradeColors.bg) : colors.border}55`, boxShadow: '0 10px 30px rgba(0,0,0,0.25)' }}>
                             <div style={{ display: 'flex', gap: 10 }}>
                               <div style={{ position: 'relative', width: 90, flex: '0 0 auto' }}>
-                                <div style={{ width: 90, aspectRatio: '2.5/3.5', borderRadius: 12, overflow: 'hidden', border: `2px solid ${colors.border}` }}>
-                                  <img
-                                    src={card.image}
-                                    alt={card.name}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }}
-                                    onClick={() => setEnlargedCard({ ...card, marketValue: card.marketValue, priceChange: 0 })}
-                                    loading="lazy"
-                                  />
-                                </div>
-                                <div style={{ position: 'absolute', top: 6, right: 6, display: 'flex', gap: 6 }}>
-                                  {canSellNormal && (
-                                    <div style={{ background: 'rgba(0,0,0,0.55)', padding: '3px 7px', borderRadius: 12, border: `2px solid ${colors.border}`, color: 'white', fontWeight: 800, fontSize: 11, textShadow: '0 1px 2px rgba(0,0,0,0.85)' }}>
-                                      x{card.ownedNormal}
+                                {isGraded ? (
+                                  /* Graded card mini slab */
+                                  <div style={{ 
+                                    width: 90, 
+                                    borderRadius: 8, 
+                                    overflow: 'hidden', 
+                                    border: `3px solid ${gradeColors.border || gradeColors.bg}`,
+                                    background: '#1a1a2e'
+                                  }}>
+                                    <div style={{
+                                      background: gradeColors.bg,
+                                      padding: '4px 6px',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center'
+                                    }}>
+                                      <div style={{ color: gradeColors.text, fontSize: 7, fontWeight: 700, opacity: 0.8 }}>TMSG</div>
+                                      <div style={{ color: gradeColors.text, fontSize: 14, fontWeight: 900 }}>
+                                        {card.grade === 'IM10' ? '10' : card.grade}
+                                      </div>
                                     </div>
-                                  )}
-                                  {canSellHolo && (
-                                    <div className="holo-badge" style={{ padding: '3px 7px', borderRadius: 12, border: `2px solid ${colors.border}`, fontWeight: 800, fontSize: 11 }}>
-                                      x{card.ownedHolo}
+                                    <div className={card.isHolo ? 'holo-overlay' : ''} style={{ padding: 4, background: '#111' }}>
+                                      <img
+                                        src={card.image}
+                                        alt={card.name}
+                                        style={{ width: '100%', aspectRatio: '2.5/3.5', objectFit: 'cover', borderRadius: 2, display: 'block' }}
+                                        loading="lazy"
+                                      />
                                     </div>
-                                  )}
-                                </div>
+                                  </div>
+                                ) : (
+                                  /* Regular card */
+                                  <>
+                                    <div style={{ width: 90, aspectRatio: '2.5/3.5', borderRadius: 12, overflow: 'hidden', border: `2px solid ${colors.border}` }}>
+                                      <img
+                                        src={card.image}
+                                        alt={card.name}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }}
+                                        onClick={() => setEnlargedCard({ ...card, marketValue: card.marketValue, priceChange: 0 })}
+                                        loading="lazy"
+                                      />
+                                    </div>
+                                    <div style={{ position: 'absolute', top: 6, right: 6, display: 'flex', gap: 6 }}>
+                                      {canSellNormal && (
+                                        <div style={{ background: 'rgba(0,0,0,0.55)', padding: '3px 7px', borderRadius: 12, border: `2px solid ${colors.border}`, color: 'white', fontWeight: 800, fontSize: 11, textShadow: '0 1px 2px rgba(0,0,0,0.85)' }}>
+                                          x{card.ownedNormal}
+                                        </div>
+                                      )}
+                                      {canSellHolo && (
+                                        <div className="holo-badge" style={{ padding: '3px 7px', borderRadius: 12, border: `2px solid ${colors.border}`, fontWeight: 800, fontSize: 11 }}>
+                                          x{card.ownedHolo}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </>
+                                )}
                               </div>
 
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontWeight: 900, fontSize: 14, color: 'white', lineHeight: 1.2, marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                   {card.name}
+                                  {isGraded && card.isHolo && <span style={{ color: '#f0abfc', fontSize: 11 }}> ✨</span>}
                                 </div>
-                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 999, background: `${colors.bg}55`, border: `1px solid ${colors.border}55`, color: colors.text, fontWeight: 800, fontSize: 11, marginBottom: 8 }}>
-                                  {card.rarity}
-                                </div>
+                                {isGraded ? (
+                                  <div style={{ 
+                                    display: 'inline-flex', 
+                                    alignItems: 'center', 
+                                    gap: 6, 
+                                    padding: '4px 8px', 
+                                    borderRadius: 999, 
+                                    background: gradeColors.bg, 
+                                    color: gradeColors.text, 
+                                    fontWeight: 800, 
+                                    fontSize: 11, 
+                                    marginBottom: 8 
+                                  }}>
+                                    TMSG {card.grade === 'IM10' ? 'IM10' : card.grade} • {GRADE_LABELS[card.grade]}
+                                  </div>
+                                ) : (
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 999, background: `${colors.bg}55`, border: `1px solid ${colors.border}55`, color: colors.text, fontWeight: 800, fontSize: 11, marginBottom: 8 }}>
+                                    {card.rarity}
+                                  </div>
+                                )}
 
                                 <div style={{ display: 'grid', gap: 6 }}>
-                                  {canSellNormal && (
+                                  {isGraded ? (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#d1d5db', fontSize: 12 }}>
-                                      <span style={{ opacity: 0.85 }}>Normal payout:</span>
+                                      <span style={{ opacity: 0.85 }}>Graded payout:</span>
                                       <img src="./rations.png" alt="" style={{ width: 14, height: 14 }} />
                                       <b style={{ color: '#fbbf24' }}>{card.payout.toFixed(2)}</b>
                                     </div>
-                                  )}
-                                  {canSellHolo && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#d1d5db', fontSize: 12 }}>
-                                      <span style={{ opacity: 0.85 }}>Holo payout:</span>
-                                      <img src="./rations.png" alt="" style={{ width: 14, height: 14, opacity: 0.9 }} />
-                                      <b className="rainbow-text">{card.holoPayout.toFixed(2)}</b>
-                                    </div>
+                                  ) : (
+                                    <>
+                                      {canSellNormal && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#d1d5db', fontSize: 12 }}>
+                                          <span style={{ opacity: 0.85 }}>Normal payout:</span>
+                                          <img src="./rations.png" alt="" style={{ width: 14, height: 14 }} />
+                                          <b style={{ color: '#fbbf24' }}>{card.payout.toFixed(2)}</b>
+                                        </div>
+                                      )}
+                                      {canSellHolo && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#d1d5db', fontSize: 12 }}>
+                                          <span style={{ opacity: 0.85 }}>Holo payout:</span>
+                                          <img src="./rations.png" alt="" style={{ width: 14, height: 14, opacity: 0.9 }} />
+                                          <b className="rainbow-text">{card.holoPayout.toFixed(2)}</b>
+                                        </div>
+                                      )}
+                                    </>
                                   )}
                                 </div>
 
                                 <button
-                                  onClick={() => setSellConfirm({ id: card.id, name: card.name, rarity: card.rarity })}
+                                  onClick={() => setSellConfirm({ 
+                                    id: card.id, 
+                                    name: card.name, 
+                                    rarity: card.rarity,
+                                    isGraded: isGraded,
+                                    gradedCardId: card.gradedCardId,
+                                    grade: card.grade,
+                                    payout: card.payout
+                                  })}
                                   style={{
                                     marginTop: 10,
                                     width: '100%',
@@ -7216,7 +7334,7 @@ return (
                               >
                                 {/* Slab Header */}
                                 <div style={{
-                                  background: 'linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%)',
+                                  background: gradeColors.bg,
                                   padding: '8px 10px',
                                   display: 'flex',
                                   justifyContent: 'space-between',
@@ -7227,7 +7345,7 @@ return (
                                   {/* Left side - Card info */}
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ 
-                                      color: 'white', 
+                                      color: gradeColors.text, 
                                       fontWeight: 700, 
                                       fontSize: 11, 
                                       lineHeight: 1.2,
@@ -7237,13 +7355,13 @@ return (
                                     }}>
                                       {cardData?.name}
                                     </div>
-                                    <div style={{ color: '#9ca3af', fontSize: 9, marginTop: 2 }}>
+                                    <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 9, marginTop: 2 }}>
                                       {gameConfig?.name}
                                     </div>
-                                    <div style={{ color: '#9ca3af', fontSize: 9 }}>
+                                    <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 9 }}>
                                       {setConfig?.name}
                                     </div>
-                                    <div style={{ color: '#6b7280', fontSize: 8, fontFamily: 'monospace', marginTop: 2 }}>
+                                    <div style={{ color: gradeColors.text, opacity: 0.5, fontSize: 8, fontFamily: 'monospace', marginTop: 2 }}>
                                       SN: {serialNum}
                                     </div>
                                   </div>
@@ -7251,29 +7369,30 @@ return (
                                   {/* Right side - Grade */}
                                   <div style={{ textAlign: 'right', marginLeft: 8 }}>
                                     <div style={{ 
-                                      color: gradeColors.text === '#000000' ? '#9ca3af' : gradeColors.text, 
+                                      color: gradeColors.text, 
                                       fontSize: 10, 
                                       fontWeight: 700,
-                                      letterSpacing: '1px'
+                                      letterSpacing: '1px',
+                                      opacity: 0.8
                                     }}>
                                       TMSG
                                     </div>
                                     <div style={{ 
-                                      color: gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg,
+                                      color: gradeColors.text,
                                       fontSize: 26, 
                                       fontWeight: 900,
                                       lineHeight: 1,
-                                      textShadow: `0 0 10px ${gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg}40`,
-                                      WebkitTextStroke: gradeColors.bg === '#ffffff' ? '1px #000' : 'none'
+                                      textShadow: gradeColors.bg === '#000000' ? '0 0 10px #fbbf2440' : 'none'
                                     }}>
                                       {gradeNum}
                                     </div>
                                     <div style={{ 
-                                      color: gradeColors.bg === '#000000' ? '#fbbf24' : (gradeColors.text === '#000000' ? '#6b7280' : gradeColors.text),
+                                      color: gradeColors.text,
                                       fontSize: 7, 
                                       fontWeight: 700,
                                       letterSpacing: '0.5px',
-                                      textTransform: 'uppercase'
+                                      textTransform: 'uppercase',
+                                      opacity: 0.8
                                     }}>
                                       {gradeLabel}
                                     </div>
@@ -7674,7 +7793,7 @@ return (
                     }}>
                       {/* Slab Header */}
                       <div style={{
-                        background: 'linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%)',
+                        background: gradeColors.bg,
                         padding: '12px 14px',
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -7686,7 +7805,7 @@ return (
                         {/* Left side - Card info */}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ 
-                            color: 'white', 
+                            color: gradeColors.text, 
                             fontWeight: 700, 
                             fontSize: 12, 
                             lineHeight: 1.2,
@@ -7694,13 +7813,13 @@ return (
                           }}>
                             {cardData?.name}
                           </div>
-                          <div style={{ color: '#9ca3af', fontSize: 10 }}>
+                          <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 10 }}>
                             {gameConfig?.name}
                           </div>
-                          <div style={{ color: '#9ca3af', fontSize: 10 }}>
+                          <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 10 }}>
                             {setConfig?.name}
                           </div>
-                          <div style={{ color: '#6b7280', fontSize: 9, fontFamily: 'monospace', marginTop: 4 }}>
+                          <div style={{ color: gradeColors.text, opacity: 0.5, fontSize: 9, fontFamily: 'monospace', marginTop: 4 }}>
                             SN: {serialNum}
                           </div>
                         </div>
@@ -7708,29 +7827,30 @@ return (
                         {/* Right side - Grade */}
                         <div style={{ textAlign: 'right', marginLeft: 10 }}>
                           <div style={{ 
-                            color: gradeColors.text === '#000000' ? '#9ca3af' : gradeColors.text, 
+                            color: gradeColors.text, 
                             fontSize: 11, 
                             fontWeight: 700,
-                            letterSpacing: '1px'
+                            letterSpacing: '1px',
+                            opacity: 0.8
                           }}>
                             TMSG
                           </div>
                           <div style={{ 
-                            color: gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg,
+                            color: gradeColors.text,
                             fontSize: 36, 
                             fontWeight: 900,
                             lineHeight: 1,
-                            textShadow: `0 0 15px ${gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg}60`,
-                            WebkitTextStroke: gradeColors.bg === '#ffffff' ? '1px #000' : 'none'
+                            textShadow: gradeColors.bg === '#000000' ? '0 0 15px #fbbf2460' : 'none'
                           }}>
                             {gradeNum}
                           </div>
                           <div style={{ 
-                            color: gradeColors.bg === '#000000' ? '#fbbf24' : (gradeColors.text === '#000000' ? '#6b7280' : gradeColors.text),
+                            color: gradeColors.text,
                             fontSize: 8, 
                             fontWeight: 700,
                             letterSpacing: '0.5px',
-                            textTransform: 'uppercase'
+                            textTransform: 'uppercase',
+                            opacity: 0.8
                           }}>
                             {gradeLabel}
                           </div>
@@ -7843,7 +7963,7 @@ return (
                       }}>
                         {/* Slab Header */}
                         <div style={{
-                          background: 'linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%)',
+                          background: gradeColors.bg,
                           padding: '12px 14px',
                           display: 'flex',
                           justifyContent: 'space-between',
@@ -7854,7 +7974,7 @@ return (
                           {/* Left side - Card info */}
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ 
-                              color: 'white', 
+                              color: gradeColors.text, 
                               fontWeight: 700, 
                               fontSize: 12, 
                               lineHeight: 1.2,
@@ -7862,13 +7982,13 @@ return (
                             }}>
                               {cardData?.name}
                             </div>
-                            <div style={{ color: '#9ca3af', fontSize: 10 }}>
+                            <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 10 }}>
                               {gameConfig?.name}
                             </div>
-                            <div style={{ color: '#9ca3af', fontSize: 10 }}>
+                            <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 10 }}>
                               {setConfig?.name}
                             </div>
-                            <div style={{ color: '#6b7280', fontSize: 9, fontFamily: 'monospace', marginTop: 4 }}>
+                            <div style={{ color: gradeColors.text, opacity: 0.5, fontSize: 9, fontFamily: 'monospace', marginTop: 4 }}>
                               SN: {serialNum}
                             </div>
                           </div>
@@ -7876,29 +7996,30 @@ return (
                           {/* Right side - Grade */}
                           <div style={{ textAlign: 'right', marginLeft: 10 }}>
                             <div style={{ 
-                              color: gradeColors.text === '#000000' ? '#9ca3af' : gradeColors.text, 
+                              color: gradeColors.text, 
                               fontSize: 11, 
                               fontWeight: 700,
-                              letterSpacing: '1px'
+                              letterSpacing: '1px',
+                              opacity: 0.8
                             }}>
                               TMSG
                             </div>
                             <div style={{ 
-                              color: gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg,
+                              color: gradeColors.text,
                               fontSize: 36, 
                               fontWeight: 900,
                               lineHeight: 1,
-                              textShadow: `0 0 15px ${gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg}60`,
-                              WebkitTextStroke: gradeColors.bg === '#ffffff' ? '1px #000' : 'none'
+                              textShadow: gradeColors.bg === '#000000' ? '0 0 15px #fbbf2460' : 'none'
                             }}>
                               {gradeNum}
                             </div>
                             <div style={{ 
-                              color: gradeColors.bg === '#000000' ? '#fbbf24' : (gradeColors.text === '#000000' ? '#6b7280' : gradeColors.text),
+                              color: gradeColors.text,
                               fontSize: 8, 
                               fontWeight: 700,
                               letterSpacing: '0.5px',
-                              textTransform: 'uppercase'
+                              textTransform: 'uppercase',
+                              opacity: 0.8
                             }}>
                               {gradeLabel}
                             </div>
@@ -8441,6 +8562,134 @@ return (
           )}
 {/* Sell Confirmation Modal */}
           {sellConfirm && (() => {
+            // Handle graded card sell
+            if (sellConfirm.isGraded) {
+              const gradeColors = GRADE_COLORS[sellConfirm.grade] || { bg: '#6b7280', text: '#000', border: '#6b7280' };
+              
+              return (
+                <div
+                  onClick={() => setSellConfirm(null)}
+                  style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0, 0, 0, 0.85)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1100,
+                    padding: 32
+                  }}
+                >
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      background: '#111827',
+                      border: `2px solid ${gradeColors.border || gradeColors.bg}`,
+                      borderRadius: 16,
+                      padding: 24,
+                      maxWidth: 420,
+                      width: '100%'
+                    }}
+                  >
+                    <h2 style={{ fontSize: 18, margin: '0 0 8px', textAlign: 'center' }}>
+                      Sell Graded Card
+                    </h2>
+
+                    <div style={{ margin: '0 0 14px', textAlign: 'center' }}>
+                      <div style={{ fontWeight: 'bold', marginBottom: 4 }}>{sellConfirm.name}</div>
+                      <div
+                        style={{
+                          display: 'inline-block',
+                          padding: '6px 12px',
+                          borderRadius: 999,
+                          background: gradeColors.bg,
+                          color: gradeColors.text,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          letterSpacing: '0.08em'
+                        }}
+                      >
+                        TMSG {sellConfirm.grade === 'IM10' ? 'IM10' : sellConfirm.grade} • {GRADE_LABELS[sellConfirm.grade]}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gap: 10, marginBottom: 18 }}>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: 12,
+                        padding: 12
+                      }}>
+                        <div style={{ color: '#9ca3af', fontSize: 12 }}>Graded card payout (60%)</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold', color: '#fbbf24' }}>
+                          <img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />
+                          {sellConfirm.payout.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 12 }}>
+                      <button
+                        onClick={() => setSellConfirm(null)}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          background: '#374151',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          // Sell the graded card
+                          const graded = gradedCards.find(g => g.id === sellConfirm.gradedCardId);
+                          if (graded) {
+                            // Remove from graded cards
+                            const newGraded = gradedCards.filter(g => g.id !== sellConfirm.gradedCardId);
+                            setGradedCards(newGraded);
+                            saveGradedCards(newGraded);
+                            
+                            // Add rations
+                            const newRations = rations + sellConfirm.payout;
+                            setRations(newRations);
+                            saveRations(newRations);
+                          }
+                          setSellConfirm(null);
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          background: `linear-gradient(90deg, ${gradeColors.bg}, ${gradeColors.border || gradeColors.bg})`,
+                          color: gradeColors.text,
+                          border: 'none',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        Sell Graded
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            
+            // Regular card sell
             const entry = collection[sellConfirm.id] || { normal: 0, holo: 0 };
             const baseValue = getBaseMarketValue(sellConfirm.id);
             const holoMult = getHoloMultiplier(sellConfirm.id);
