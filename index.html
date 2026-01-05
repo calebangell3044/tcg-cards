@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -16,616 +17,607 @@ html, body {
 }
 #root { min-height: 100%; }
 
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      overflow-x: hidden;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    .card-flip {
-      transition: transform 0.6s;
-      transform-style: preserve-3d;
-    }
-    .card-flip.flipped {
-      transform: rotateY(180deg);
-    }
-    .card-face {
-      backface-visibility: hidden;
-      position: absolute;
-      inset: 0;
-    }
-    .card-back {
-      transform: rotateY(180deg);
-    }
-    .card-tooltip {
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.9);
-      color: white;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      white-space: nowrap;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.2s;
-      margin-bottom: 8px;
-      z-index: 100;
-    }
-    .card-wrapper:hover .card-tooltip {
-      opacity: 1;
-    }
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.85);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      cursor: pointer;
-      animation: fadeIn 0.2s;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    .modal-image {
-      max-width: 90vw;
-      max-height: 90vh;
-      border-radius: 12px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      animation: zoomIn 0.2s;
-    }
-    @keyframes zoomIn {
-      from { transform: scale(0.8); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-  
-
-/* ---- Holo / Foil visuals ---- */
-@keyframes holoSpin {
-  from { transform: rotate(0deg); }
+```
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+@keyframes spin {
   to { transform: rotate(360deg); }
+}
+.card-flip {
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+.card-flip.flipped {
+  transform: rotateY(180deg);
+}
+.card-face {
+  backface-visibility: hidden;
+  position: absolute;
+  inset: 0;
+}
+.card-back {
+  transform: rotateY(180deg);
+}
+.card-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  margin-bottom: 8px;
+  z-index: 100;
+}
+.card-wrapper:hover .card-tooltip {
+  opacity: 1;
+}
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  cursor: pointer;
+  animation: fadeIn 0.2s;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.modal-image {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: zoomIn 0.2s;
+}
+@keyframes zoomIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+```
+
+/* –– Holo / Foil visuals –– */
+@keyframes holoSpin {
+from { transform: rotate(0deg); }
+to { transform: rotate(360deg); }
 }
 
 @keyframes holoShimmer {
-  0% { opacity: 0.10; transform: translateX(-20%) skewX(-10deg); }
-  50% { opacity: 0.25; transform: translateX(20%) skewX(-10deg); }
-  100% { opacity: 0.10; transform: translateX(-20%) skewX(-10deg); }
+0% { opacity: 0.10; transform: translateX(-20%) skewX(-10deg); }
+50% { opacity: 0.25; transform: translateX(20%) skewX(-10deg); }
+100% { opacity: 0.10; transform: translateX(-20%) skewX(-10deg); }
 }
 
 .foil-glow {
-  position: relative;
+position: relative;
 }
 
 /* Holo overlay applies to the revealed face that shows the card art */
 .foil-glow .card-face.card-back {
-  /* Keep absolute positioning so flipping doesn't shift layout */
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  isolation: isolate;
+/* Keep absolute positioning so flipping doesn’t shift layout */
+position: absolute;
+inset: 0;
+overflow: hidden;
+isolation: isolate;
 }
-
 
 .foil-glow .card-face.card-back img {
-  position: relative;
-  z-index: 1;
-  filter: saturate(1.08) contrast(1.04);
+position: relative;
+z-index: 1;
+filter: saturate(1.08) contrast(1.04);
 }
-
 
 /* Static, slightly-opaque rainbow filter to make the card itself look holographic */
 .foil-glow .card-face.card-back::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(120deg,
-    rgba(255, 0, 128, 0.32),
-    rgba(0, 255, 255, 0.30),
-    rgba(255, 255, 0, 0.28),
-    rgba(255, 0, 128, 0.30)
-  );
-  opacity: 0.42;
-  filter: saturate(1.5) contrast(1.08);
-  pointer-events: none;
-  z-index: 3;
+content: ‘’;
+position: absolute;
+inset: 0;
+border-radius: inherit;
+background: linear-gradient(120deg,
+rgba(255, 0, 128, 0.32),
+rgba(0, 255, 255, 0.30),
+rgba(255, 255, 0, 0.28),
+rgba(255, 0, 128, 0.30)
+);
+opacity: 0.42;
+filter: saturate(1.5) contrast(1.08);
+pointer-events: none;
+z-index: 3;
 }
 
 /* Subtle highlight to sell the holo effect without animation */
 .foil-glow .card-face.card-back::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.22), rgba(255,255,255,0.0) 55%);
-  opacity: 0.20;
-  pointer-events: none;
-  z-index: 4;
+content: ‘’;
+position: absolute;
+inset: 0;
+border-radius: inherit;
+background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.22), rgba(255,255,255,0.0) 55%);
+opacity: 0.20;
+pointer-events: none;
+z-index: 4;
 }
 
 /* General holo overlay for any card container */
 .holo-overlay {
-  position: relative;
-  overflow: hidden;
+position: relative;
+overflow: hidden;
 }
 
 .holo-overlay::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(120deg,
-    rgba(255, 0, 128, 0.35),
-    rgba(0, 255, 255, 0.32),
-    rgba(255, 255, 0, 0.30),
-    rgba(128, 0, 255, 0.32),
-    rgba(255, 0, 128, 0.35)
-  );
-  opacity: 0.6;
-  filter: saturate(1.5) contrast(1.08);
-  pointer-events: none;
-  z-index: 10;
+content: ‘’;
+position: absolute;
+inset: 0;
+border-radius: inherit;
+background: linear-gradient(120deg,
+rgba(255, 0, 128, 0.35),
+rgba(0, 255, 255, 0.32),
+rgba(255, 255, 0, 0.30),
+rgba(128, 0, 255, 0.32),
+rgba(255, 0, 128, 0.35)
+);
+opacity: 0.6;
+filter: saturate(1.5) contrast(1.08);
+pointer-events: none;
+z-index: 10;
 }
 
 .holo-overlay::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35), rgba(255,255,255,0.0) 55%);
-  opacity: 0.4;
-  pointer-events: none;
-  z-index: 11;
+content: ‘’;
+position: absolute;
+inset: 0;
+border-radius: inherit;
+background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35), rgba(255,255,255,0.0) 55%);
+opacity: 0.4;
+pointer-events: none;
+z-index: 11;
 }
 
 .holo-badge {
-  background: linear-gradient(90deg,
-    rgba(255, 0, 128, 0.40),
-    rgba(0, 255, 255, 0.40),
-    rgba(255, 255, 0, 0.40)
-  );
-  box-shadow: 0 0 18px rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.98);
-  text-shadow: 0 1px 2px rgba(0,0,0,0.85);
+background: linear-gradient(90deg,
+rgba(255, 0, 128, 0.40),
+rgba(0, 255, 255, 0.40),
+rgba(255, 255, 0, 0.40)
+);
+box-shadow: 0 0 18px rgba(255,255,255,0.15);
+color: rgba(255,255,255,0.98);
+text-shadow: 0 1px 2px rgba(0,0,0,0.85);
 }
 
 .new-badge {
-  background: linear-gradient(135deg, #f97316, #fb923c);
-  box-shadow: 0 0 12px rgba(249, 115, 22, 0.6), 0 0 24px rgba(249, 115, 22, 0.3);
-  color: white;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-  animation: new-pulse 1.5s ease-in-out infinite;
+background: linear-gradient(135deg, #f97316, #fb923c);
+box-shadow: 0 0 12px rgba(249, 115, 22, 0.6), 0 0 24px rgba(249, 115, 22, 0.3);
+color: white;
+text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+animation: new-pulse 1.5s ease-in-out infinite;
 }
 
 @keyframes new-pulse {
-  0%, 100% { box-shadow: 0 0 12px rgba(249, 115, 22, 0.6), 0 0 24px rgba(249, 115, 22, 0.3); }
-  50% { box-shadow: 0 0 18px rgba(249, 115, 22, 0.8), 0 0 36px rgba(249, 115, 22, 0.5); }
+0%, 100% { box-shadow: 0 0 12px rgba(249, 115, 22, 0.6), 0 0 24px rgba(249, 115, 22, 0.3); }
+50% { box-shadow: 0 0 18px rgba(249, 115, 22, 0.8), 0 0 36px rgba(249, 115, 22, 0.5); }
 }
 
 .rainbow-text {
-  background: linear-gradient(90deg, #ff3ea5, #2ee9ff, #ffe155, #ff3ea5);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 0 10px rgba(255,255,255,0.20));
+background: linear-gradient(90deg, #ff3ea5, #2ee9ff, #ffe155, #ff3ea5);
+-webkit-background-clip: text;
+background-clip: text;
+color: transparent;
+filter: drop-shadow(0 0 10px rgba(255,255,255,0.20));
 }
 
 .holo-button {
-  background: linear-gradient(90deg, #ff3ea5, #2ee9ff, #ffe155, #ff3ea5);
-  box-shadow: 0 0 18px rgba(255,255,255,0.18);
+background: linear-gradient(90deg, #ff3ea5, #2ee9ff, #ffe155, #ff3ea5);
+box-shadow: 0 0 18px rgba(255,255,255,0.18);
 }
 
 /* ===== God Pack effect ===== */
 @keyframes godGlowPulse {
-  0% { opacity: 0; transform: scale(0.95); }
-  20% { opacity: 1; transform: scale(1.0); }
-  100% { opacity: 0; transform: scale(1.05); }
+0% { opacity: 0; transform: scale(0.95); }
+20% { opacity: 1; transform: scale(1.0); }
+100% { opacity: 0; transform: scale(1.05); }
 }
 @keyframes confettiFall {
-  0% { transform: translateY(-20vh) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+0% { transform: translateY(-20vh) rotate(0deg); opacity: 1; }
+100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
 }
 .godpack-effect {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 2500;
-  overflow: hidden;
+position: fixed;
+inset: 0;
+pointer-events: none;
+z-index: 2500;
+overflow: hidden;
 }
 .godpack-effect::before {
-  content: '';
-  position: absolute;
-  inset: -20%;
-  background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.28), rgba(168,85,247,0.12) 40%, rgba(0,0,0,0) 72%);
-  mix-blend-mode: screen;
-  animation: godGlowPulse 1.6s ease-out forwards;
+content: ‘’;
+position: absolute;
+inset: -20%;
+background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.28), rgba(168,85,247,0.12) 40%, rgba(0,0,0,0) 72%);
+mix-blend-mode: screen;
+animation: godGlowPulse 1.6s ease-out forwards;
 }
 .confetti-piece {
-  position: absolute;
-  top: -12vh;
-  width: var(--w);
-  height: var(--h);
-  left: var(--left);
-  background: var(--c);
-  border-radius: 2px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
-  animation: confettiFall var(--dur) linear forwards;
-  animation-delay: var(--delay);
-  opacity: 0.95;
+position: absolute;
+top: -12vh;
+width: var(–w);
+height: var(–h);
+left: var(–left);
+background: var(–c);
+border-radius: 2px;
+filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+animation: confettiFall var(–dur) linear forwards;
+animation-delay: var(–delay);
+opacity: 0.95;
 }
 .godpack-gate {
-  position: fixed;
-  inset: 0;
-  z-index: 3200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.72);
-  backdrop-filter: blur(6px);
+position: fixed;
+inset: 0;
+z-index: 3200;
+display: flex;
+align-items: center;
+justify-content: center;
+background: rgba(0,0,0,0.72);
+backdrop-filter: blur(6px);
 }
 .godpack-gate-card {
-  width: min(560px, 92vw);
-  border-radius: 18px;
-  padding: 24px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(17,24,39,0.92);
-  box-shadow: 0 30px 90px rgba(0,0,0,0.55);
-  position: relative;
-  overflow: hidden;
+width: min(560px, 92vw);
+border-radius: 18px;
+padding: 24px;
+border: 1px solid rgba(255,255,255,0.14);
+background: rgba(17,24,39,0.92);
+box-shadow: 0 30px 90px rgba(0,0,0,0.55);
+position: relative;
+overflow: hidden;
 }
 .godpack-gate-card::before {
-  content: '';
-  position: absolute;
-  inset: -30%;
-  background: conic-gradient(from 90deg, rgba(168,85,247,0.35), rgba(34,211,238,0.28), rgba(250,204,21,0.28), rgba(244,63,94,0.26), rgba(168,85,247,0.35));
-  filter: blur(20px);
-  opacity: 0.85;
+content: ‘’;
+position: absolute;
+inset: -30%;
+background: conic-gradient(from 90deg, rgba(168,85,247,0.35), rgba(34,211,238,0.28), rgba(250,204,21,0.28), rgba(244,63,94,0.26), rgba(168,85,247,0.35));
+filter: blur(20px);
+opacity: 0.85;
 }
 .godpack-gate-content {
-  position: relative;
-  text-align: center;
+position: relative;
+text-align: center;
 }
 .godpack-gate-title {
-  font-size: 34px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin: 0 0 8px 0;
+font-size: 34px;
+font-weight: 900;
+letter-spacing: 1px;
+text-transform: uppercase;
+margin: 0 0 8px 0;
 }
 .godpack-gate-sub {
-  color: rgba(255,255,255,0.85);
-  margin: 0 0 18px 0;
-  line-height: 1.35;
+color: rgba(255,255,255,0.85);
+margin: 0 0 18px 0;
+line-height: 1.35;
 }
 .godpack-gate-note {
-  color: rgba(255,255,255,0.70);
-  margin: 0 0 18px 0;
-  font-size: 13px;
+color: rgba(255,255,255,0.70);
+margin: 0 0 18px 0;
+font-size: 13px;
 }
 .godpack-gate-actions {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
+display: flex;
+justify-content: center;
+gap: 10px;
 }
 .godpack-banner {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.20);
-  background: radial-gradient(circle at 30% 30%, rgba(236,72,153,0.25), rgba(168,85,247,0.15), rgba(0,0,0,0.25));
-  box-shadow: 0 0 40px rgba(236,72,153,0.20), 0 0 60px rgba(168,85,247,0.18);
+display: inline-flex;
+align-items: center;
+gap: 10px;
+padding: 10px 16px;
+border-radius: 999px;
+border: 1px solid rgba(255,255,255,0.20);
+background: radial-gradient(circle at 30% 30%, rgba(236,72,153,0.25), rgba(168,85,247,0.15), rgba(0,0,0,0.25));
+box-shadow: 0 0 40px rgba(236,72,153,0.20), 0 0 60px rgba(168,85,247,0.18);
 }
-
-
 
 /* ===== Mobile Navigation ===== */
 .hamburger-btn { display: inline-flex; align-items: center; justify-content: center; }
 .topbar-nav { display: none !important; }
 .menu-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.35);
-  z-index: 200;
+position: fixed;
+inset: 0;
+background: rgba(0,0,0,0.35);
+z-index: 200;
 }
 .menu-panel {
-  position: fixed;
-  top: 66px;
-  right: 12px;
-  width: min(340px, calc(100vw - 24px));
-  background: rgba(17,24,39,0.96);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 16px;
-  padding: 10px;
-  z-index: 201;
-  box-shadow: 0 24px 70px rgba(0,0,0,0.55);
-  backdrop-filter: blur(10px);
+position: fixed;
+top: 66px;
+right: 12px;
+width: min(340px, calc(100vw - 24px));
+background: rgba(17,24,39,0.96);
+border: 1px solid rgba(255,255,255,0.12);
+border-radius: 16px;
+padding: 10px;
+z-index: 201;
+box-shadow: 0 24px 70px rgba(0,0,0,0.55);
+backdrop-filter: blur(10px);
 }
 @media (max-width: 720px) {
-  .topbar-title { font-size: 18px !important; }
-  .topbar { padding: 10px 12px !important; }
+.topbar-title { font-size: 18px !important; }
+.topbar { padding: 10px 12px !important; }
 }
-
 
 /* ===== Mobile UX improvements (v14) ===== */
 :root{
-  --ui-radius: 16px;
-  --ui-radius-sm: 12px;
-  --ui-pad: 12px;
-  --ui-pad-sm: 10px;
-  --ui-border: 1px solid rgba(255,255,255,0.12);
+–ui-radius: 16px;
+–ui-radius-sm: 12px;
+–ui-pad: 12px;
+–ui-pad-sm: 10px;
+–ui-border: 1px solid rgba(255,255,255,0.12);
 }
 
-button, [role="button"]{
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+button, [role=“button”]{
+touch-action: manipulation;
+-webkit-tap-highlight-color: transparent;
 }
 
 .topbar{
-  position: sticky;
-  top: 0;
-  z-index: 220;
-  backdrop-filter: blur(10px);
+position: sticky;
+top: 0;
+z-index: 220;
+backdrop-filter: blur(10px);
 }
 
 /* Make sure the page never shows white on iOS when rubber-banding */
 body{
-  background-color: #111827;
-  overscroll-behavior-y: none;
+background-color: #111827;
+overscroll-behavior-y: none;
 }
 
 @keyframes menuSlideUp{
-  from{ transform: translateY(14px); opacity: 0.0; }
-  to{ transform: translateY(0); opacity: 1; }
+from{ transform: translateY(14px); opacity: 0.0; }
+to{ transform: translateY(0); opacity: 1; }
 }
 
 @media (max-width: 720px){
-  /* Respect iOS safe areas */
-  .topbar{
-    padding-top: calc(10px + env(safe-area-inset-top)) !important;
-    padding-left: calc(12px + env(safe-area-inset-left)) !important;
-    padding-right: calc(12px + env(safe-area-inset-right)) !important;
-  }
+/* Respect iOS safe areas */
+.topbar{
+padding-top: calc(10px + env(safe-area-inset-top)) !important;
+padding-left: calc(12px + env(safe-area-inset-left)) !important;
+padding-right: calc(12px + env(safe-area-inset-right)) !important;
+}
 
-  
+.menu-item{
+padding: 14px 14px !important;
+font-size: 16px !important;
+border-radius: 14px !important;
+}
 
+/* Bigger taps across the app */
+.hamburger-btn{
+width: 42px !important;
+height: 42px !important;
+border-radius: 12px !important;
+}
 
-
-  .menu-item{
-    padding: 14px 14px !important;
-    font-size: 16px !important;
-    border-radius: 14px !important;
-  }
-
-  /* Bigger taps across the app */
-  .hamburger-btn{
-    width: 42px !important;
-    height: 42px !important;
-    border-radius: 12px !important;
-  }
-
-  /* Modal images slightly larger and less cramped */
-  .modal-image{
-    max-width: 94vw !important;
-    max-height: 86vh !important;
-  }
+/* Modal images slightly larger and less cramped */
+.modal-image{
+max-width: 94vw !important;
+max-height: 86vh !important;
+}
 }
 
 /* Improve readability on small screens (badges, small overlays) */
 .card-dup-badge, .holo-dup-badge{
-  text-shadow: 0 1px 2px rgba(0,0,0,0.65);
+text-shadow: 0 1px 2px rgba(0,0,0,0.65);
 }
 
 /* ===== Pack Ripping Styles ===== */
 .pack-rip-container {
-  position: relative;
-  width: 280px;
-  height: 400px;
-  margin: 0 auto;
-  perspective: 1000px;
+position: relative;
+width: 280px;
+height: 400px;
+margin: 0 auto;
+perspective: 1000px;
 }
 
 .pack-wrapper {
-  position: relative;
-  width: 100%;
-  height: 100%;
+position: relative;
+width: 100%;
+height: 100%;
 }
 
 .pack-body {
-  position: absolute;
-  inset: 0;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 3px solid rgba(168, 85, 247, 0.5);
-  box-shadow: 0 25px 50px -12px rgba(168, 85, 247, 0.5);
+position: absolute;
+inset: 0;
+border-radius: 16px;
+overflow: hidden;
+border: 3px solid rgba(168, 85, 247, 0.5);
+box-shadow: 0 25px 50px -12px rgba(168, 85, 247, 0.5);
 }
 
 .pack-top {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: linear-gradient(180deg, rgba(168, 85, 247, 0.8) 0%, rgba(168, 85, 247, 0.4) 100%);
-  border-bottom: 3px dashed rgba(255, 255, 255, 0.4);
-  cursor: grab;
-  z-index: 10;
-  transform-origin: left center;
-  transition: transform 0.1s ease-out;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+height: 60px;
+background: linear-gradient(180deg, rgba(168, 85, 247, 0.8) 0%, rgba(168, 85, 247, 0.4) 100%);
+border-bottom: 3px dashed rgba(255, 255, 255, 0.4);
+cursor: grab;
+z-index: 10;
+transform-origin: left center;
+transition: transform 0.1s ease-out;
+display: flex;
+align-items: center;
+justify-content: center;
 }
 
 .pack-top:active {
-  cursor: grabbing;
+cursor: grabbing;
 }
 
 .pack-top-text {
-  color: white;
-  font-size: 12px;
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  pointer-events: none;
-  opacity: 0.9;
+color: white;
+font-size: 12px;
+font-weight: bold;
+text-transform: uppercase;
+letter-spacing: 1px;
+pointer-events: none;
+opacity: 0.9;
 }
 
 .pack-tear-progress {
-  position: absolute;
-  top: 57px;
-  left: 0;
-  height: 6px;
-  background: linear-gradient(90deg, #ec4899, #a855f7);
-  border-radius: 0 3px 3px 0;
-  transition: width 0.05s linear;
-  box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+position: absolute;
+top: 57px;
+left: 0;
+height: 6px;
+background: linear-gradient(90deg, #ec4899, #a855f7);
+border-radius: 0 3px 3px 0;
+transition: width 0.05s linear;
+box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
 }
 
 @keyframes packTopTearOff {
-  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(-100px) rotate(-15deg); opacity: 0; }
+0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+100% { transform: translateY(-100px) rotate(-15deg); opacity: 0; }
 }
 
 .pack-top-torn {
-  animation: packTopTearOff 0.4s ease-out forwards;
+animation: packTopTearOff 0.4s ease-out forwards;
 }
 
 /* Card stack styles */
 .card-stack-container {
-  position: relative;
-  width: 220px;
-  height: 308px;
-  margin: 0 auto;
+position: relative;
+width: 220px;
+height: 308px;
+margin: 0 auto;
 }
 
 .stacked-card {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 12px;
-  overflow: hidden;
-  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-  cursor: pointer;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+position: absolute;
+width: 100%;
+height: 100%;
+border-radius: 12px;
+overflow: hidden;
+transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+cursor: pointer;
+box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .stacked-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+width: 100%;
+height: 100%;
+object-fit: cover;
 }
 
 /* Holo effect for stacked cards */
 .stacked-card.foil-glow::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(120deg,
-    rgba(255, 0, 128, 0.35),
-    rgba(0, 255, 255, 0.32),
-    rgba(255, 255, 0, 0.30),
-    rgba(128, 0, 255, 0.32),
-    rgba(255, 0, 128, 0.35)
-  );
-  opacity: 0.6;
-  filter: saturate(1.5) contrast(1.08);
-  pointer-events: none;
-  z-index: 10;
+content: ‘’;
+position: absolute;
+inset: 0;
+border-radius: inherit;
+background: linear-gradient(120deg,
+rgba(255, 0, 128, 0.35),
+rgba(0, 255, 255, 0.32),
+rgba(255, 255, 0, 0.30),
+rgba(128, 0, 255, 0.32),
+rgba(255, 0, 128, 0.35)
+);
+opacity: 0.6;
+filter: saturate(1.5) contrast(1.08);
+pointer-events: none;
+z-index: 10;
 }
 
 .stacked-card.foil-glow::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35), rgba(255,255,255,0.0) 55%);
-  opacity: 0.4;
-  pointer-events: none;
-  z-index: 11;
+content: ‘’;
+position: absolute;
+inset: 0;
+border-radius: inherit;
+background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35), rgba(255,255,255,0.0) 55%);
+opacity: 0.4;
+pointer-events: none;
+z-index: 11;
 }
 
 /* Holo effect for grid cards */
 .grid-card.foil-glow::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(120deg,
-    rgba(255, 0, 128, 0.35),
-    rgba(0, 255, 255, 0.32),
-    rgba(255, 255, 0, 0.30),
-    rgba(128, 0, 255, 0.32),
-    rgba(255, 0, 128, 0.35)
-  );
-  opacity: 0.6;
-  filter: saturate(1.5) contrast(1.08);
-  pointer-events: none;
-  z-index: 10;
+content: ‘’;
+position: absolute;
+inset: 0;
+border-radius: inherit;
+background: linear-gradient(120deg,
+rgba(255, 0, 128, 0.35),
+rgba(0, 255, 255, 0.32),
+rgba(255, 255, 0, 0.30),
+rgba(128, 0, 255, 0.32),
+rgba(255, 0, 128, 0.35)
+);
+opacity: 0.6;
+filter: saturate(1.5) contrast(1.08);
+pointer-events: none;
+z-index: 10;
 }
 
 .grid-card.foil-glow::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35), rgba(255,255,255,0.0) 55%);
-  opacity: 0.4;
-  pointer-events: none;
-  z-index: 11;
+content: ‘’;
+position: absolute;
+inset: 0;
+border-radius: inherit;
+background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35), rgba(255,255,255,0.0) 55%);
+opacity: 0.4;
+pointer-events: none;
+z-index: 11;
 }
 
 @keyframes cardSlideOff {
-  0% { transform: translateX(0) rotate(0deg); opacity: 1; }
-  100% { transform: translateX(400px) rotate(15deg); opacity: 0; }
+0% { transform: translateX(0) rotate(0deg); opacity: 1; }
+100% { transform: translateX(400px) rotate(15deg); opacity: 0; }
 }
 
 .card-sliding-off {
-  animation: cardSlideOff 0.35s ease-in forwards;
-  pointer-events: none;
+animation: cardSlideOff 0.35s ease-in forwards;
+pointer-events: none;
 }
 
 /* Grid reveal layout */
 .cards-grid-reveal {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
-  max-width: 700px;
-  margin: 0 auto;
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+gap: 12px;
+max-width: 700px;
+margin: 0 auto;
 }
 
 .cards-grid-reveal .grid-card {
-  aspect-ratio: 2.5/3.5;
-  border-radius: 10px;
-  overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
-  cursor: pointer;
-  position: relative;
+aspect-ratio: 2.5/3.5;
+border-radius: 10px;
+overflow: hidden;
+transition: transform 0.2s, box-shadow 0.2s;
+cursor: pointer;
+position: relative;
 }
 
 .cards-grid-reveal .grid-card:hover {
-  transform: scale(1.05);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+transform: scale(1.05);
+box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
 .cards-grid-reveal .grid-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+width: 100%;
+height: 100%;
+object-fit: cover;
 }
 
 </style>
@@ -1167,6 +1159,202 @@ body{
         1: 1           // 1% - rare novelty
       };
 
+      // ===== NPC Community System =====
+      const NPC_PROFILES = {
+        'xX_CardMaster_Xx': {
+          name: 'xX_CardMaster_Xx',
+          avatar: '😤',
+          bio: 'Pro collector since 2019 💪 Only the best cards',
+          emojis: ['😤', '🔥', '💀', '🎮', '👊', '💪', '😈', '🏆'],
+          buyRange: [0.50, 0.65],  // Lowballs
+          sellRange: [1.15, 1.30], // Overpriced
+          offerTypes: ['buy', 'sell'],
+          focusRarity: ['SR', 'UR', 'SP'],
+          focusHolo: false,
+          focusGraded: false,
+          focusSealed: false,
+          speechStyle: 'tryhard',
+          messages: {
+            buy: ["yo i need that {card} you got. ill give you {price} rations for it", "bro sell me your {card} for {price}R, its a fair deal trust", "that {card} would look sick in my collection. {price}R?"],
+            sell: ["check this {card} bro, only {price}R 🔥 steal of a deal", "selling my {card} for {price}R, you need this fr", "got a {card} im letting go for {price}R, lmk"],
+            trade: ["trade your {card1} for my {card2}? even swap 🤝"]
+          }
+        },
+        'GrampasCards': {
+          name: 'GrampasCards',
+          avatar: '👴',
+          bio: 'Been collecting since the 70s! My grandson set this up for me.',
+          emojis: ['😊', '👍', '🤔', '📞', '💚', '🙂', '👋', '❤️'],
+          buyRange: [0.40, 0.80],  // Random/confused
+          sellRange: [0.70, 1.40], // Sometimes great deals
+          offerTypes: ['buy', 'sell', 'trade'],
+          focusRarity: null,
+          focusHolo: false,
+          focusGraded: false,
+          focusSealed: true,
+          speechStyle: 'grandpa',
+          messages: {
+            buy: ["Hello! Would you sell your {card} for {price} rations? My grandson says thats fair", "I'd like to buy that {card} if you dont mind. How about {price} rations?", "Is {price} rations okay for your {card}? Im still learning these prices"],
+            sell: ["I have this {card} I dont need anymore. Would {price} rations be okay?",  "My grandson said this {card} is worth something. {price} rations sound right?", "Cleaning out my collection! {card} for {price} rations if youre interested"],
+            trade: ["Would you trade your {card1} for my {card2}? Seems fair to me!"]
+          }
+        },
+        'DefinitelyNotAScam': {
+          name: 'DefinitelyNotAScam',
+          avatar: '🥸',
+          bio: 'Legitimate business man. Trust me. 100% real deals.',
+          emojis: ['🤝', '💯', '😅', '👀', '🙏', '😬', '🤫', '💼'],
+          buyRange: [0.30, 0.50],  // Ripoff
+          sellRange: [1.40, 1.80], // Scam
+          offerTypes: ['buy', 'sell', 'trade'],
+          focusRarity: null,
+          focusHolo: false,
+          focusGraded: true,
+          focusSealed: true,
+          speechStyle: 'scammer',
+          messages: {
+            buy: ["hey friend! ill take that {card} off your hands for {price}R. very fair price trust me 🤝", "i can do {price}R for your {card}. this is GREAT deal for you", "your {card} is worth exactly {price}R, i checked. sell to me?"],
+            sell: ["RARE OPPORTUNITY! {card} only {price}R! Usually sells for way more!", "my friend, this {card} is worth 10x what im asking. only {price}R for you!", "{card} for {price}R. im basically giving it away. dont tell anyone 🤫"],
+            trade: ["fair trade: your {card1} for my {card2}. trust me both same value 💯"]
+          }
+        },
+        'HoloHunter99': {
+          name: 'HoloHunter99',
+          avatar: '✨',
+          bio: '✨ HOLO ONLY ✨ Dont msg me about regular cards',
+          emojis: ['✨', '🌈', '😍', '💎', '⭐', '🤩', '💫', '🌟'],
+          buyRange: [0.90, 1.10],  // Overpays for holos
+          sellRange: [0.95, 1.15], // Fair prices
+          offerTypes: ['buy', 'sell', 'trade'],
+          focusRarity: null,
+          focusHolo: true,
+          focusGraded: true,
+          focusSealed: false,
+          speechStyle: 'holo',
+          messages: {
+            buy: ["OMG is that a holo {card}?! 😍 ill pay {price}R for it!!", "i NEED that shiny {card}! {price}R? pleaseee ✨", "that holo {card} is gorgeous! {price}R and its a deal?"],
+            sell: ["look at this BEAUTIFUL holo {card}! ✨ only {price}R", "selling this sparkly {card} for {price}R 🌈 so pretty", "holo {card} for {price}R! the shine on this one is amazing 💎"],
+            trade: ["holo for holo? your {card1} for my {card2}? ✨"]
+          }
+        },
+        'BargainBarry': {
+          name: 'BargainBarry',
+          avatar: '🤑',
+          bio: 'Looking for deals! Bulk buyer. Low prices only.',
+          emojis: ['🤑', '💵', '😬', '📉', '👌', '💰', '🏷️', '📦'],
+          buyRange: [0.55, 0.70],  // Lowballs
+          sellRange: [0.80, 0.95], // Actual good deals!
+          offerTypes: ['buy', 'sell'],
+          focusRarity: ['C', 'UC'],
+          focusHolo: false,
+          focusGraded: false,
+          focusSealed: true,
+          speechStyle: 'bargain',
+          messages: {
+            buy: ["ill take that {card} for {price}R. bulk deal, take it or leave it", "best i can do is {price}R for your {card}. final offer", "{price}R for the {card}. im buying in bulk so thats the price"],
+            sell: ["got {card} for cheap! only {price}R, way under market 📉", "clearing inventory: {card} for {price}R. steal of a deal", "bargain bin special: {card} only {price}R 🏷️"],
+            trade: []
+          }
+        },
+        'WhaleWatcher': {
+          name: 'WhaleWatcher',
+          avatar: '🐋',
+          bio: '💰 Serious collector only. High-end cards. Money is no object.',
+          emojis: ['🐋', '💰', '👑', '🏆', '💸', '🎩', '💎', '🥂'],
+          buyRange: [0.95, 1.20],  // Overpays for rares
+          sellRange: [1.10, 1.25], // Overcharges for commons
+          offerTypes: ['buy', 'sell'],
+          focusRarity: ['SR', 'UR', 'SP'],
+          focusHolo: false,
+          focusGraded: true,
+          focusSealed: true,
+          speechStyle: 'whale',
+          messages: {
+            buy: ["I collect only the finest. {price}R for your {card}? 💰", "That {card} belongs in my vault. {price}R. Name your price if higher.", "A {card}! Exquisite. I'll pay {price}R immediately. 👑"],
+            sell: ["Selling a common {card} for {price}R. Peasant cards for peasant collectors 🎩", "I suppose I can part with this {card} for {price}R", "{card} available for {price}R. Below my usual standards but perhaps you'd want it"],
+            trade: []
+          }
+        },
+        'CardboardCrackhead': {
+          name: 'CardboardCrackhead',
+          avatar: '🫠',
+          bio: 'I just need ONE more pack... okay maybe two... or ten...',
+          emojis: ['😵', '🫠', '🙃', '❤️‍🔥', '🤪', '😵‍💫', '🥴', '💀'],
+          buyRange: [0.60, 1.00],  // Erratic
+          sellRange: [0.60, 1.00], // Erratic
+          offerTypes: ['buy', 'sell', 'trade'],
+          focusRarity: null,
+          focusHolo: false,
+          focusGraded: true,
+          focusSealed: true,
+          speechStyle: 'addict',
+          messages: {
+            buy: ["dude i NEED that {card}!! {price}R?? ill throw in my lunch money", "bro please {card} for {price}R i cant stop thinking about it 😵‍💫", "okay hear me out... {price}R for {card}... i know i said no more buying but..."],
+            sell: ["selling {card} for {price}R so i can buy more packs 🫠", "gotta let go of {card} for {price}R... need pack money...", "{card} for {price}R take it quick before i change my mind"],
+            trade: ["TRADE?? your {card1} for my {card2}?? please i need new cards 🤪"]
+          }
+        },
+        'MomsBasement_Mike': {
+          name: 'MomsBasement_Mike',
+          avatar: '🤓',
+          bio: 'Actually, the correct term is "collectibles". 15 years exp.',
+          emojis: ['🤓', '☝️', '😤', '🎯', '📊', '📈', '🧐', '💡'],
+          buyRange: [0.70, 0.80],  // Fair but firm
+          sellRange: [1.05, 1.15], // Slight markup
+          offerTypes: ['buy', 'sell', 'trade'],
+          focusRarity: null,
+          focusHolo: false,
+          focusGraded: true,
+          focusSealed: false,
+          speechStyle: 'nerd',
+          messages: {
+            buy: ["According to my spreadsheet, {card} is worth exactly {price}R. I'll buy at that price.", "Actually, {price}R for {card} is the fair market value. Interested?", "I've analyzed the data. {card} = {price}R. This is non-negotiable. 📊"],
+            sell: ["Selling {card} for {price}R. I've calculated this is 5% above floor price.", "Listing {card} at {price}R. My pricing algorithm is never wrong 🎯", "{card} available for {price}R. Condition: Near Mint. No lowballers."],
+            trade: ["I propose an equal value trade: {card1} for {card2}. The math checks out ☝️"]
+          }
+        },
+        'TheGradeGuru': {
+          name: 'TheGradeGuru',
+          avatar: '🔬',
+          bio: 'PSA 10 or nothing. Raw cards are for casuals.',
+          emojis: ['🔬', '📈', '🧐', '💯', '🏅', '⭐', '🎖️', '📋'],
+          buyRange: [0.50, 1.30],  // Varies by grade
+          sellRange: [0.90, 1.20], // Varies by grade
+          offerTypes: ['buy', 'sell', 'trade'],
+          focusRarity: null,
+          focusHolo: false,
+          focusGraded: true,
+          focusSealed: false,
+          speechStyle: 'grader',
+          messages: {
+            buy: ["Hmm, that graded {card}... {price}R. The centering looks decent.", "I'll take that slab for {price}R. The grade is... acceptable. 🧐", "Your graded {card} for {price}R? Let me examine the label first... okay deal."],
+            sell: ["Premium graded {card} available. {price}R firm. Check that grade! 🏅", "Selling this beautiful slab: {card} for {price}R. Population report is favorable.", "Graded {card} for {price}R. This grade is undervalued imo 📈"],
+            trade: ["Trade slabs? Your graded {card1} for my graded {card2}?"]
+          }
+        },
+        'FlipMaster3000': {
+          name: 'FlipMaster3000',
+          avatar: '📈',
+          bio: '📈 Buy low sell high 📉 Not financial advice. To the moon! 🚀',
+          emojis: ['📈', '📉', '💹', '🚀', '😎', '💰', '🔥', '⚡'],
+          buyRange: [0.80, 0.90],  // Buys rising cards
+          sellRange: [0.85, 1.00], // Sells falling cards
+          offerTypes: ['buy', 'sell'],
+          focusRarity: null,
+          focusHolo: false,
+          focusGraded: true,
+          focusSealed: true,
+          speechStyle: 'trader',
+          messages: {
+            buy: ["that {card} is PUMPING! 📈 {price}R before it moons?", "bullish on {card}! buying at {price}R, this thing is going to 10x 🚀", "{card} breakout incoming. {price}R. get in or regret it"],
+            sell: ["dumping {card} for {price}R, chart looks bearish 📉", "taking profits on {card}. {price}R. smart money moves", "selling {card} at {price}R before the crash. trust the process 😎"],
+            trade: []
+          }
+        }
+      };
+
+      const NPC_IDS = Object.keys(NPC_PROFILES);
+
       // ===== Inventory Helper Functions =====
       // Get sealed count for a specific game/set/product
       const getSealedCount = useCallback((gameId, setId, productType) => {
@@ -1600,6 +1788,27 @@ body{
       const [eventLog, setEventLog] = useState([]);
       const [selectedEvent, setSelectedEvent] = useState(null);
 
+      // ===== NPC Community State =====
+      const [npcChats, setNpcChats] = useState(() => {
+        try {
+          const core = readCoreSave();
+          if (core && core.npcChats) return core.npcChats;
+          const raw = localStorage.getItem('tcg-npc-chats');
+          if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        // Initialize empty chat threads for each NPC
+        const initial = {};
+        NPC_IDS.forEach(id => { initial[id] = { messages: [], hasUnread: false }; });
+        return initial;
+      });
+      const [activeNpcChat, setActiveNpcChat] = useState(null);
+      const [npcOfferModal, setNpcOfferModal] = useState(null);
+      const [userMessageInput, setUserMessageInput] = useState('');
+
+      const saveNpcChats = useCallback((chats) => {
+        try { localStorage.setItem('tcg-npc-chats', JSON.stringify(chats)); } catch (e) {}
+        try { updateCoreSave({ npcChats: chats }); } catch (e) {}
+      }, []);
 
       // ===== Settings / Save / Debug =====
       const [saveSeed, setSaveSeed] = useState(() => {
@@ -2862,6 +3071,275 @@ body{
         try { updateCoreSave({ freeStarterClaimed: !!claimed }); } catch (e) {}
       }, []);
 
+      // ===== NPC Offer Generation =====
+      const generateNpcOffers = useCallback((day) => {
+        // Pick 1-3 random NPCs to send offers today
+        const numOffers = 1 + Math.floor(Math.random() * 3); // 1-3
+        const shuffledNpcs = [...NPC_IDS].sort(() => Math.random() - 0.5);
+        const selectedNpcs = shuffledNpcs.slice(0, numOffers);
+        
+        const newChats = { ...npcChats };
+        
+        selectedNpcs.forEach(npcId => {
+          const profile = NPC_PROFILES[npcId];
+          if (!profile) return;
+          
+          // Determine offer type
+          const availableTypes = profile.offerTypes.filter(t => {
+            if (t === 'trade') return profile.offerTypes.includes('trade');
+            return true;
+          });
+          if (availableTypes.length === 0) return;
+          
+          const offerType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+          let offer = null;
+          
+          // Helper to get a random card the player owns
+          const getOwnedCard = (filter = () => true) => {
+            const owned = [];
+            Object.entries(collection).forEach(([cardId, entry]) => {
+              if ((entry.normal || 0) > 0 || (entry.holo || 0) > 0) {
+                // Find card data
+                for (const [gameId, gameSets] of Object.entries(setConfigs)) {
+                  for (const [setId, setConfig] of Object.entries(gameSets)) {
+                    const card = setConfig.cards?.find(c => c.id === cardId);
+                    if (card && filter(card, entry)) {
+                      owned.push({ 
+                        ...card, 
+                        gameId, 
+                        setId, 
+                        hasNormal: (entry.normal || 0) > 0,
+                        hasHolo: (entry.holo || 0) > 0
+                      });
+                    }
+                  }
+                }
+              }
+            });
+            if (owned.length === 0) return null;
+            return owned[Math.floor(Math.random() * owned.length)];
+          };
+          
+          // Helper to get a random card from the game
+          const getRandomCard = (filter = () => true) => {
+            const allCards = [];
+            for (const [gameId, gameSets] of Object.entries(setConfigs)) {
+              for (const [setId, setConfig] of Object.entries(gameSets)) {
+                setConfig.cards?.forEach(card => {
+                  if (filter(card)) {
+                    allCards.push({ ...card, gameId, setId });
+                  }
+                });
+              }
+            }
+            if (allCards.length === 0) return null;
+            return allCards[Math.floor(Math.random() * allCards.length)];
+          };
+          
+          // Helper to get owned graded card
+          const getOwnedGraded = () => {
+            if (!gradedCards || gradedCards.length === 0) return null;
+            return gradedCards[Math.floor(Math.random() * gradedCards.length)];
+          };
+          
+          // Helper to get owned sealed product
+          const getOwnedSealed = () => {
+            const products = [];
+            Object.entries(sealedInventory).forEach(([gameId, sets]) => {
+              Object.entries(sets).forEach(([setId, types]) => {
+                Object.entries(types).forEach(([productType, count]) => {
+                  if (count > 0) {
+                    products.push({ gameId, setId, productType, count });
+                  }
+                });
+              });
+            });
+            if (products.length === 0) return null;
+            return products[Math.floor(Math.random() * products.length)];
+          };
+          
+          // Filter based on NPC preferences
+          const cardFilter = (card, entry) => {
+            if (profile.focusRarity && profile.focusRarity.length > 0) {
+              if (!profile.focusRarity.includes(card.rarity)) return false;
+            }
+            if (profile.focusHolo) {
+              if (!(entry?.hasHolo || entry?.holo > 0)) return false;
+            }
+            return true;
+          };
+          
+          const randomCardFilter = (card) => {
+            if (profile.focusRarity && profile.focusRarity.length > 0) {
+              if (!profile.focusRarity.includes(card.rarity)) return false;
+            }
+            return true;
+          };
+          
+          // Generate offer based on type
+          if (offerType === 'buy') {
+            // NPC wants to buy from player
+            let targetCard = null;
+            let isGraded = false;
+            let isSealed = false;
+            let gradedData = null;
+            let sealedData = null;
+            let isHolo = false;
+            
+            // Check if NPC focuses on graded
+            if (profile.focusGraded && Math.random() < 0.4 && gradedCards.length > 0) {
+              gradedData = getOwnedGraded();
+              if (gradedData) {
+                isGraded = true;
+                const setConfig = setConfigs[gradedData.gameId]?.[gradedData.setId];
+                targetCard = setConfig?.cards?.find(c => c.id === gradedData.cardId);
+              }
+            }
+            
+            // Check if NPC focuses on sealed
+            if (!isGraded && profile.focusSealed && Math.random() < 0.3) {
+              sealedData = getOwnedSealed();
+              if (sealedData) {
+                isSealed = true;
+              }
+            }
+            
+            // Regular card
+            if (!isGraded && !isSealed) {
+              targetCard = getOwnedCard(cardFilter);
+              if (targetCard && profile.focusHolo && targetCard.hasHolo) {
+                isHolo = true;
+              } else if (targetCard && targetCard.hasHolo && Math.random() < 0.3) {
+                isHolo = true;
+              }
+            }
+            
+            if (!targetCard && !isSealed) return; // No valid card found
+            
+            // Calculate price
+            let baseValue = 0;
+            if (isSealed) {
+              // Estimate sealed value (rough)
+              const sealedMultipliers = { single: 1, bundle: 7.5, booster: 20, case: 100 };
+              baseValue = (sealedMultipliers[sealedData.productType] || 1) * 10; // Rough estimate
+            } else if (isGraded) {
+              const cardValue = marketValues[targetCard.id] || 1;
+              const holoMult = gradedData.isHolo ? (holoMultipliers[targetCard.id] || 1.5) : 1;
+              const gradeMult = GRADE_MULTIPLIERS[gradedData.grade] || 1;
+              baseValue = cardValue * holoMult * gradeMult;
+            } else {
+              const cardValue = marketValues[targetCard.id] || 1;
+              const holoMult = isHolo ? (holoMultipliers[targetCard.id] || 1.5) : 1;
+              baseValue = cardValue * holoMult;
+            }
+            
+            // Apply NPC's price range
+            const [minMult, maxMult] = profile.buyRange;
+            const priceMult = minMult + Math.random() * (maxMult - minMult);
+            const offerPrice = Math.max(0.01, baseValue * priceMult);
+            
+            offer = {
+              type: 'buy',
+              npcId,
+              day,
+              card: targetCard,
+              isHolo,
+              isGraded,
+              gradedData,
+              isSealed,
+              sealedData,
+              price: Math.round(offerPrice * 100) / 100,
+              marketValue: Math.round(baseValue * 100) / 100,
+              status: 'pending'
+            };
+          } else if (offerType === 'sell') {
+            // NPC wants to sell to player
+            let targetCard = null;
+            let isHolo = profile.focusHolo || Math.random() < 0.2;
+            
+            targetCard = getRandomCard(randomCardFilter);
+            if (!targetCard) return;
+            
+            const cardValue = marketValues[targetCard.id] || 1;
+            const holoMult = isHolo ? (holoMultipliers[targetCard.id] || 1.5) : 1;
+            const baseValue = cardValue * holoMult;
+            
+            // Apply NPC's price range
+            const [minMult, maxMult] = profile.sellRange;
+            const priceMult = minMult + Math.random() * (maxMult - minMult);
+            const offerPrice = Math.max(0.01, baseValue * priceMult);
+            
+            offer = {
+              type: 'sell',
+              npcId,
+              day,
+              card: targetCard,
+              isHolo,
+              price: Math.round(offerPrice * 100) / 100,
+              marketValue: Math.round(baseValue * 100) / 100,
+              status: 'pending'
+            };
+          } else if (offerType === 'trade') {
+            // NPC wants to trade
+            const playerCard = getOwnedCard(cardFilter);
+            const npcCard = getRandomCard(randomCardFilter);
+            
+            if (!playerCard || !npcCard) return;
+            
+            const playerIsHolo = profile.focusHolo && playerCard.hasHolo;
+            const npcIsHolo = profile.focusHolo || Math.random() < 0.2;
+            
+            offer = {
+              type: 'trade',
+              npcId,
+              day,
+              playerCard,
+              playerIsHolo,
+              npcCard,
+              npcIsHolo,
+              status: 'pending'
+            };
+          }
+          
+          if (!offer) return;
+          
+          // Generate message
+          const templates = profile.messages[offerType];
+          if (!templates || templates.length === 0) return;
+          
+          let message = templates[Math.floor(Math.random() * templates.length)];
+          
+          if (offer.type === 'buy' || offer.type === 'sell') {
+            const cardName = offer.isSealed 
+              ? `${offer.sealedData.productType} (${offer.sealedData.gameId})`
+              : (offer.isHolo ? `✨${offer.card.name}✨` : offer.card.name);
+            message = message.replace('{card}', cardName).replace('{price}', offer.price.toFixed(2));
+          } else if (offer.type === 'trade') {
+            const card1Name = offer.playerIsHolo ? `✨${offer.playerCard.name}✨` : offer.playerCard.name;
+            const card2Name = offer.npcIsHolo ? `✨${offer.npcCard.name}✨` : offer.npcCard.name;
+            message = message.replace('{card1}', card1Name).replace('{card2}', card2Name);
+          }
+          
+          // Add message to chat
+          if (!newChats[npcId]) {
+            newChats[npcId] = { messages: [], hasUnread: false };
+          }
+          
+          newChats[npcId].messages.push({
+            id: `${npcId}_${day}_${Date.now()}`,
+            from: 'npc',
+            text: message,
+            offer,
+            day,
+            timestamp: Date.now()
+          });
+          newChats[npcId].hasUnread = true;
+        });
+        
+        setNpcChats(newChats);
+        saveNpcChats(newChats);
+      }, [npcChats, collection, setConfigs, marketValues, holoMultipliers, gradedCards, sealedInventory, saveNpcChats]);
+
       const advanceDay = () => {
         const nextDay = gameDay + 1;
         localStorage.setItem('tcg-game-day', String(nextDay));
@@ -2926,6 +3404,12 @@ body{
           console.error(e);
         }
       
+        // Generate NPC offers for the new day
+        try {
+          generateNpcOffers(nextDay);
+        } catch (e) {
+          console.error('NPC offer generation failed:', e);
+        }
 
         // Persist deterministic RNG state after advancing the day (debug mode only)
         persistRngState();
@@ -4726,10 +5210,30 @@ if (!isLoaded) {
                         textAlign: 'left',
                         fontWeight: 700,
                         fontSize: 14,
-                        marginBottom: 8
+                        marginBottom: 8,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
                       }}
                     >
-                      Community
+                      <span>Community</span>
+                      {(() => {
+                        const unreadCount = Object.values(npcChats).filter(c => c.hasUnread).length;
+                        return unreadCount > 0 ? (
+                          <span style={{
+                            background: '#ef4444',
+                            color: 'white',
+                            fontSize: 10,
+                            fontWeight: 800,
+                            padding: '2px 6px',
+                            borderRadius: 10,
+                            minWidth: 18,
+                            textAlign: 'center'
+                          }}>
+                            {unreadCount}
+                          </span>
+                        ) : null;
+                      })()}
                     </button>
                     <button
                       className="menu-item"
@@ -6867,20 +7371,472 @@ return (
             )}
 
             {view === 'community' && (
-              <div style={{ maxWidth: 980, margin: '0 auto', textAlign: 'center', padding: '60px 20px' }}>
-                <h2 style={{ fontSize: 32, fontWeight: 800, marginBottom: 16 }}>🌐 Community</h2>
-                <p style={{ color: '#9ca3af', fontSize: 16, marginBottom: 24 }}>
-                  Coming soon! Connect with other collectors, trade cards, and share your pulls.
+              <div style={{ maxWidth: 500, margin: '0 auto', padding: '20px' }}>
+                <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8, textAlign: 'center' }}>📱 Community</h2>
+                <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 20, textAlign: 'center' }}>
+                  Trade with other collectors! Check your messages for offers.
                 </p>
-                <div style={{ 
-                  padding: 32, 
-                  borderRadius: 16, 
-                  background: 'rgba(17,24,39,0.6)', 
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  color: '#6b7280'
+                
+                {/* Phone Frame */}
+                <div style={{
+                  background: '#1a1a2e',
+                  borderRadius: 40,
+                  border: '4px solid #2d2d44',
+                  overflow: 'hidden',
+                  boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
+                  maxWidth: 380,
+                  margin: '0 auto'
                 }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>
-                  <div>This feature is under construction</div>
+                  {/* Phone Notch */}
+                  <div style={{
+                    background: '#0d0d1a',
+                    padding: '8px 0',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: 8
+                  }}>
+                    <div style={{ width: 60, height: 6, background: '#2d2d44', borderRadius: 3 }}></div>
+                    <div style={{ width: 8, height: 8, background: '#2d2d44', borderRadius: '50%' }}></div>
+                  </div>
+                  
+                  {/* Phone Screen */}
+                  <div style={{ 
+                    background: 'linear-gradient(180deg, #0d0d1a 0%, #1a1a2e 100%)',
+                    minHeight: 500
+                  }}>
+                    {!activeNpcChat ? (
+                      /* Chat List View */
+                      <div>
+                        {/* Header */}
+                        <div style={{
+                          padding: '16px 20px',
+                          borderBottom: '1px solid rgba(255,255,255,0.1)',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <span style={{ fontSize: 20, fontWeight: 800 }}>Messages</span>
+                          <span style={{ color: '#9ca3af', fontSize: 12 }}>Day {gameDay}</span>
+                        </div>
+                        
+                        {/* Chat List */}
+                        <div style={{ padding: '8px 0' }}>
+                          {NPC_IDS.map(npcId => {
+                            const profile = NPC_PROFILES[npcId];
+                            const chat = npcChats[npcId] || { messages: [], hasUnread: false };
+                            const lastMsg = chat.messages[chat.messages.length - 1];
+                            const hasUnread = chat.hasUnread;
+                            const pendingOffers = chat.messages.filter(m => m.offer && m.offer.status === 'pending').length;
+                            
+                            return (
+                              <div 
+                                key={npcId}
+                                onClick={() => {
+                                  setActiveNpcChat(npcId);
+                                  // Mark as read
+                                  if (hasUnread) {
+                                    const updated = { ...npcChats };
+                                    updated[npcId] = { ...chat, hasUnread: false };
+                                    setNpcChats(updated);
+                                    saveNpcChats(updated);
+                                  }
+                                }}
+                                style={{
+                                  padding: '12px 20px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 12,
+                                  cursor: 'pointer',
+                                  background: hasUnread ? 'rgba(147,51,234,0.15)' : 'transparent',
+                                  borderLeft: hasUnread ? '3px solid #9333ea' : '3px solid transparent',
+                                  transition: 'background 0.2s'
+                                }}
+                              >
+                                {/* Avatar */}
+                                <div style={{
+                                  width: 50,
+                                  height: 50,
+                                  borderRadius: '50%',
+                                  background: 'rgba(255,255,255,0.1)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: 24,
+                                  flexShrink: 0
+                                }}>
+                                  {profile.avatar}
+                                </div>
+                                
+                                {/* Info */}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between', 
+                                    alignItems: 'center',
+                                    marginBottom: 4
+                                  }}>
+                                    <span style={{ 
+                                      fontWeight: hasUnread ? 800 : 600, 
+                                      fontSize: 14,
+                                      color: hasUnread ? 'white' : '#e5e7eb'
+                                    }}>
+                                      {profile.name}
+                                    </span>
+                                    {pendingOffers > 0 && (
+                                      <span style={{
+                                        background: '#9333ea',
+                                        color: 'white',
+                                        fontSize: 10,
+                                        fontWeight: 800,
+                                        padding: '2px 6px',
+                                        borderRadius: 10
+                                      }}>
+                                        {pendingOffers} offer{pendingOffers > 1 ? 's' : ''}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div style={{ 
+                                    color: '#9ca3af', 
+                                    fontSize: 12, 
+                                    overflow: 'hidden', 
+                                    textOverflow: 'ellipsis', 
+                                    whiteSpace: 'nowrap' 
+                                  }}>
+                                    {lastMsg ? lastMsg.text.substring(0, 40) + (lastMsg.text.length > 40 ? '...' : '') : profile.bio}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Individual Chat View */
+                      (() => {
+                        const profile = NPC_PROFILES[activeNpcChat];
+                        const chat = npcChats[activeNpcChat] || { messages: [] };
+                        
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', height: 500 }}>
+                            {/* Chat Header */}
+                            <div style={{
+                              padding: '12px 16px',
+                              borderBottom: '1px solid rgba(255,255,255,0.1)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12
+                            }}>
+                              <button
+                                onClick={() => setActiveNpcChat(null)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#9333ea',
+                                  fontSize: 20,
+                                  cursor: 'pointer',
+                                  padding: 4
+                                }}
+                              >
+                                ←
+                              </button>
+                              <div style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: '50%',
+                                background: 'rgba(255,255,255,0.1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: 18
+                              }}>
+                                {profile.avatar}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: 700, fontSize: 14 }}>{profile.name}</div>
+                                <div style={{ color: '#9ca3af', fontSize: 10 }}>{profile.bio.substring(0, 30)}...</div>
+                              </div>
+                            </div>
+                            
+                            {/* Messages */}
+                            <div style={{ 
+                              flex: 1, 
+                              overflowY: 'auto', 
+                              padding: '12px 16px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 8
+                            }}>
+                              {chat.messages.length === 0 ? (
+                                <div style={{ 
+                                  color: '#6b7280', 
+                                  textAlign: 'center', 
+                                  padding: 40,
+                                  fontSize: 13
+                                }}>
+                                  No messages yet. Check back after advancing the day!
+                                </div>
+                              ) : (
+                                chat.messages.map((msg, idx) => (
+                                  <div key={msg.id || idx}>
+                                    {/* Message Bubble */}
+                                    <div style={{
+                                      maxWidth: '85%',
+                                      marginLeft: msg.from === 'user' ? 'auto' : 0,
+                                      marginRight: msg.from === 'user' ? 0 : 'auto'
+                                    }}>
+                                      <div style={{
+                                        background: msg.from === 'user' ? '#9333ea' : 'rgba(255,255,255,0.1)',
+                                        padding: '10px 14px',
+                                        borderRadius: msg.from === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                                        fontSize: 13,
+                                        lineHeight: 1.4
+                                      }}>
+                                        {msg.text}
+                                      </div>
+                                      
+                                      {/* Offer Actions */}
+                                      {msg.offer && msg.offer.status === 'pending' && (
+                                        <div style={{
+                                          marginTop: 8,
+                                          padding: '10px 12px',
+                                          background: 'rgba(147,51,234,0.2)',
+                                          borderRadius: 12,
+                                          border: '1px solid rgba(147,51,234,0.3)'
+                                        }}>
+                                          <div style={{ fontSize: 11, color: '#a78bfa', marginBottom: 6, fontWeight: 600 }}>
+                                            {msg.offer.type === 'buy' ? '💰 WANTS TO BUY' : msg.offer.type === 'sell' ? '🏷️ WANTS TO SELL' : '🔄 WANTS TO TRADE'}
+                                          </div>
+                                          
+                                          {msg.offer.type !== 'trade' && (
+                                            <div style={{ fontSize: 12, marginBottom: 8 }}>
+                                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                                <span style={{ color: '#9ca3af' }}>Offer:</span>
+                                                <span style={{ color: '#fbbf24', fontWeight: 700 }}>{msg.offer.price.toFixed(2)} R</span>
+                                              </div>
+                                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span style={{ color: '#9ca3af' }}>Market:</span>
+                                                <span style={{ color: '#6b7280' }}>{msg.offer.marketValue.toFixed(2)} R</span>
+                                              </div>
+                                              {msg.offer.price > msg.offer.marketValue * 1.05 && msg.offer.type === 'buy' && (
+                                                <div style={{ color: '#10b981', fontSize: 10, marginTop: 4 }}>✓ Good deal for you!</div>
+                                              )}
+                                              {msg.offer.price < msg.offer.marketValue * 0.95 && msg.offer.type === 'sell' && (
+                                                <div style={{ color: '#10b981', fontSize: 10, marginTop: 4 }}>✓ Below market price!</div>
+                                              )}
+                                              {msg.offer.price < msg.offer.marketValue * 0.7 && msg.offer.type === 'buy' && (
+                                                <div style={{ color: '#ef4444', fontSize: 10, marginTop: 4 }}>⚠️ Lowball offer</div>
+                                              )}
+                                              {msg.offer.price > msg.offer.marketValue * 1.3 && msg.offer.type === 'sell' && (
+                                                <div style={{ color: '#ef4444', fontSize: 10, marginTop: 4 }}>⚠️ Overpriced</div>
+                                              )}
+                                            </div>
+                                          )}
+                                          
+                                          <div style={{ display: 'flex', gap: 8 }}>
+                                            <button
+                                              onClick={() => setNpcOfferModal({ msg, npcId: activeNpcChat })}
+                                              style={{
+                                                flex: 1,
+                                                padding: '8px',
+                                                borderRadius: 8,
+                                                border: 'none',
+                                                background: '#10b981',
+                                                color: 'white',
+                                                fontWeight: 700,
+                                                fontSize: 12,
+                                                cursor: 'pointer'
+                                              }}
+                                            >
+                                              Accept
+                                            </button>
+                                            <button
+                                              onClick={() => {
+                                                // Decline offer
+                                                const updated = { ...npcChats };
+                                                const msgIdx = updated[activeNpcChat].messages.findIndex(m => m.id === msg.id);
+                                                if (msgIdx >= 0) {
+                                                  updated[activeNpcChat].messages[msgIdx] = {
+                                                    ...msg,
+                                                    offer: { ...msg.offer, status: 'declined' }
+                                                  };
+                                                  // Add NPC response
+                                                  const emoji = profile.emojis[Math.floor(Math.random() * profile.emojis.length)];
+                                                  updated[activeNpcChat].messages.push({
+                                                    id: `${activeNpcChat}_decline_${Date.now()}`,
+                                                    from: 'npc',
+                                                    text: `${emoji} ${emoji}`,
+                                                    day: gameDay,
+                                                    timestamp: Date.now()
+                                                  });
+                                                  setNpcChats(updated);
+                                                  saveNpcChats(updated);
+                                                }
+                                              }}
+                                              style={{
+                                                flex: 1,
+                                                padding: '8px',
+                                                borderRadius: 8,
+                                                border: '1px solid rgba(255,255,255,0.2)',
+                                                background: 'transparent',
+                                                color: '#9ca3af',
+                                                fontWeight: 700,
+                                                fontSize: 12,
+                                                cursor: 'pointer'
+                                              }}
+                                            >
+                                              Decline
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Show offer status if not pending */}
+                                      {msg.offer && msg.offer.status !== 'pending' && (
+                                        <div style={{
+                                          marginTop: 4,
+                                          fontSize: 10,
+                                          color: msg.offer.status === 'accepted' ? '#10b981' : '#ef4444'
+                                        }}>
+                                          {msg.offer.status === 'accepted' ? '✓ Accepted' : '✗ Declined'}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Timestamp */}
+                                      <div style={{ 
+                                        fontSize: 9, 
+                                        color: '#6b7280', 
+                                        marginTop: 4,
+                                        textAlign: msg.from === 'user' ? 'right' : 'left'
+                                      }}>
+                                        Day {msg.day}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                            
+                            {/* Message Input */}
+                            <div style={{
+                              padding: '12px 16px',
+                              borderTop: '1px solid rgba(255,255,255,0.1)',
+                              display: 'flex',
+                              gap: 8
+                            }}>
+                              <input
+                                type="text"
+                                value={userMessageInput}
+                                onChange={(e) => setUserMessageInput(e.target.value)}
+                                placeholder="Type a message..."
+                                style={{
+                                  flex: 1,
+                                  padding: '10px 14px',
+                                  borderRadius: 20,
+                                  border: '1px solid rgba(255,255,255,0.15)',
+                                  background: 'rgba(255,255,255,0.05)',
+                                  color: 'white',
+                                  fontSize: 13,
+                                  outline: 'none'
+                                }}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter' && userMessageInput.trim()) {
+                                    // Send message
+                                    const updated = { ...npcChats };
+                                    updated[activeNpcChat].messages.push({
+                                      id: `user_${Date.now()}`,
+                                      from: 'user',
+                                      text: userMessageInput.trim(),
+                                      day: gameDay,
+                                      timestamp: Date.now()
+                                    });
+                                    // NPC responds with random emoji
+                                    setTimeout(() => {
+                                      const emoji1 = profile.emojis[Math.floor(Math.random() * profile.emojis.length)];
+                                      const emoji2 = profile.emojis[Math.floor(Math.random() * profile.emojis.length)];
+                                      const updatedAfter = { ...npcChats };
+                                      updatedAfter[activeNpcChat].messages.push({
+                                        id: `npc_reply_${Date.now()}`,
+                                        from: 'npc',
+                                        text: `${emoji1} ${emoji2}`,
+                                        day: gameDay,
+                                        timestamp: Date.now()
+                                      });
+                                      setNpcChats(updatedAfter);
+                                      saveNpcChats(updatedAfter);
+                                    }, 500);
+                                    setNpcChats(updated);
+                                    saveNpcChats(updated);
+                                    setUserMessageInput('');
+                                  }
+                                }}
+                              />
+                              <button
+                                onClick={() => {
+                                  if (userMessageInput.trim()) {
+                                    // Send message
+                                    const updated = { ...npcChats };
+                                    updated[activeNpcChat].messages.push({
+                                      id: `user_${Date.now()}`,
+                                      from: 'user',
+                                      text: userMessageInput.trim(),
+                                      day: gameDay,
+                                      timestamp: Date.now()
+                                    });
+                                    setNpcChats(updated);
+                                    saveNpcChats(updated);
+                                    // NPC responds with random emoji
+                                    setTimeout(() => {
+                                      const emoji1 = profile.emojis[Math.floor(Math.random() * profile.emojis.length)];
+                                      const emoji2 = profile.emojis[Math.floor(Math.random() * profile.emojis.length)];
+                                      const updatedAfter = { ...npcChats };
+                                      updatedAfter[activeNpcChat].messages.push({
+                                        id: `npc_reply_${Date.now()}`,
+                                        from: 'npc',
+                                        text: `${emoji1} ${emoji2}`,
+                                        day: gameDay,
+                                        timestamp: Date.now()
+                                      });
+                                      setNpcChats(updatedAfter);
+                                      saveNpcChats(updatedAfter);
+                                    }, 500);
+                                    setUserMessageInput('');
+                                  }
+                                }}
+                                style={{
+                                  padding: '10px 16px',
+                                  borderRadius: 20,
+                                  border: 'none',
+                                  background: '#9333ea',
+                                  color: 'white',
+                                  fontWeight: 700,
+                                  fontSize: 13,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                Send
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()
+                    )}
+                  </div>
+                  
+                  {/* Phone Home Button */}
+                  <div style={{
+                    background: '#0d0d1a',
+                    padding: '12px 0',
+                    display: 'flex',
+                    justifyContent: 'center'
+                  }}>
+                    <div style={{ 
+                      width: 100, 
+                      height: 5, 
+                      background: '#4b5563', 
+                      borderRadius: 3 
+                    }}></div>
+                  </div>
                 </div>
               </div>
             )}
@@ -8560,6 +9516,303 @@ return (
               </div>
             </div>
           )}
+
+          {/* NPC Offer Modal */}
+          {npcOfferModal && (() => {
+            const { msg, npcId } = npcOfferModal;
+            const offer = msg.offer;
+            const profile = NPC_PROFILES[npcId];
+            
+            const handleAccept = () => {
+              let success = false;
+              
+              if (offer.type === 'buy') {
+                // NPC is buying from player - player loses card, gains rations
+                if (offer.isGraded && offer.gradedData) {
+                  // Remove graded card
+                  const newGraded = gradedCards.filter(g => g.id !== offer.gradedData.id);
+                  setGradedCards(newGraded);
+                  saveGradedCards(newGraded);
+                  success = true;
+                } else if (offer.isSealed && offer.sealedData) {
+                  // Remove sealed product
+                  const { gameId, setId, productType } = offer.sealedData;
+                  const current = sealedInventory[gameId]?.[setId]?.[productType] || 0;
+                  if (current > 0) {
+                    updateSealedCount(gameId, setId, productType, -1);
+                    success = true;
+                  }
+                } else if (offer.card) {
+                  // Remove regular card
+                  const entry = collection[offer.card.id] || { normal: 0, holo: 0 };
+                  if (offer.isHolo && entry.holo > 0) {
+                    const newCollection = { ...collection };
+                    newCollection[offer.card.id] = { ...entry, holo: entry.holo - 1 };
+                    setCollection(newCollection);
+                    saveCollection(newCollection);
+                    success = true;
+                  } else if (!offer.isHolo && entry.normal > 0) {
+                    const newCollection = { ...collection };
+                    newCollection[offer.card.id] = { ...entry, normal: entry.normal - 1 };
+                    setCollection(newCollection);
+                    saveCollection(newCollection);
+                    success = true;
+                  }
+                }
+                
+                if (success) {
+                  // Add rations
+                  const newRations = rations + offer.price;
+                  setRations(newRations);
+                  saveRations(newRations);
+                }
+              } else if (offer.type === 'sell') {
+                // NPC is selling to player - player loses rations, gains card
+                if (rations >= offer.price) {
+                  // Deduct rations
+                  const newRations = rations - offer.price;
+                  setRations(newRations);
+                  saveRations(newRations);
+                  
+                  // Add card to collection
+                  const newCollection = { ...collection };
+                  const entry = newCollection[offer.card.id] || { normal: 0, holo: 0 };
+                  if (offer.isHolo) {
+                    newCollection[offer.card.id] = { ...entry, holo: (entry.holo || 0) + 1 };
+                  } else {
+                    newCollection[offer.card.id] = { ...entry, normal: (entry.normal || 0) + 1 };
+                  }
+                  setCollection(newCollection);
+                  saveCollection(newCollection);
+                  success = true;
+                }
+              } else if (offer.type === 'trade') {
+                // Trade - player loses their card, gains NPC's card
+                const playerEntry = collection[offer.playerCard.id] || { normal: 0, holo: 0 };
+                const hasCard = offer.playerIsHolo ? playerEntry.holo > 0 : playerEntry.normal > 0;
+                
+                if (hasCard) {
+                  const newCollection = { ...collection };
+                  
+                  // Remove player's card
+                  if (offer.playerIsHolo) {
+                    newCollection[offer.playerCard.id] = { ...playerEntry, holo: playerEntry.holo - 1 };
+                  } else {
+                    newCollection[offer.playerCard.id] = { ...playerEntry, normal: playerEntry.normal - 1 };
+                  }
+                  
+                  // Add NPC's card
+                  const npcEntry = newCollection[offer.npcCard.id] || { normal: 0, holo: 0 };
+                  if (offer.npcIsHolo) {
+                    newCollection[offer.npcCard.id] = { ...npcEntry, holo: (npcEntry.holo || 0) + 1 };
+                  } else {
+                    newCollection[offer.npcCard.id] = { ...npcEntry, normal: (npcEntry.normal || 0) + 1 };
+                  }
+                  
+                  setCollection(newCollection);
+                  saveCollection(newCollection);
+                  success = true;
+                }
+              }
+              
+              if (success) {
+                // Update offer status
+                const updated = { ...npcChats };
+                const msgIdx = updated[npcId].messages.findIndex(m => m.id === msg.id);
+                if (msgIdx >= 0) {
+                  updated[npcId].messages[msgIdx] = {
+                    ...msg,
+                    offer: { ...offer, status: 'accepted' }
+                  };
+                  // Add NPC happy response
+                  const emoji = profile.emojis[Math.floor(Math.random() * profile.emojis.length)];
+                  updated[npcId].messages.push({
+                    id: `${npcId}_accept_${Date.now()}`,
+                    from: 'npc',
+                    text: `${emoji} ${emoji} ${emoji}`,
+                    day: gameDay,
+                    timestamp: Date.now()
+                  });
+                  setNpcChats(updated);
+                  saveNpcChats(updated);
+                }
+              }
+              
+              setNpcOfferModal(null);
+            };
+            
+            // Check if player can complete the deal
+            let canAccept = false;
+            let errorMsg = '';
+            
+            if (offer.type === 'buy') {
+              if (offer.isGraded && offer.gradedData) {
+                canAccept = gradedCards.some(g => g.id === offer.gradedData.id);
+                if (!canAccept) errorMsg = "You no longer have this graded card";
+              } else if (offer.isSealed && offer.sealedData) {
+                const { gameId, setId, productType } = offer.sealedData;
+                canAccept = (sealedInventory[gameId]?.[setId]?.[productType] || 0) > 0;
+                if (!canAccept) errorMsg = "You no longer have this sealed product";
+              } else if (offer.card) {
+                const entry = collection[offer.card.id] || { normal: 0, holo: 0 };
+                canAccept = offer.isHolo ? entry.holo > 0 : entry.normal > 0;
+                if (!canAccept) errorMsg = "You no longer have this card";
+              }
+            } else if (offer.type === 'sell') {
+              canAccept = rations >= offer.price;
+              if (!canAccept) errorMsg = `Not enough rations (need ${offer.price.toFixed(2)})`;
+            } else if (offer.type === 'trade') {
+              const entry = collection[offer.playerCard.id] || { normal: 0, holo: 0 };
+              canAccept = offer.playerIsHolo ? entry.holo > 0 : entry.normal > 0;
+              if (!canAccept) errorMsg = "You no longer have the card to trade";
+            }
+            
+            return (
+              <div
+                onClick={() => setNpcOfferModal(null)}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(0, 0, 0, 0.85)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1100,
+                  padding: 20
+                }}
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: '#1f2937',
+                    border: '2px solid #9333ea',
+                    borderRadius: 16,
+                    padding: 24,
+                    maxWidth: 400,
+                    width: '100%'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                    <div style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: '50%',
+                      background: 'rgba(147,51,234,0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 24
+                    }}>
+                      {profile.avatar}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 16 }}>{profile.name}</div>
+                      <div style={{ color: '#9ca3af', fontSize: 12 }}>
+                        {offer.type === 'buy' ? 'Wants to buy from you' : offer.type === 'sell' ? 'Wants to sell to you' : 'Wants to trade'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    background: 'rgba(0,0,0,0.3)',
+                    borderRadius: 12,
+                    padding: 16,
+                    marginBottom: 16
+                  }}>
+                    {offer.type === 'trade' ? (
+                      <div>
+                        <div style={{ color: '#ef4444', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>YOU GIVE:</div>
+                        <div style={{ fontSize: 14, marginBottom: 12 }}>
+                          {offer.playerIsHolo ? '✨' : ''}{offer.playerCard.name}{offer.playerIsHolo ? '✨' : ''} ({offer.playerCard.rarity})
+                        </div>
+                        <div style={{ color: '#10b981', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>YOU GET:</div>
+                        <div style={{ fontSize: 14 }}>
+                          {offer.npcIsHolo ? '✨' : ''}{offer.npcCard.name}{offer.npcIsHolo ? '✨' : ''} ({offer.npcCard.rarity})
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
+                          {offer.type === 'buy' ? 'They want:' : 'They\'re selling:'}
+                        </div>
+                        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>
+                          {offer.isSealed 
+                            ? `${offer.sealedData.productType.charAt(0).toUpperCase() + offer.sealedData.productType.slice(1)}`
+                            : (offer.isHolo ? '✨' : '') + (offer.card?.name || 'Unknown') + (offer.isHolo ? '✨' : '')
+                          }
+                          {offer.isGraded && offer.gradedData && (
+                            <span style={{ color: '#fbbf24', fontSize: 12 }}> (TMSG {offer.gradedData.grade})</span>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                          <span style={{ color: '#9ca3af' }}>
+                            {offer.type === 'buy' ? 'You receive:' : 'You pay:'}
+                          </span>
+                          <span style={{ color: '#fbbf24', fontWeight: 700 }}>{offer.price.toFixed(2)} R</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 4 }}>
+                          <span style={{ color: '#6b7280' }}>Market value:</span>
+                          <span style={{ color: '#6b7280' }}>{offer.marketValue.toFixed(2)} R</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {errorMsg && (
+                    <div style={{ 
+                      color: '#ef4444', 
+                      fontSize: 12, 
+                      textAlign: 'center', 
+                      marginBottom: 12,
+                      padding: '8px',
+                      background: 'rgba(239,68,68,0.1)',
+                      borderRadius: 8
+                    }}>
+                      {errorMsg}
+                    </div>
+                  )}
+                  
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <button
+                      onClick={() => setNpcOfferModal(null)}
+                      style={{
+                        flex: 1,
+                        padding: '12px',
+                        borderRadius: 8,
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        background: 'transparent',
+                        color: 'white',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleAccept}
+                      disabled={!canAccept}
+                      style={{
+                        flex: 1,
+                        padding: '12px',
+                        borderRadius: 8,
+                        border: 'none',
+                        background: canAccept ? '#10b981' : '#374151',
+                        color: canAccept ? 'white' : '#6b7280',
+                        fontWeight: 700,
+                        cursor: canAccept ? 'pointer' : 'not-allowed'
+                      }}
+                    >
+                      Accept Deal
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
 {/* Sell Confirmation Modal */}
           {sellConfirm && (() => {
             // Handle graded card sell
@@ -8872,5 +10125,6 @@ return (
 
     ReactDOM.render(<App />, document.getElementById('root'));
   </script>
+
 </body>
 </html>
