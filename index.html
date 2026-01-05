@@ -594,10 +594,26 @@ pointer-events: none;
 /* Grid reveal layout */
 .cards-grid-reveal {
 display: grid;
-grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-gap: 12px;
-max-width: 700px;
+grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+gap: 8px;
+width: 100%;
+max-width: 600px;
 margin: 0 auto;
+padding: 0 8px;
+box-sizing: border-box;
+}
+
+@media (min-width: 400px) {
+.cards-grid-reveal {
+grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+gap: 12px;
+}
+}
+
+@media (min-width: 600px) {
+.cards-grid-reveal {
+grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
 }
 
 .cards-grid-reveal .grid-card {
@@ -2404,43 +2420,47 @@ object-fit: cover;
       const generateDailyShopStock = (day) => {
         const d = (day !== null && day !== undefined) ? day : gameDay;
         
-        // Generate stock per game/set with different distributions
+        // Generate stock dynamically based on loaded game/set configs
         const stock = { day: d };
         
-        // TTA Base Set: 0-5 packs, 0-2 bundles, 0-1 boxes, 0-1 cases
-        stock['tta'] = {
-          'base-set': {
-            single: { limit: generateWeightedInt(0, 5, 2), remaining: 0 },
-            bundle: { limit: generateWeightedInt(0, 2, 1), remaining: 0 },
-            booster: { limit: generateWeightedInt(0, 1, 0), remaining: 0 },
-            case: { limit: generateWeightedInt(0, 1, 0), remaining: 0 }
-          },
-          // TTA Expansion Set: 0-5 packs, 0-1 bundles, 0-1 boxes, 0-1 cases
-          'expansion-set': {
-            single: { limit: generateWeightedInt(0, 5, 2), remaining: 0 },
-            bundle: { limit: generateWeightedInt(0, 1, 0), remaining: 0 },
-            booster: { limit: generateWeightedInt(0, 1, 0), remaining: 0 },
-            case: { limit: generateWeightedInt(0, 1, 0), remaining: 0 }
-          }
-        };
-        
-        // SP Base Set: 0-6 packs, 0-4 blisters, 0-2 summoning boxes, 0-1 boxes, 0-1 cases
-        stock['spiritual-possessions'] = {
-          'base-set': {
-            single: { limit: generateWeightedInt(0, 6, 3), remaining: 0 },
-            blister: { limit: generateWeightedInt(0, 4, 2), remaining: 0 },
-            summoningBox: { limit: generateWeightedInt(0, 2, 1), remaining: 0 },
-            booster: { limit: generateWeightedInt(0, 1, 0), remaining: 0 },
-            case: { limit: generateWeightedInt(0, 1, 0), remaining: 0 }
-          }
-        };
-        
-        // Set remaining = limit for all
-        for (const gameId in stock) {
-          if (gameId === 'day') continue;
-          for (const setId in stock[gameId]) {
-            for (const productType in stock[gameId][setId]) {
-              stock[gameId][setId][productType].remaining = stock[gameId][setId][productType].limit;
+        // Iterate through all loaded games and sets
+        for (const [gameId, gameSets] of Object.entries(setConfigs)) {
+          stock[gameId] = {};
+          
+          for (const [setId, setConfig] of Object.entries(gameSets)) {
+            if (!setConfig) continue;
+            
+            // Determine products based on set's sealedProducts config
+            const sealedProducts = setConfig.sealedProducts || {};
+            const productStock = {};
+            
+            // Generate stock for each product type the set supports
+            if (sealedProducts.single) {
+              productStock.single = { limit: generateWeightedInt(0, 5, 2), remaining: 0 };
+            }
+            if (sealedProducts.bundle) {
+              productStock.bundle = { limit: generateWeightedInt(0, 2, 1), remaining: 0 };
+            }
+            if (sealedProducts.booster) {
+              productStock.booster = { limit: generateWeightedInt(0, 1, 0), remaining: 0 };
+            }
+            if (sealedProducts.case) {
+              productStock.case = { limit: generateWeightedInt(0, 1, 0), remaining: 0 };
+            }
+            if (sealedProducts.blister) {
+              productStock.blister = { limit: generateWeightedInt(0, 4, 2), remaining: 0 };
+            }
+            if (sealedProducts.summoningBox) {
+              productStock.summoningBox = { limit: generateWeightedInt(0, 2, 1), remaining: 0 };
+            }
+            
+            // Set remaining = limit for all
+            for (const productType in productStock) {
+              productStock[productType].remaining = productStock[productType].limit;
+            }
+            
+            if (Object.keys(productStock).length > 0) {
+              stock[gameId][setId] = productStock;
             }
           }
         }
@@ -3256,13 +3276,44 @@ object-fit: cover;
             // NPC wants to sell to player
             let targetCard = null;
             let isHolo = profile.focusHolo || Math.random() < 0.2;
+            let isGraded = false;
+            let gradedData = null;
             
             targetCard = getRandomCard(randomCardFilter);
             if (!targetCard) return;
             
+            // If NPC focuses on graded, they sell graded cards
+            if (profile.focusGraded && Math.random() < 0.5) {
+              isGraded = true;
+              // Generate a random grade (weighted toward middle grades)
+              const grades = ['IM10', 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+              const weights = [0.5, 5, 20, 30, 20, 10, 6, 4, 2, 1.5, 1];
+              const totalWeight = weights.reduce((a, b) => a + b, 0);
+              let r = Math.random() * totalWeight;
+              let grade = 8;
+              for (let i = 0; i < grades.length; i++) {
+                r -= weights[i];
+                if (r <= 0) {
+                  grade = grades[i];
+                  break;
+                }
+              }
+              gradedData = {
+                id: `npc_graded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                cardId: targetCard.id,
+                gameId: targetCard.gameId,
+                setId: targetCard.setId,
+                isHolo: isHolo,
+                grade: grade,
+                submittedDay: day - Math.floor(Math.random() * 10),
+                gradedDay: day - 1
+              };
+            }
+            
             const cardValue = marketValues[targetCard.id] || 1;
             const holoMult = isHolo ? (holoMultipliers[targetCard.id] || 1.5) : 1;
-            const baseValue = cardValue * holoMult;
+            const gradeMult = isGraded ? (GRADE_MULTIPLIERS[gradedData.grade] || 1) : 1;
+            const baseValue = cardValue * holoMult * gradeMult;
             
             // Apply NPC's price range
             const [minMult, maxMult] = profile.sellRange;
@@ -3275,6 +3326,8 @@ object-fit: cover;
               day,
               card: targetCard,
               isHolo,
+              isGraded,
+              gradedData,
               price: Math.round(offerPrice * 100) / 100,
               marketValue: Math.round(baseValue * 100) / 100,
               status: 'pending'
@@ -7608,6 +7661,99 @@ return (
                                             {msg.offer.type === 'buy' ? '💰 WANTS TO BUY' : msg.offer.type === 'sell' ? '🏷️ WANTS TO SELL' : '🔄 WANTS TO TRADE'}
                                           </div>
                                           
+                                          {/* Clickable card name */}
+                                          {msg.offer.card && !msg.offer.isSealed && (
+                                            <button
+                                              onClick={() => {
+                                                const card = msg.offer.card;
+                                                const gameId = card.gameId || msg.offer.gradedData?.gameId;
+                                                const setId = card.setId || msg.offer.gradedData?.setId;
+                                                setEnlargedCard({
+                                                  ...card,
+                                                  image: buildImageUrl(gameId, setId, card),
+                                                  marketValue: marketValues[card.id] || 1,
+                                                  isHolo: msg.offer.isHolo
+                                                });
+                                              }}
+                                              style={{
+                                                display: 'block',
+                                                width: '100%',
+                                                padding: '8px',
+                                                marginBottom: 8,
+                                                background: 'rgba(255,255,255,0.1)',
+                                                border: '1px solid rgba(255,255,255,0.2)',
+                                                borderRadius: 8,
+                                                color: 'white',
+                                                fontSize: 12,
+                                                fontWeight: 600,
+                                                cursor: 'pointer',
+                                                textAlign: 'left'
+                                              }}
+                                            >
+                                              📋 {msg.offer.isHolo ? '✨' : ''}{msg.offer.card.name}{msg.offer.isHolo ? '✨' : ''}
+                                              {msg.offer.isGraded && msg.offer.gradedData && (
+                                                <span style={{ color: '#fbbf24', marginLeft: 4 }}>(TMSG {msg.offer.gradedData.grade})</span>
+                                              )}
+                                              <span style={{ color: '#9ca3af', fontSize: 10, marginLeft: 8 }}>tap to view</span>
+                                            </button>
+                                          )}
+                                          
+                                          {msg.offer.type === 'trade' && (
+                                            <div style={{ marginBottom: 8 }}>
+                                              <button
+                                                onClick={() => {
+                                                  const card = msg.offer.playerCard;
+                                                  setEnlargedCard({
+                                                    ...card,
+                                                    image: buildImageUrl(card.gameId, card.setId, card),
+                                                    marketValue: marketValues[card.id] || 1,
+                                                    isHolo: msg.offer.playerIsHolo
+                                                  });
+                                                }}
+                                                style={{
+                                                  display: 'block',
+                                                  width: '100%',
+                                                  padding: '6px 8px',
+                                                  marginBottom: 4,
+                                                  background: 'rgba(239,68,68,0.15)',
+                                                  border: '1px solid rgba(239,68,68,0.3)',
+                                                  borderRadius: 6,
+                                                  color: 'white',
+                                                  fontSize: 11,
+                                                  cursor: 'pointer',
+                                                  textAlign: 'left'
+                                                }}
+                                              >
+                                                ↑ You give: {msg.offer.playerIsHolo ? '✨' : ''}{msg.offer.playerCard.name}
+                                              </button>
+                                              <button
+                                                onClick={() => {
+                                                  const card = msg.offer.npcCard;
+                                                  setEnlargedCard({
+                                                    ...card,
+                                                    image: buildImageUrl(card.gameId, card.setId, card),
+                                                    marketValue: marketValues[card.id] || 1,
+                                                    isHolo: msg.offer.npcIsHolo
+                                                  });
+                                                }}
+                                                style={{
+                                                  display: 'block',
+                                                  width: '100%',
+                                                  padding: '6px 8px',
+                                                  background: 'rgba(16,185,129,0.15)',
+                                                  border: '1px solid rgba(16,185,129,0.3)',
+                                                  borderRadius: 6,
+                                                  color: 'white',
+                                                  fontSize: 11,
+                                                  cursor: 'pointer',
+                                                  textAlign: 'left'
+                                                }}
+                                              >
+                                                ↓ You get: {msg.offer.npcIsHolo ? '✨' : ''}{msg.offer.npcCard.name}
+                                              </button>
+                                            </div>
+                                          )}
+                                          
                                           {msg.offer.type !== 'trade' && (
                                             <div style={{ fontSize: 12, marginBottom: 8 }}>
                                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -7616,7 +7762,7 @@ return (
                                               </div>
                                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                 <span style={{ color: '#9ca3af' }}>Market:</span>
-                                                <span style={{ color: '#6b7280' }}>{msg.offer.marketValue.toFixed(2)} R</span>
+                                                <span style={{ color: '#9ca3af' }}>{msg.offer.marketValue.toFixed(2)} R</span>
                                               </div>
                                               {msg.offer.price > msg.offer.marketValue * 1.05 && msg.offer.type === 'buy' && (
                                                 <div style={{ color: '#10b981', fontSize: 10, marginTop: 4 }}>✓ Good deal for you!</div>
@@ -9164,22 +9310,32 @@ return (
                 bottom: 0,
                 background: 'rgba(0, 0, 0, 0.9)',
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 justifyContent: 'center',
                 zIndex: 1000,
                 cursor: 'zoom-out',
-                padding: 32
+                padding: 16,
+                overflowY: 'auto'
               }}
             >
-              <div style={{ display: 'flex', gap: 24, alignItems: 'center', maxWidth: '95vw' }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                gap: 16, 
+                alignItems: 'center', 
+                maxWidth: '100%',
+                width: '100%',
+                paddingTop: 16,
+                paddingBottom: 32
+              }} onClick={(e) => e.stopPropagation()}>
                 {/* Card Image */}
-                <div style={{ position: 'relative' }}>
+                <div style={{ position: 'relative', width: '100%', maxWidth: 300, flexShrink: 0 }}>
                   <img 
                     src={enlargedCard.image} 
                     alt={enlargedCard.name}
                     style={{
-                      maxWidth: '500px',
-                      maxHeight: '80vh',
+                      width: '100%',
+                      maxHeight: '50vh',
                       objectFit: 'contain',
                       borderRadius: 16,
                       border: `4px solid ${(RARITY_COLORS[enlargedCard.rarity] || { border: '#6b7280' }).border}`,
@@ -9195,14 +9351,15 @@ return (
                   return (
                 <div style={{
                   background: 'rgba(0,0,0,0.8)',
-                  padding: 24,
+                  padding: 20,
                   borderRadius: 16,
                   border: `2px solid ${enlargedColors.border}`,
-                  minWidth: 300,
-                  maxWidth: 400
+                  width: '100%',
+                  maxWidth: 400,
+                  boxSizing: 'border-box'
                 }}>
-                  <h2 style={{ color: 'white', fontSize: 24, fontWeight: 'bold', margin: '0 0 8px' }}>{enlargedCard.name}</h2>
-                  <p style={{ color: enlargedColors.text, fontSize: 16, textTransform: 'capitalize', margin: '0 0 24px' }}>
+                  <h2 style={{ color: 'white', fontSize: 20, fontWeight: 'bold', margin: '0 0 8px' }}>{enlargedCard.name}</h2>
+                  <p style={{ color: enlargedColors.text, fontSize: 14, textTransform: 'capitalize', margin: '0 0 16px' }}>
                     {enlargedCard.rarity}
                   </p>
                   {/* Market Values */}
@@ -9574,16 +9731,23 @@ return (
                   setRations(newRations);
                   saveRations(newRations);
                   
-                  // Add card to collection
-                  const newCollection = { ...collection };
-                  const entry = newCollection[offer.card.id] || { normal: 0, holo: 0 };
-                  if (offer.isHolo) {
-                    newCollection[offer.card.id] = { ...entry, holo: (entry.holo || 0) + 1 };
+                  if (offer.isGraded && offer.gradedData) {
+                    // Add graded card to collection
+                    const newGradedCards = [...gradedCards, offer.gradedData];
+                    setGradedCards(newGradedCards);
+                    saveGradedCards(newGradedCards);
                   } else {
-                    newCollection[offer.card.id] = { ...entry, normal: (entry.normal || 0) + 1 };
+                    // Add regular card to collection
+                    const newCollection = { ...collection };
+                    const entry = newCollection[offer.card.id] || { normal: 0, holo: 0 };
+                    if (offer.isHolo) {
+                      newCollection[offer.card.id] = { ...entry, holo: (entry.holo || 0) + 1 };
+                    } else {
+                      newCollection[offer.card.id] = { ...entry, normal: (entry.normal || 0) + 1 };
+                    }
+                    setCollection(newCollection);
+                    saveCollection(newCollection);
                   }
-                  setCollection(newCollection);
-                  saveCollection(newCollection);
                   success = true;
                 }
               } else if (offer.type === 'trade') {
