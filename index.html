@@ -2070,7 +2070,10 @@ body{
       const [npcOfferModal, setNpcOfferModal] = useState(null);
       const [userMessageInput, setUserMessageInput] = useState('');
       const [showOfferCardPicker, setShowOfferCardPicker] = useState(false);
-      const [offerCardFilter, setOfferCardFilter] = useState({ game: 'all', rarity: 'all', search: '' });
+      const [offerPickerStep, setOfferPickerStep] = useState(1); // 1=game, 2=set, 3=rarity, 4=cards
+      const [offerPickerGame, setOfferPickerGame] = useState(null);
+      const [offerPickerSet, setOfferPickerSet] = useState(null);
+      const [offerPickerRarity, setOfferPickerRarity] = useState(null);
 
       // NPC Reputation System - tracks relationship with each NPC
       const [npcReputation, setNpcReputation] = useState(() => {
@@ -2146,7 +2149,8 @@ body{
         if (!hasCard) return;
         
         // NPC decides: buy, trade, or decline
-        const isInterested = profile.interests.some(i => 
+        const interests = profile.interests || [];
+        const isInterested = interests.some(i => 
           (i === 'holos' && isHolo) ||
           (i === 'rares' && ['rare', 'ultra-rare', 'special', 'ghost-rare'].some(r => (cardData.rarity || '').toLowerCase().includes(r))) ||
           (i === 'commons' && (cardData.rarity || '').toLowerCase() === 'common') ||
@@ -9473,7 +9477,13 @@ return (
                             }}>
                               {/* Offer Card Button */}
                               <button
-                                onClick={() => setShowOfferCardPicker(true)}
+                                onClick={() => {
+                                  setOfferPickerStep(1);
+                                  setOfferPickerGame(null);
+                                  setOfferPickerSet(null);
+                                  setOfferPickerRarity(null);
+                                  setShowOfferCardPicker(true);
+                                }}
                                 title="Offer a card"
                                 style={{
                                   width: 36,
@@ -11737,7 +11747,13 @@ return (
           {/* Card Picker Modal for Offering to NPC */}
           {showOfferCardPicker && activeNpcChat && (
             <div
-              onClick={() => setShowOfferCardPicker(false)}
+              onClick={() => {
+                setShowOfferCardPicker(false);
+                setOfferPickerStep(1);
+                setOfferPickerGame(null);
+                setOfferPickerSet(null);
+                setOfferPickerRarity(null);
+              }}
               style={{
                 position: 'fixed',
                 inset: 0,
@@ -11763,179 +11779,373 @@ return (
                   border: '1px solid rgba(255,255,255,0.15)'
                 }}
               >
-                <h3 style={{ margin: 0, marginBottom: 16, color: 'white', fontSize: 18, fontWeight: 700 }}>
+                <h3 style={{ margin: 0, marginBottom: 4, color: 'white', fontSize: 18, fontWeight: 700 }}>
                   Offer a Card to {NPC_PROFILES[activeNpcChat]?.name}
                 </h3>
                 
-                {/* Filters */}
-                <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-                  <select
-                    value={offerCardFilter.game}
-                    onChange={(e) => setOfferCardFilter(f => ({ ...f, game: e.target.value }))}
-                    style={{
-                      padding: '6px 10px',
-                      borderRadius: 8,
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      background: 'rgba(0,0,0,0.3)',
-                      color: 'white',
-                      fontSize: 12
-                    }}
-                  >
-                    <option value="all">All Games</option>
-                    {Object.entries(gameConfigs).map(([id, gc]) => (
-                      <option key={id} value={id}>{gc.name}</option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
-                    placeholder="Search cards..."
-                    value={offerCardFilter.search}
-                    onChange={(e) => setOfferCardFilter(f => ({ ...f, search: e.target.value }))}
-                    style={{
-                      flex: 1,
-                      padding: '6px 10px',
-                      borderRadius: 8,
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      background: 'rgba(0,0,0,0.3)',
-                      color: 'white',
-                      fontSize: 12,
-                      minWidth: 120
-                    }}
-                  />
+                {/* Step indicator */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+                  {[1, 2, 3, 4].map(step => (
+                    <React.Fragment key={step}>
+                      <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: offerPickerStep >= step ? '#9333ea' : 'rgba(255,255,255,0.1)',
+                        color: offerPickerStep >= step ? 'white' : '#6b7280',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 12,
+                        fontWeight: 700
+                      }}>
+                        {step}
+                      </div>
+                      {step < 4 && (
+                        <div style={{
+                          flex: 1,
+                          height: 2,
+                          background: offerPickerStep > step ? '#9333ea' : 'rgba(255,255,255,0.1)'
+                        }} />
+                      )}
+                    </React.Fragment>
+                  ))}
                 </div>
                 
-                {/* Card Grid */}
-                <div style={{ 
-                  flex: 1, 
-                  overflowY: 'auto',
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
-                  gap: 8
-                }}>
-                  {(() => {
-                    const cards = [];
-                    Object.entries(collection).forEach(([cardId, entry]) => {
-                      // Find card data
-                      let cardData = null;
-                      let foundGameId = null;
-                      let foundSetId = null;
-                      
-                      Object.entries(setConfigs).forEach(([gameId, sets]) => {
-                        Object.entries(sets).forEach(([setId, setConfig]) => {
-                          const found = setConfig.cards?.find(c => c.id === cardId);
-                          if (found) {
-                            cardData = found;
-                            foundGameId = gameId;
-                            foundSetId = setId;
-                          }
-                        });
+                {/* Step 1: Select Game */}
+                {offerPickerStep === 1 && (() => {
+                  // Get games that have cards in collection
+                  const gamesWithCards = new Set();
+                  Object.keys(collection).forEach(cardId => {
+                    const entry = collection[cardId];
+                    if ((entry.normal || 0) + (entry.holo || 0) === 0) return;
+                    Object.entries(setConfigs).forEach(([gameId, sets]) => {
+                      Object.values(sets).forEach(setConfig => {
+                        if (setConfig.cards?.some(c => c.id === cardId)) {
+                          gamesWithCards.add(gameId);
+                        }
                       });
-                      
-                      if (!cardData) return;
-                      
-                      // Apply filters
-                      if (offerCardFilter.game !== 'all' && foundGameId !== offerCardFilter.game) return;
-                      if (offerCardFilter.search && !cardData.name.toLowerCase().includes(offerCardFilter.search.toLowerCase())) return;
-                      
-                      if (entry.normal > 0) {
-                        cards.push({ cardData, isHolo: false, count: entry.normal, gameId: foundGameId, setId: foundSetId });
-                      }
-                      if (entry.holo > 0) {
-                        cards.push({ cardData, isHolo: true, count: entry.holo, gameId: foundGameId, setId: foundSetId });
-                      }
                     });
-                    
-                    // Sort by value
-                    cards.sort((a, b) => {
-                      const valA = (marketValues[a.cardData.id] || 1) * (a.isHolo ? 1.5 : 1);
-                      const valB = (marketValues[b.cardData.id] || 1) * (b.isHolo ? 1.5 : 1);
-                      return valB - valA;
-                    });
-                    
-                    if (cards.length === 0) {
-                      return (
-                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#9ca3af', padding: 40 }}>
-                          No cards in collection
-                        </div>
-                      );
-                    }
-                    
-                    return cards.map((item, idx) => {
-                      const value = (marketValues[item.cardData.id] || 1) * (item.isHolo ? (holoMultipliers[item.cardData.id] || 1.5) : 1);
-                      return (
-                        <div
-                          key={`${item.cardData.id}-${item.isHolo}-${idx}`}
-                          onClick={() => handlePlayerOfferCard(activeNpcChat, item.cardData, item.isHolo, item.gameId, item.setId)}
-                          style={{
-                            cursor: 'pointer',
-                            borderRadius: 8,
-                            overflow: 'hidden',
-                            border: item.isHolo ? '2px solid #ec4899' : '1px solid rgba(255,255,255,0.1)',
-                            background: 'rgba(0,0,0,0.3)',
-                            transition: 'transform 0.15s'
-                          }}
-                        >
-                          <div className={item.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative' }}>
-                            <img
-                              src={buildImageUrl(item.gameId, item.setId, item.cardData)}
-                              alt={item.cardData.name}
-                              style={{ width: '100%', aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block' }}
-                            />
-                            <div style={{
-                              position: 'absolute',
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              background: 'linear-gradient(transparent, rgba(0,0,0,0.9))',
-                              padding: '12px 4px 4px',
-                              fontSize: 9,
+                  });
+                  
+                  const availableGames = Array.from(gamesWithCards).map(gId => ({
+                    id: gId,
+                    name: gameConfigs[gId]?.name || gId
+                  }));
+                  
+                  return (
+                    <div style={{ flex: 1, overflowY: 'auto' }}>
+                      <div style={{ color: '#9ca3af', fontSize: 13, marginBottom: 12 }}>Select a game:</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {availableGames.length === 0 ? (
+                          <div style={{ color: '#6b7280', textAlign: 'center', padding: 40 }}>No cards in collection</div>
+                        ) : availableGames.map(game => (
+                          <button
+                            key={game.id}
+                            onClick={() => {
+                              setOfferPickerGame(game.id);
+                              setOfferPickerStep(2);
+                            }}
+                            style={{
+                              padding: '14px 16px',
+                              borderRadius: 10,
+                              border: '1px solid rgba(147,51,234,0.3)',
+                              background: 'rgba(147,51,234,0.1)',
                               color: 'white',
-                              textAlign: 'center'
-                            }}>
-                              <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {item.isHolo && '✨ '}{item.cardData.name}
-                              </div>
-                              <div style={{ color: '#fbbf24', fontSize: 10, fontWeight: 700 }}>
-                                {value.toFixed(2)}R
+                              fontSize: 15,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10
+                            }}
+                          >
+                            <span style={{ fontSize: 20 }}>{gameConfigs[game.id]?.icon || '🎴'}</span>
+                            {game.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+                
+                {/* Step 2: Select Set */}
+                {offerPickerStep === 2 && offerPickerGame && (() => {
+                  // Get sets from selected game that have cards in collection
+                  const setsWithCards = new Set();
+                  Object.keys(collection).forEach(cardId => {
+                    const entry = collection[cardId];
+                    if ((entry.normal || 0) + (entry.holo || 0) === 0) return;
+                    const gameSets = setConfigs[offerPickerGame] || {};
+                    Object.entries(gameSets).forEach(([setId, setConfig]) => {
+                      if (setConfig.cards?.some(c => c.id === cardId)) {
+                        setsWithCards.add(setId);
+                      }
+                    });
+                  });
+                  
+                  const availableSets = Array.from(setsWithCards).map(sId => ({
+                    id: sId,
+                    name: setConfigs[offerPickerGame]?.[sId]?.name || sId
+                  }));
+                  
+                  return (
+                    <div style={{ flex: 1, overflowY: 'auto' }}>
+                      <div style={{ color: '#9ca3af', fontSize: 13, marginBottom: 12 }}>
+                        <span style={{ color: '#a78bfa' }}>{gameConfigs[offerPickerGame]?.name}</span> → Select a set:
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {availableSets.map(set => (
+                          <button
+                            key={set.id}
+                            onClick={() => {
+                              setOfferPickerSet(set.id);
+                              setOfferPickerStep(3);
+                            }}
+                            style={{
+                              padding: '14px 16px',
+                              borderRadius: 10,
+                              border: '1px solid rgba(147,51,234,0.3)',
+                              background: 'rgba(147,51,234,0.1)',
+                              color: 'white',
+                              fontSize: 15,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              textAlign: 'left'
+                            }}
+                          >
+                            {set.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+                
+                {/* Step 3: Select Rarity */}
+                {offerPickerStep === 3 && offerPickerGame && offerPickerSet && (() => {
+                  // Get rarities from selected set that have cards in collection
+                  const raritiesWithCards = new Map(); // rarity -> count
+                  const setConfig = setConfigs[offerPickerGame]?.[offerPickerSet];
+                  
+                  Object.keys(collection).forEach(cardId => {
+                    const entry = collection[cardId];
+                    const count = (entry.normal || 0) + (entry.holo || 0);
+                    if (count === 0) return;
+                    
+                    const card = setConfig?.cards?.find(c => c.id === cardId);
+                    if (card) {
+                      const rarity = card.rarity || 'common';
+                      raritiesWithCards.set(rarity, (raritiesWithCards.get(rarity) || 0) + count);
+                    }
+                  });
+                  
+                  const availableRarities = Array.from(raritiesWithCards.entries()).map(([rarity, count]) => ({
+                    id: rarity,
+                    name: rarity.charAt(0).toUpperCase() + rarity.slice(1).replace(/-/g, ' '),
+                    count
+                  }));
+                  
+                  // Sort by rarity order
+                  const rarityOrder = ['common', 'uncommon', 'rare', 'ultra-rare', 'special', 'ghost-rare'];
+                  availableRarities.sort((a, b) => {
+                    const idxA = rarityOrder.indexOf(a.id);
+                    const idxB = rarityOrder.indexOf(b.id);
+                    return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+                  });
+                  
+                  return (
+                    <div style={{ flex: 1, overflowY: 'auto' }}>
+                      <div style={{ color: '#9ca3af', fontSize: 13, marginBottom: 12 }}>
+                        <span style={{ color: '#a78bfa' }}>{setConfigs[offerPickerGame]?.[offerPickerSet]?.name}</span> → Select rarity:
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {availableRarities.map(rarity => (
+                          <button
+                            key={rarity.id}
+                            onClick={() => {
+                              setOfferPickerRarity(rarity.id);
+                              setOfferPickerStep(4);
+                            }}
+                            style={{
+                              padding: '14px 16px',
+                              borderRadius: 10,
+                              border: '1px solid rgba(147,51,234,0.3)',
+                              background: 'rgba(147,51,234,0.1)',
+                              color: 'white',
+                              fontSize: 15,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
+                            }}
+                          >
+                            <span>{rarity.name}</span>
+                            <span style={{ color: '#9ca3af', fontSize: 13 }}>{rarity.count} cards</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+                
+                {/* Step 4: Select Card */}
+                {offerPickerStep === 4 && offerPickerGame && offerPickerSet && offerPickerRarity && (() => {
+                  const setConfig = setConfigs[offerPickerGame]?.[offerPickerSet];
+                  const cards = [];
+                  
+                  Object.entries(collection).forEach(([cardId, entry]) => {
+                    const card = setConfig?.cards?.find(c => c.id === cardId);
+                    if (!card) return;
+                    if ((card.rarity || 'common') !== offerPickerRarity) return;
+                    
+                    if (entry.normal > 0) {
+                      cards.push({ cardData: card, isHolo: false, count: entry.normal, gameId: offerPickerGame, setId: offerPickerSet });
+                    }
+                    if (entry.holo > 0) {
+                      cards.push({ cardData: card, isHolo: true, count: entry.holo, gameId: offerPickerGame, setId: offerPickerSet });
+                    }
+                  });
+                  
+                  // Sort by value
+                  cards.sort((a, b) => {
+                    const valA = (marketValues[a.cardData.id] || 1) * (a.isHolo ? 1.5 : 1);
+                    const valB = (marketValues[b.cardData.id] || 1) * (b.isHolo ? 1.5 : 1);
+                    return valB - valA;
+                  });
+                  
+                  return (
+                    <div style={{ flex: 1, overflowY: 'auto' }}>
+                      <div style={{ color: '#9ca3af', fontSize: 13, marginBottom: 12 }}>
+                        Select a card to offer:
+                      </div>
+                      <div style={{ 
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
+                        gap: 8
+                      }}>
+                        {cards.map((item, idx) => {
+                          const value = (marketValues[item.cardData.id] || 1) * (item.isHolo ? (holoMultipliers[item.cardData.id] || 1.5) : 1);
+                          return (
+                            <div
+                              key={`${item.cardData.id}-${item.isHolo}-${idx}`}
+                              onClick={() => {
+                                handlePlayerOfferCard(activeNpcChat, item.cardData, item.isHolo, item.gameId, item.setId);
+                                setOfferPickerStep(1);
+                                setOfferPickerGame(null);
+                                setOfferPickerSet(null);
+                                setOfferPickerRarity(null);
+                              }}
+                              style={{
+                                cursor: 'pointer',
+                                borderRadius: 8,
+                                overflow: 'hidden',
+                                border: item.isHolo ? '2px solid #ec4899' : '1px solid rgba(255,255,255,0.1)',
+                                background: 'rgba(0,0,0,0.3)',
+                                transition: 'transform 0.15s'
+                              }}
+                            >
+                              <div className={item.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative' }}>
+                                <img
+                                  src={buildImageUrl(item.gameId, item.setId, item.cardData)}
+                                  alt={item.cardData.name}
+                                  style={{ width: '100%', aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block' }}
+                                />
+                                <div style={{
+                                  position: 'absolute',
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  background: 'linear-gradient(transparent, rgba(0,0,0,0.9))',
+                                  padding: '12px 4px 4px',
+                                  fontSize: 9,
+                                  color: 'white',
+                                  textAlign: 'center'
+                                }}>
+                                  <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {item.isHolo && '✨ '}{item.cardData.name}
+                                  </div>
+                                  <div style={{ color: '#fbbf24', fontSize: 10, fontWeight: 700 }}>
+                                    {value.toFixed(2)}R
+                                  </div>
+                                </div>
+                                {item.count > 1 && (
+                                  <div style={{
+                                    position: 'absolute',
+                                    top: 4,
+                                    right: 4,
+                                    background: 'rgba(0,0,0,0.8)',
+                                    color: 'white',
+                                    fontSize: 10,
+                                    fontWeight: 700,
+                                    padding: '2px 6px',
+                                    borderRadius: 10
+                                  }}>
+                                    ×{item.count}
+                                  </div>
+                                )}
                               </div>
                             </div>
-                            {item.count > 1 && (
-                              <div style={{
-                                position: 'absolute',
-                                top: 4,
-                                right: 4,
-                                background: 'rgba(0,0,0,0.8)',
-                                color: 'white',
-                                fontSize: 10,
-                                fontWeight: 700,
-                                padding: '2px 6px',
-                                borderRadius: 10
-                              }}>
-                                ×{item.count}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
                 
-                <button
-                  onClick={() => setShowOfferCardPicker(false)}
-                  style={{
-                    marginTop: 12,
-                    padding: '10px',
-                    borderRadius: 8,
-                    border: 'none',
-                    background: 'rgba(255,255,255,0.1)',
-                    color: 'white',
-                    cursor: 'pointer',
-                    fontWeight: 600
-                  }}
-                >
-                  Cancel
-                </button>
+                {/* Navigation buttons */}
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  {offerPickerStep > 1 && (
+                    <button
+                      onClick={() => {
+                        if (offerPickerStep === 2) {
+                          setOfferPickerGame(null);
+                        } else if (offerPickerStep === 3) {
+                          setOfferPickerSet(null);
+                        } else if (offerPickerStep === 4) {
+                          setOfferPickerRarity(null);
+                        }
+                        setOfferPickerStep(offerPickerStep - 1);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '10px',
+                        borderRadius: 8,
+                        border: '1px solid rgba(147,51,234,0.3)',
+                        background: 'transparent',
+                        color: '#a78bfa',
+                        cursor: 'pointer',
+                        fontWeight: 600
+                      }}
+                    >
+                      ← Back
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowOfferCardPicker(false);
+                      setOfferPickerStep(1);
+                      setOfferPickerGame(null);
+                      setOfferPickerSet(null);
+                      setOfferPickerRarity(null);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: 'rgba(255,255,255,0.1)',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontWeight: 600
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           )}
