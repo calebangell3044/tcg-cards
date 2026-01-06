@@ -11190,7 +11190,7 @@ return (
                         borderRadius: 999,
                         background: 'rgba(255, 255, 255, 0.07)',
                         border: '1px solid rgba(255, 255, 255, 0.12)',
-                        color: RARITY_COLORS[sellConfirm.rarity] || '#9ca3af',
+                        color: RARITY_COLORS[sellConfirm.rarity]?.text || '#9ca3af',
                         fontSize: 12,
                         textTransform: 'uppercase',
                         letterSpacing: '0.08em'
@@ -11316,7 +11316,8 @@ return (
                 </div>
               </div>
             );
-          })()}</div>
+          })()}
+        </div>
       );
     }
 
