@@ -4239,9 +4239,9 @@ body{
         
         // Reset daily trackers for new day
         setDailyTrackers({});
-        setDailyTrackersDay(nextDay);
         localStorage.setItem('tcg-daily-trackers', JSON.stringify({}));
         localStorage.setItem('tcg-daily-trackers-day', String(nextDay));
+        try { updateCoreSave({ dailyTrackers: {}, dailyTrackersDay: nextDay }); } catch (e) {}
 
         // Persist deterministic RNG state after advancing the day (debug mode only)
         persistRngState();
