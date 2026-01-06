@@ -1377,10 +1377,188 @@ body{
             sell: ["dumping {card} for {price}R, chart looks bearish 📉", "taking profits on {card}. {price}R. smart money moves", "selling {card} at {price}R before the crash. trust the process 😎"],
             trade: []
           }
+        },
+        'NewbCollector2024': {
+          name: 'NewbCollector2024',
+          avatar: '🐣',
+          bio: 'Just started collecting! Any tips welcome 😊',
+          emojis: ['🐣', '😊', '🤔', '❓', '😅', '🙏', '✨', '👀'],
+          buyRange: [0.95, 1.20],  // Overpays because new
+          sellRange: [0.70, 0.85], // Undersells
+          offerTypes: ['buy', 'sell', 'trade'],
+          focusRarity: ['C', 'UC', 'R'],
+          focusHolo: false,
+          focusGraded: false,
+          focusSealed: false,
+          speechStyle: 'newbie',
+          messages: {
+            buy: ["hi! is {price}R fair for your {card}? im still learning prices 😅", "ooh that {card} looks cool! would {price}R be okay?", "can i buy your {card}? i have {price}R, is that enough? 🤔"],
+            sell: ["does anyone want this {card}? {price}R? idk if thats good lol", "selling {card} for {price}R! hope thats fair 😊", "i got a duplicate {card}, {price}R? new to this sorry!"],
+            trade: ["wanna trade? my {card2} for your {card1}? idk if its fair but worth asking! 🙏"]
+          }
+        },
+        'PackRipper_Pete': {
+          name: 'PackRipper_Pete',
+          avatar: '🎰',
+          bio: '🎰 Live pack openings daily! Sub to my channel!',
+          emojis: ['🎰', '🎉', '📹', '🔴', '😱', '🤑', '💥', '🎊'],
+          buyRange: [0.85, 1.05],  // Fair prices
+          sellRange: [0.95, 1.10], // Slightly high
+          offerTypes: ['buy', 'sell'],
+          focusRarity: ['SR', 'UR', 'SP'],
+          focusHolo: true,
+          focusGraded: false,
+          focusSealed: true,
+          speechStyle: 'streamer',
+          messages: {
+            buy: ["YOOO that {card} would be INSANE for content! {price}R? 🔴", "chat wants me to get that {card}! {price}R lets gooo", "dude that {card} for {price}R? the stream would go CRAZY 😱"],
+            sell: ["pulled this {card} on stream! selling for {price}R, streamer luck baby 🎉", "got this {card} in todays rips! {price}R for a sub 📹", "stream pull {card}! {price}R! chat said its worth more but whatever"],
+            trade: []
+          }
+        },
+        'SilentTrader': {
+          name: 'SilentTrader',
+          avatar: '🤫',
+          bio: '...',
+          emojis: ['🤫', '👁️', '🫥', '💀', '🖤', '🌑', '⬛', '🕳️'],
+          buyRange: [0.90, 1.05],  // Actually fair
+          sellRange: [0.90, 1.05], // Actually fair
+          offerTypes: ['buy', 'sell', 'trade'],
+          focusRarity: ['UR', 'SP'],
+          focusHolo: true,
+          focusGraded: true,
+          focusSealed: false,
+          speechStyle: 'silent',
+          messages: {
+            buy: ["{card}. {price}R.", "..{card}.. {price}R..", "interested. {card}. {price}R."],
+            sell: ["{card}. {price}R.", "selling. {card}. {price}R.", "...{card}... {price}R..."],
+            trade: ["{card1} ↔️ {card2}"]
+          }
+        },
+        'TCG_Mom': {
+          name: 'TCG_Mom',
+          avatar: '👩‍👧',
+          bio: 'Collecting for my kids! They grow up so fast 💕',
+          emojis: ['👩‍👧', '💕', '😊', '🏠', '🎁', '❤️', '🌸', '✨'],
+          buyRange: [0.95, 1.15],  // Overpays for kids
+          sellRange: [0.75, 0.90], // Undersells
+          offerTypes: ['buy', 'sell'],
+          focusRarity: ['C', 'UC', 'R'],
+          focusHolo: true,
+          focusGraded: false,
+          focusSealed: true,
+          speechStyle: 'mom',
+          messages: {
+            buy: ["My son has been wanting that {card}! Would {price}R be okay? 💕", "Oh that {card} would make such a great birthday gift! {price}R?", "My daughter would love that {card}! Can I buy it for {price}R? 🎁"],
+            sell: ["Selling this {card} for {price}R - the kids have too many duplicates!", "Got this {card} for {price}R! Cleaning out the playroom 🏠", "The kids dont want this {card} anymore, {price}R? 😊"],
+            trade: []
+          }
+        },
+        'RageQuitter99': {
+          name: 'RageQuitter99',
+          avatar: '😡',
+          bio: 'THIS GAME IS RIGGED. Selling everything. Done.',
+          emojis: ['😡', '🤬', '💢', '😤', '🔥', '💀', '⚰️', '🚮'],
+          buyRange: [0.40, 0.60],  // Lowballs
+          sellRange: [0.50, 0.70], // Sells cheap from rage
+          offerTypes: ['sell'],
+          focusRarity: null,
+          focusHolo: true,
+          focusGraded: true,
+          focusSealed: true,
+          speechStyle: 'rage',
+          messages: {
+            buy: [],
+            sell: ["TAKE THIS {card} FOR {price}R IM DONE 😡", "selling {card} for {price}R. pack luck is RIGGED", "whatever just take {card} for {price}R. im quitting this garbage 🤬", "{card} for {price}R. everything must GO. worst luck EVER 💢"],
+            trade: []
+          }
+        },
+        'VintageVince': {
+          name: 'VintageVince',
+          avatar: '🎩',
+          bio: 'Old school collector. Quality over quantity since 1995.',
+          emojis: ['🎩', '🍷', '📜', '⌛', '🏛️', '👔', '🎭', '📿'],
+          buyRange: [1.00, 1.20],  // Pays premium for quality
+          sellRange: [1.15, 1.30], // Charges premium
+          offerTypes: ['buy', 'sell'],
+          focusRarity: ['SR', 'UR', 'SP'],
+          focusHolo: false,
+          focusGraded: true,
+          focusSealed: true,
+          speechStyle: 'vintage',
+          messages: {
+            buy: ["Ah, a fine {card}. I shall offer {price}R for this specimen. 🎩", "This {card} would complement my collection nicely. {price}R?", "A gentleman's offer: {price}R for your {card}. 🍷"],
+            sell: ["Offering this distinguished {card} for {price}R. A fair price for quality.", "Parting with my {card} for {price}R. Treat it well. 📜", "A vintage piece: {card} for {price}R. For the discerning collector."],
+            trade: []
+          }
+        },
+        'BulkBuyer_Bob': {
+          name: 'BulkBuyer_Bob',
+          avatar: '📦',
+          bio: 'Buying BULK! Commons and uncommons wanted! 📦',
+          emojis: ['📦', '🛒', '💵', '🔢', '📊', '💼', '🏭', '🚛'],
+          buyRange: [0.50, 0.65],  // Lowballs but buys everything
+          sellRange: [0.75, 0.85], // Sells cheap
+          offerTypes: ['buy', 'sell'],
+          focusRarity: ['C', 'UC'],
+          focusHolo: false,
+          focusGraded: false,
+          focusSealed: false,
+          speechStyle: 'bulk',
+          messages: {
+            buy: ["bulk deal: {price}R for your {card}. i buy everything 📦", "adding {card} to my bulk order. {price}R each, take it or leave it", "{card} for {price}R. im buying hundreds, thats my price 🛒"],
+            sell: ["offloading {card} for {price}R. got too many in inventory 📊", "bulk sale: {card} only {price}R. clearing warehouse space", "{card} at {price}R. bulk discount, you're welcome 💵"],
+            trade: []
+          }
         }
       };
 
       const NPC_IDS = Object.keys(NPC_PROFILES);
+
+      // NPC casual reply generator based on personality
+      const NPC_CASUAL_REPLIES = {
+        tryhard: ["yo", "bet", "facts", "aight", "cool cool", "say less", "nah fr", "ight", "bet bet", "word"],
+        grandpa: ["Oh okay!", "Sounds good!", "I understand!", "Wonderful!", "Thank you!", "That's nice!", "Alrighty then!", "How lovely!"],
+        scammer: ["yes yes friend!", "of course!", "trust!", "very good!", "we do business!", "you understand!", "smart!", "haha yes!"],
+        holo: ["omg yes!", "so pretty!", "✨✨✨", "love it!", "yesss!", "sparkles!", "amazing!", "gorgeous!"],
+        bargain: ["noted", "understood", "ok deal", "fine", "works", "alright", "fair enough", "done"],
+        whale: ["Indeed.", "Very well.", "Acceptable.", "Noted.", "As you wish.", "Certainly.", "Quite.", "Splendid."],
+        addict: ["lol same", "broooo", "yooo", "im down", "lets goo", "haha yeah", "for real", "duuude"],
+        nerd: ["Acknowledged.", "Noted.", "That tracks.", "Makes sense.", "Logically sound.", "Affirmative.", "Data recorded.", "Understood."],
+        grader: ["Hmm, noted.", "I see.", "Interesting.", "The slab speaks.", "Grade is everything.", "Quality noted.", "Condition: decent.", "Edge wear: minimal."],
+        trader: ["LFG!", "bullish", "to the moon", "WAGMI", "this is the way", "diamond hands", "based", "lets gooo 🚀"],
+        newbie: ["oh ok! 😊", "thanks!", "that helps!", "cool cool", "got it!", "nice!", "ohhh i see", "makes sense!"],
+        streamer: ["LETS GOOO", "chat says hi!", "W response", "poggers", "no cap", "straight fire", "W", "based take"],
+        silent: [".", "..", "...", "👁️", "🤫", "📭", "⬛", "..."],
+        mom: ["Okay honey!", "Sounds good!", "That's sweet!", "Wonderful!", "The kids will love this!", "How nice!", "Thanks dear!", "💕"],
+        rage: ["whatever", "ugh", "fine", "dont care", "😤", "meh", "k", "im still leaving"],
+        vintage: ["Cheers.", "Quite so.", "Indeed.", "Marvelous.", "Capital.", "Splendid.", "I concur.", "🎩"],
+        bulk: ["noted", "k", "processing", "order updated", "logged", "ok", "👍", "done"]
+      };
+
+      // Generate contextual NPC reply based on user message
+      const generateNpcReply = (npcId, userMessage) => {
+        const profile = NPC_PROFILES[npcId];
+        if (!profile) return '👍';
+        
+        const style = profile.speechStyle;
+        const replies = NPC_CASUAL_REPLIES[style] || ['👍', '✓', 'ok'];
+        const emoji = profile.emojis[Math.floor(Math.random() * profile.emojis.length)];
+        const reply = replies[Math.floor(Math.random() * replies.length)];
+        
+        // 30% chance to just send emojis
+        if (Math.random() < 0.3) {
+          const emoji2 = profile.emojis[Math.floor(Math.random() * profile.emojis.length)];
+          return `${emoji} ${emoji2}`;
+        }
+        
+        // Sometimes add emoji to reply
+        if (Math.random() < 0.5) {
+          return `${reply} ${emoji}`;
+        }
+        
+        return reply;
+      };
 
       // ===== Inventory Helper Functions =====
       // Get sealed count for a specific game/set/product
@@ -1831,6 +2009,59 @@ body{
       const [activeNpcChat, setActiveNpcChat] = useState(null);
       const [npcOfferModal, setNpcOfferModal] = useState(null);
       const [userMessageInput, setUserMessageInput] = useState('');
+
+      // NPC Reputation System - tracks relationship with each NPC
+      const [npcReputation, setNpcReputation] = useState(() => {
+        try {
+          const core = readCoreSave();
+          if (core && core.npcReputation) return core.npcReputation;
+          const raw = localStorage.getItem('tcg-npc-reputation');
+          if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        // Initialize all NPCs at level 1 with 0 XP
+        const initial = {};
+        NPC_IDS.forEach(id => { initial[id] = { level: 1, xp: 0 }; });
+        return initial;
+      });
+
+      const saveNpcReputation = useCallback((rep) => {
+        try { localStorage.setItem('tcg-npc-reputation', JSON.stringify(rep)); } catch (e) {}
+        try { updateCoreSave({ npcReputation: rep }); } catch (e) {}
+      }, []);
+
+      // XP required for each level (cumulative)
+      const NPC_REP_LEVELS = [0, 10, 30, 60, 100, 150, 220, 310, 420, 550]; // Level 1-10
+      
+      // Get NPC level from XP
+      const getNpcLevel = (xp) => {
+        for (let i = NPC_REP_LEVELS.length - 1; i >= 0; i--) {
+          if (xp >= NPC_REP_LEVELS[i]) return i + 1;
+        }
+        return 1;
+      };
+
+      // Get discount/bonus based on rep level (0% at level 1, up to 18% at level 10)
+      const getNpcRepBonus = (npcId) => {
+        const rep = npcReputation[npcId] || { level: 1, xp: 0 };
+        const level = getNpcLevel(rep.xp);
+        // Level 1 = 0%, Level 10 = 18% (2% per level after 1)
+        return (level - 1) * 0.02;
+      };
+
+      // Add XP to NPC based on transaction value
+      const addNpcXp = useCallback((npcId, transactionValue) => {
+        // 1 XP per 1 ration of transaction value (minimum 1)
+        const xpGain = Math.max(1, Math.floor(transactionValue));
+        setNpcReputation(prev => {
+          const current = prev[npcId] || { level: 1, xp: 0 };
+          const newXp = current.xp + xpGain;
+          const newLevel = getNpcLevel(newXp);
+          const updated = { ...prev, [npcId]: { level: newLevel, xp: newXp } };
+          saveNpcReputation(updated);
+          return updated;
+        });
+        return xpGain;
+      }, [saveNpcReputation]);
 
       const saveNpcChats = useCallback((chats) => {
         try { localStorage.setItem('tcg-npc-chats', JSON.stringify(chats)); } catch (e) {}
@@ -3267,12 +3498,16 @@ body{
             // Apply NPC's price range
             const [minMult, maxMult] = profile.buyRange;
             const priceMult = minMult + Math.random() * (maxMult - minMult);
-            const offerPrice = Math.max(0.01, baseValue * priceMult);
+            // Apply reputation bonus (higher rep = better prices when selling TO NPC)
+            const repBonus = getNpcRepBonus(npcId);
+            const adjustedPriceMult = priceMult * (1 + repBonus); // Better buy price for player
+            const offerPrice = Math.max(0.01, baseValue * adjustedPriceMult);
             
             offer = {
               type: 'buy',
               npcId,
               day,
+              expiresDay: day + 2, // Expires in 2 days
               card: targetCard,
               isHolo,
               isGraded,
@@ -3329,12 +3564,16 @@ body{
             // Apply NPC's price range
             const [minMult, maxMult] = profile.sellRange;
             const priceMult = minMult + Math.random() * (maxMult - minMult);
-            const offerPrice = Math.max(0.01, baseValue * priceMult);
+            // Apply reputation bonus (higher rep = cheaper prices when buying FROM NPC)
+            const repBonus = getNpcRepBonus(npcId);
+            const adjustedPriceMult = priceMult * (1 - repBonus); // Discount for player
+            const offerPrice = Math.max(0.01, baseValue * adjustedPriceMult);
             
             offer = {
               type: 'sell',
               npcId,
               day,
+              expiresDay: day + 2, // Expires in 2 days
               card: targetCard,
               isHolo,
               isGraded,
@@ -3357,6 +3596,7 @@ body{
               type: 'trade',
               npcId,
               day,
+              expiresDay: day + 2, // Expires in 2 days
               playerCard,
               playerIsHolo,
               npcCard,
@@ -3402,7 +3642,7 @@ body{
         
         setNpcChats(newChats);
         saveNpcChats(newChats);
-      }, [npcChats, collection, setConfigs, marketValues, holoMultipliers, gradedCards, sealedInventory, saveNpcChats]);
+      }, [npcChats, collection, setConfigs, marketValues, holoMultipliers, gradedCards, sealedInventory, saveNpcChats, npcReputation]);
 
       const advanceDay = () => {
         const nextDay = gameDay + 1;
@@ -7494,9 +7734,11 @@ return (
                           }).map(npcId => {
                             const profile = NPC_PROFILES[npcId];
                             const chat = npcChats[npcId] || { messages: [], hasUnread: false };
-                            const lastMsg = chat.messages[chat.messages.length - 1];
+                            const lastMsg = chat.messages.filter(m => m.from !== 'system')[chat.messages.filter(m => m.from !== 'system').length - 1];
                             const hasUnread = chat.hasUnread;
-                            const pendingOffers = chat.messages.filter(m => m.offer && m.offer.status === 'pending').length;
+                            const pendingOffers = chat.messages.filter(m => m.offer && m.offer.status === 'pending' && (!m.offer.expiresDay || gameDay <= m.offer.expiresDay)).length;
+                            const rep = npcReputation[npcId] || { level: 1, xp: 0 };
+                            const repLevel = getNpcLevel(rep.xp);
                             
                             return (
                               <div 
@@ -7522,19 +7764,35 @@ return (
                                   transition: 'background 0.2s'
                                 }}
                               >
-                                {/* Avatar */}
-                                <div style={{
-                                  width: 50,
-                                  height: 50,
-                                  borderRadius: '50%',
-                                  background: 'rgba(255,255,255,0.1)',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: 24,
-                                  flexShrink: 0
-                                }}>
-                                  {profile.avatar}
+                                {/* Avatar with Rep Level */}
+                                <div style={{ position: 'relative' }}>
+                                  <div style={{
+                                    width: 50,
+                                    height: 50,
+                                    borderRadius: '50%',
+                                    background: 'rgba(255,255,255,0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: 24,
+                                    flexShrink: 0
+                                  }}>
+                                    {profile.avatar}
+                                  </div>
+                                  <div style={{
+                                    position: 'absolute',
+                                    bottom: -2,
+                                    right: -2,
+                                    background: repLevel >= 10 ? 'linear-gradient(90deg, #fbbf24, #f59e0b)' : '#1f2937',
+                                    border: '2px solid #1a1a2e',
+                                    borderRadius: 6,
+                                    padding: '1px 4px',
+                                    fontSize: 9,
+                                    fontWeight: 700,
+                                    color: repLevel >= 10 ? '#000' : '#a78bfa'
+                                  }}>
+                                    {repLevel}
+                                  </div>
                                 </div>
                                 
                                 {/* Info */}
@@ -7600,6 +7858,12 @@ return (
                       (() => {
                         const profile = NPC_PROFILES[activeNpcChat];
                         const chat = npcChats[activeNpcChat] || { messages: [] };
+                        const rep = npcReputation[activeNpcChat] || { level: 1, xp: 0 };
+                        const repLevel = getNpcLevel(rep.xp);
+                        const repBonus = getNpcRepBonus(activeNpcChat);
+                        const currentLevelXp = NPC_REP_LEVELS[repLevel - 1] || 0;
+                        const nextLevelXp = NPC_REP_LEVELS[repLevel] || NPC_REP_LEVELS[NPC_REP_LEVELS.length - 1];
+                        const xpProgress = repLevel >= 10 ? 100 : ((rep.xp - currentLevelXp) / (nextLevelXp - currentLevelXp)) * 100;
                         
                         return (
                           <div style={{ display: 'flex', flexDirection: 'column', height: 500 }}>
@@ -7636,10 +7900,56 @@ return (
                               }}>
                                 {profile.avatar}
                               </div>
-                              <div>
-                                <div style={{ fontWeight: 700, fontSize: 14 }}>{profile.name}</div>
-                                <div style={{ color: '#9ca3af', fontSize: 10 }}>{profile.bio.substring(0, 30)}...</div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ fontWeight: 700, fontSize: 14 }}>{profile.name}</span>
+                                  <span style={{ 
+                                    fontSize: 10, 
+                                    padding: '2px 6px', 
+                                    borderRadius: 4, 
+                                    background: repLevel >= 10 ? 'linear-gradient(90deg, #fbbf24, #f59e0b)' : 'rgba(147,51,234,0.3)',
+                                    color: repLevel >= 10 ? '#000' : '#a78bfa',
+                                    fontWeight: 700
+                                  }}>
+                                    Lv.{repLevel}
+                                  </span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                                  <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, maxWidth: 80 }}>
+                                    <div style={{ width: `${xpProgress}%`, height: '100%', background: repLevel >= 10 ? '#fbbf24' : '#9333ea', borderRadius: 2 }} />
+                                  </div>
+                                  {repBonus > 0 && (
+                                    <span style={{ fontSize: 9, color: '#10b981' }}>+{Math.round(repBonus * 100)}% deals</span>
+                                  )}
+                                </div>
                               </div>
+                              {/* Delete Chat Button */}
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Delete all messages with ${profile.name}?`)) {
+                                    const updated = { ...npcChats };
+                                    updated[activeNpcChat] = { messages: [], hasUnread: false };
+                                    setNpcChats(updated);
+                                    saveNpcChats(updated);
+                                    setActiveNpcChat(null);
+                                  }
+                                }}
+                                style={{
+                                  background: 'rgba(239,68,68,0.2)',
+                                  border: '1px solid rgba(239,68,68,0.4)',
+                                  color: '#ef4444',
+                                  fontSize: 14,
+                                  cursor: 'pointer',
+                                  padding: '6px 10px',
+                                  borderRadius: 8,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 4
+                                }}
+                                title="Delete chat"
+                              >
+                                🗑️
+                              </button>
                             </div>
                             
                             {/* Messages */}
@@ -7663,7 +7973,25 @@ return (
                               ) : (
                                 chat.messages.map((msg, idx) => (
                                   <div key={msg.id || idx}>
-                                    {/* Message Bubble */}
+                                    {/* System Message (XP gain, etc) */}
+                                    {msg.from === 'system' ? (
+                                      <div style={{
+                                        textAlign: 'center',
+                                        margin: '4px 0'
+                                      }}>
+                                        <span style={{
+                                          fontSize: 10,
+                                          color: '#10b981',
+                                          background: 'rgba(16,185,129,0.15)',
+                                          padding: '3px 10px',
+                                          borderRadius: 10,
+                                          fontWeight: 600
+                                        }}>
+                                          {msg.text}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                    /* Message Bubble */
                                     <div style={{
                                       maxWidth: '85%',
                                       marginLeft: msg.from === 'user' ? 'auto' : 0,
@@ -7681,6 +8009,27 @@ return (
                                       
                                       {/* Offer Actions */}
                                       {msg.offer && msg.offer.status === 'pending' && (
+                                        (() => {
+                                          const isExpired = msg.offer.expiresDay && gameDay > msg.offer.expiresDay;
+                                          const daysLeft = msg.offer.expiresDay ? msg.offer.expiresDay - gameDay : null;
+                                          
+                                          if (isExpired) {
+                                            return (
+                                              <div style={{
+                                                marginTop: 8,
+                                                padding: '10px 12px',
+                                                background: 'rgba(107,114,128,0.2)',
+                                                borderRadius: 12,
+                                                border: '1px solid rgba(107,114,128,0.3)'
+                                              }}>
+                                                <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>
+                                                  ⏰ OFFER EXPIRED
+                                                </div>
+                                              </div>
+                                            );
+                                          }
+                                          
+                                          return (
                                         <div style={{
                                           marginTop: 8,
                                           padding: '10px 12px',
@@ -7688,8 +8037,21 @@ return (
                                           borderRadius: 12,
                                           border: '1px solid rgba(147,51,234,0.3)'
                                         }}>
-                                          <div style={{ fontSize: 11, color: '#a78bfa', marginBottom: 6, fontWeight: 600 }}>
-                                            {msg.offer.type === 'buy' ? '💰 WANTS TO BUY' : msg.offer.type === 'sell' ? '🏷️ WANTS TO SELL' : '🔄 WANTS TO TRADE'}
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                            <span style={{ fontSize: 11, color: '#a78bfa', fontWeight: 600 }}>
+                                              {msg.offer.type === 'buy' ? '💰 WANTS TO BUY' : msg.offer.type === 'sell' ? '🏷️ WANTS TO SELL' : '🔄 WANTS TO TRADE'}
+                                            </span>
+                                            {daysLeft !== null && (
+                                              <span style={{ 
+                                                fontSize: 9, 
+                                                padding: '2px 6px', 
+                                                borderRadius: 4, 
+                                                background: daysLeft <= 1 ? 'rgba(239,68,68,0.3)' : 'rgba(251,191,36,0.2)',
+                                                color: daysLeft <= 1 ? '#ef4444' : '#fbbf24'
+                                              }}>
+                                                ⏰ {daysLeft === 0 ? 'Last day!' : daysLeft === 1 ? '1 day left' : `${daysLeft} days left`}
+                                              </span>
+                                            )}
                                           </div>
                                           
                                           {/* Clickable card name */}
@@ -7866,6 +8228,8 @@ return (
                                             </button>
                                           </div>
                                         </div>
+                                          );
+                                        })()
                                       )}
                                       
                                       {/* Show offer status if not pending */}
@@ -7889,6 +8253,7 @@ return (
                                         Day {msg.day}
                                       </div>
                                     </div>
+                                    )}
                                   </div>
                                 ))
                               )}
@@ -7927,21 +8292,20 @@ return (
                                       day: gameDay,
                                       timestamp: Date.now()
                                     });
-                                    // NPC responds with random emoji
+                                    // NPC responds with contextual reply
                                     setTimeout(() => {
-                                      const emoji1 = profile.emojis[Math.floor(Math.random() * profile.emojis.length)];
-                                      const emoji2 = profile.emojis[Math.floor(Math.random() * profile.emojis.length)];
+                                      const replyText = generateNpcReply(activeNpcChat, userMessageInput.trim());
                                       const updatedAfter = { ...npcChats };
                                       updatedAfter[activeNpcChat].messages.push({
                                         id: `npc_reply_${Date.now()}`,
                                         from: 'npc',
-                                        text: `${emoji1} ${emoji2}`,
+                                        text: replyText,
                                         day: gameDay,
                                         timestamp: Date.now()
                                       });
                                       setNpcChats(updatedAfter);
                                       saveNpcChats(updatedAfter);
-                                    }, 500);
+                                    }, 500 + Math.random() * 1000);
                                     setNpcChats(updated);
                                     saveNpcChats(updated);
                                     setUserMessageInput('');
@@ -7962,21 +8326,20 @@ return (
                                     });
                                     setNpcChats(updated);
                                     saveNpcChats(updated);
-                                    // NPC responds with random emoji
+                                    // NPC responds with contextual reply
                                     setTimeout(() => {
-                                      const emoji1 = profile.emojis[Math.floor(Math.random() * profile.emojis.length)];
-                                      const emoji2 = profile.emojis[Math.floor(Math.random() * profile.emojis.length)];
+                                      const replyText = generateNpcReply(activeNpcChat, userMessageInput.trim());
                                       const updatedAfter = { ...npcChats };
                                       updatedAfter[activeNpcChat].messages.push({
                                         id: `npc_reply_${Date.now()}`,
                                         from: 'npc',
-                                        text: `${emoji1} ${emoji2}`,
+                                        text: replyText,
                                         day: gameDay,
                                         timestamp: Date.now()
                                       });
                                       setNpcChats(updatedAfter);
                                       saveNpcChats(updatedAfter);
-                                    }, 500);
+                                    }, 500 + Math.random() * 1000);
                                     setUserMessageInput('');
                                   }
                                 }}
@@ -9109,19 +9472,19 @@ return (
                             <div style={{ 
                               color: gradeColors.text, 
                               fontWeight: 700, 
-                              fontSize: 12, 
+                              fontSize: cardData?.name?.length > 18 ? 9 : cardData?.name?.length > 14 ? 10 : 11, 
                               lineHeight: 1.2,
                               marginBottom: 4
                             }}>
                               {cardData?.name}
                             </div>
-                            <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 10 }}>
-                              {gameConfig?.name}
+                            <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 9 }}>
+                              {gameConfig?.name} - {setConfig?.name}
                             </div>
-                            <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 10 }}>
-                              {setConfig?.name}
+                            <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 9, marginTop: 2 }}>
+                              {cardData?.rarity?.toUpperCase()}{graded.isHolo ? ' - HOLO' : ''}
                             </div>
-                            <div style={{ color: gradeColors.text, opacity: 0.5, fontSize: 9, fontFamily: 'monospace', marginTop: 4 }}>
+                            <div style={{ color: gradeColors.text, opacity: 0.5, fontSize: 8, fontFamily: 'monospace', marginTop: 4 }}>
                               SN: {serialNum}
                             </div>
                           </div>
@@ -9341,7 +9704,7 @@ return (
                 bottom: 0,
                 background: 'rgba(0, 0, 0, 0.9)',
                 display: 'flex',
-                alignItems: 'flex-start',
+                alignItems: 'center',
                 justifyContent: 'center',
                 zIndex: 1000,
                 cursor: 'zoom-out',
@@ -9351,22 +9714,21 @@ return (
             >
               <div style={{ 
                 display: 'flex', 
-                flexDirection: 'column',
-                gap: 16, 
-                alignItems: 'center', 
-                maxWidth: '100%',
+                flexDirection: window.innerWidth >= 768 ? 'row' : 'column',
+                gap: 24, 
+                alignItems: window.innerWidth >= 768 ? 'flex-start' : 'center', 
+                maxWidth: window.innerWidth >= 768 ? 700 : '100%',
                 width: '100%',
-                paddingTop: 16,
-                paddingBottom: 32
+                padding: 16
               }} onClick={(e) => e.stopPropagation()}>
                 {/* Card Image */}
-                <div style={{ position: 'relative', width: '100%', maxWidth: 300, flexShrink: 0 }}>
+                <div style={{ position: 'relative', width: '100%', maxWidth: 280, flexShrink: 0 }}>
                   <img 
                     src={enlargedCard.image} 
                     alt={enlargedCard.name}
                     style={{
                       width: '100%',
-                      maxHeight: '50vh',
+                      maxHeight: window.innerWidth >= 768 ? '70vh' : '50vh',
                       objectFit: 'contain',
                       borderRadius: 16,
                       border: `4px solid ${(RARITY_COLORS[enlargedCard.rarity] || { border: '#6b7280' }).border}`,
@@ -9819,12 +10181,35 @@ return (
                     ...msg,
                     offer: { ...offer, status: 'accepted' }
                   };
-                  // Add NPC happy response
+                  
+                  // Calculate transaction value for XP
+                  let transactionValue = 0;
+                  if (offer.type === 'buy' || offer.type === 'sell') {
+                    transactionValue = offer.price;
+                  } else if (offer.type === 'trade') {
+                    // Use market value of the cards being traded
+                    const playerCardValue = marketValues[offer.playerCard?.id] || 1;
+                    const npcCardValue = marketValues[offer.npcCard?.id] || 1;
+                    transactionValue = (playerCardValue + npcCardValue) / 2;
+                  }
+                  
+                  // Add reputation XP
+                  const xpGained = addNpcXp(npcId, transactionValue);
+                  
+                  // Add NPC happy response with XP gain notification
                   const emoji = profile.emojis[Math.floor(Math.random() * profile.emojis.length)];
                   updated[npcId].messages.push({
                     id: `${npcId}_accept_${Date.now()}`,
                     from: 'npc',
                     text: `${emoji} ${emoji} ${emoji}`,
+                    day: gameDay,
+                    timestamp: Date.now()
+                  });
+                  // Add system message for XP gain
+                  updated[npcId].messages.push({
+                    id: `${npcId}_xp_${Date.now()}`,
+                    from: 'system',
+                    text: `+${xpGained} Rep XP`,
                     day: gameDay,
                     timestamp: Date.now()
                   });
