@@ -1882,7 +1882,7 @@ body{
         track('slabs_cracked', 1);
         
         return true;
-      }, [gradedCards, collection, saveCollection, saveGradedCards, track]);
+      }, [gradedCards, collection, saveCollection, saveGradedCards]);
 
       // Get cards available for grading (owned, not already graded or in queue)
       const getGradableCards = useCallback(() => {
@@ -2278,14 +2278,28 @@ body{
         try { updateCoreSave({ dailyTrackers: trackers, dailyTrackersDay: day }); } catch (e) {}
       }, []);
 
-      // Simple function to increment a tracker
-      const track = useCallback((trackerName, amount = 1) => {
+      // Ref to store latest tracker state for stable access
+      const dailyTrackersRef = useRef(dailyTrackers);
+      const gameDayRef = useRef(gameDay);
+      
+      // Keep refs updated
+      useEffect(() => {
+        dailyTrackersRef.current = dailyTrackers;
+      }, [dailyTrackers]);
+      
+      useEffect(() => {
+        gameDayRef.current = gameDay;
+      }, [gameDay]);
+
+      // Simple function to increment a tracker - uses refs to avoid stale closures
+      const track = (trackerName, amount = 1) => {
         setDailyTrackers(prev => {
           const updated = { ...prev, [trackerName]: (prev[trackerName] || 0) + amount };
-          saveDailyTrackers(updated, gameDay);
+          saveDailyTrackers(updated, gameDayRef.current);
+          console.log('TRACK:', trackerName, '+', amount, '=', updated[trackerName]);
           return updated;
         });
-      }, [gameDay, saveDailyTrackers]);
+      };
 
       // Daily challenges state
       const [dailyChallenges, setDailyChallenges] = useState(() => {
@@ -2370,7 +2384,7 @@ body{
           else if (view === 'community') track('community_views', 1);
           prevViewRef.current = view;
         }
-      }, [view, track]);
+      }, [view]);
 
       // Track card inspection
       const prevEnlargedRef = useRef(null);
@@ -2379,7 +2393,7 @@ body{
           track('cards_inspected', 1);
         }
         prevEnlargedRef.current = enlargedCard;
-      }, [enlargedCard, track]);
+      }, [enlargedCard]);
 
       // ===== Showcase System =====
       const [showcase, setShowcase] = useState(() => {
@@ -2412,7 +2426,7 @@ body{
           setTimeout(() => track('showcase_adds', 1), 0);
           return updated;
         });
-      }, [saveShowcase, track]);
+      }, [saveShowcase]);
 
       const removeFromShowcase = useCallback((index) => {
         setShowcase(prev => {
@@ -3707,7 +3721,7 @@ body{
         
         // Track
         track('sealed_opened', 1);
-      }, [getSealedCount, setConfigs, packInventory, savePackInventory, updateSealedCount, track]);
+      }, [getSealedCount, setConfigs, packInventory, savePackInventory, updateSealedCount]);
 
       // Legacy wrappers for backwards compatibility (used in some places)
       const openBundleBox = () => openSealedProduct(currentGameId, currentSetId, 'bundle');
@@ -4328,7 +4342,7 @@ body{
         // Track purchase
         track('packs_bought', 1);
         track('rations_spent', cost);
-      }, [rations, packInventory, savePackInventory, saveRations, track]);
+      }, [rations, packInventory, savePackInventory, saveRations]);
 
       // Universal function to buy sealed products that go into sealed inventory
       const buySealedProduct = useCallback((gameId, setId, productType, cost) => {
@@ -4345,7 +4359,7 @@ body{
         if (productType === 'bundle') track('bundles_bought', 1);
         else if (productType === 'booster') track('boosters_bought', 1);
         else if (productType === 'case') track('cases_bought', 1);
-      }, [rations, saveRations, updateSealedCount, track]);
+      }, [rations, saveRations, updateSealedCount]);
 
       // Legacy: Buy single pack for current game/set
       const buySinglePack = () => {
@@ -6233,6 +6247,31 @@ if (!isLoaded) {
                       if (item.type === 'graded') {
                         const graded = item.data;
                         const cardData = setConfigs[graded.gameId]?.[graded.setId]?.cards?.find(c => c.id === graded.cardId);
+                        if (!cardData) {
+                          return (
+                            <div 
+                              key={idx}
+                              onClick={() => removeFromShowcase(idx)}
+                              style={{
+                                width: 80,
+                                height: 112,
+                                borderRadius: 8,
+                                border: '2px solid rgba(255,255,255,0.2)',
+                                background: 'rgba(0,0,0,0.3)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#ef4444',
+                                fontSize: 10,
+                                textAlign: 'center',
+                                cursor: 'pointer'
+                              }}
+                              title="Card not found - click to remove"
+                            >
+                              Card Not Found
+                            </div>
+                          );
+                        }
                         const imageUrl = buildImageUrl(graded.gameId, graded.setId, cardData);
                         const gradeColors = GRADE_COLORS[graded.grade] || GRADE_COLORS[8];
                         
@@ -6258,16 +6297,43 @@ if (!isLoaded) {
                           </div>
                         );
                       } else {
-                        // Regular card
-                        const card = item.data;
-                        const imageUrl = buildImageUrl(card.gameId, card.setId, card);
-                        const colors = RARITY_COLORS[card.rarity] || { border: '#6b7280' };
+                        // Regular card - look up full card data
+                        const cardInfo = item.data;
+                        const cardData = setConfigs[cardInfo.gameId]?.[cardInfo.setId]?.cards?.find(c => c.id === cardInfo.cardId);
+                        if (!cardData) {
+                          // Card data not found, show placeholder
+                          return (
+                            <div 
+                              key={idx}
+                              onClick={() => removeFromShowcase(idx)}
+                              style={{
+                                width: 80,
+                                height: 112,
+                                borderRadius: 8,
+                                border: '2px solid rgba(255,255,255,0.2)',
+                                background: 'rgba(0,0,0,0.3)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#ef4444',
+                                fontSize: 10,
+                                textAlign: 'center',
+                                cursor: 'pointer'
+                              }}
+                              title="Card not found - click to remove"
+                            >
+                              Card Not Found
+                            </div>
+                          );
+                        }
+                        const imageUrl = buildImageUrl(cardInfo.gameId, cardInfo.setId, cardData);
+                        const colors = RARITY_COLORS[cardData.rarity] || { border: '#6b7280' };
                         
                         return (
                           <div 
                             key={idx}
                             onClick={() => removeFromShowcase(idx)}
-                            className={card.isHolo ? 'holo-overlay' : ''}
+                            className={cardInfo.isHolo ? 'holo-overlay' : ''}
                             style={{
                               width: 80,
                               borderRadius: 8,
@@ -6279,7 +6345,7 @@ if (!isLoaded) {
                             title="Click to remove"
                           >
                             <img src={imageUrl} alt="" style={{ width: '100%', display: 'block' }} />
-                            {card.isHolo && (
+                            {cardInfo.isHolo && (
                               <div style={{ position: 'absolute', top: 2, right: 2, fontSize: 10 }}>✨</div>
                             )}
                           </div>
