@@ -4866,6 +4866,27 @@ const getRareSlotCard = () => {
           savePackCount(next);
           return next;
         });
+        
+        // Track challenge progress
+        try {
+          track('packs_opened', 1);
+          
+          // Track holos pulled
+          const holoCount = newPack.filter(c => c.isHolo).length;
+          if (holoCount > 0) track('holos_pulled', holoCount);
+          
+          // Track rares/SR/UR pulled
+          const raresCount = newPack.filter(c => ['R', 'SR', 'UR', 'SP'].includes(c.rarity)).length;
+          const srCount = newPack.filter(c => c.rarity === 'SR').length;
+          const urCount = newPack.filter(c => ['UR', 'SP'].includes(c.rarity)).length;
+          if (raresCount > 0) track('rares_pulled', raresCount);
+          if (srCount > 0) track('sr_pulled', srCount);
+          if (urCount > 0) track('ur_pulled', urCount);
+          
+          // Track god packs
+          if (isGodPack) track('godpacks_pulled', 1);
+        } catch (e) { console.error('Tracking error:', e); }
+        
         navigate('opening');
       };
 
@@ -6278,7 +6299,7 @@ if (!isLoaded) {
                         return (
                           <div 
                             key={idx}
-                            onClick={() => removeFromShowcase(idx)}
+                            onClick={() => setInspectingGradedCard(graded)}
                             style={{
                               width: 80,
                               borderRadius: 8,
@@ -6288,7 +6309,7 @@ if (!isLoaded) {
                               cursor: 'pointer',
                               position: 'relative'
                             }}
-                            title="Click to remove"
+                            title="Click to inspect"
                           >
                             <div style={{ background: gradeColors.bg, padding: '2px 4px', textAlign: 'center' }}>
                               <span style={{ color: gradeColors.text, fontSize: 10, fontWeight: 700 }}>TMSG {graded.grade}</span>
@@ -6332,7 +6353,15 @@ if (!isLoaded) {
                         return (
                           <div 
                             key={idx}
-                            onClick={() => removeFromShowcase(idx)}
+                            onClick={() => setEnlargedCard({
+                              ...cardData,
+                              id: cardInfo.cardId,
+                              gameId: cardInfo.gameId,
+                              setId: cardInfo.setId,
+                              image: imageUrl,
+                              isHolo: cardInfo.isHolo,
+                              marketValue: marketValues[cardInfo.cardId] || 1
+                            })}
                             className={cardInfo.isHolo ? 'holo-overlay' : ''}
                             style={{
                               width: 80,
@@ -6342,7 +6371,7 @@ if (!isLoaded) {
                               cursor: 'pointer',
                               position: 'relative'
                             }}
-                            title="Click to remove"
+                            title="Click to inspect"
                           >
                             <img src={imageUrl} alt="" style={{ width: '100%', display: 'block' }} />
                             {cardInfo.isHolo && (
@@ -6355,7 +6384,7 @@ if (!isLoaded) {
                   </div>
                   
                   <p style={{ color: '#6b7280', fontSize: 10, marginTop: 12, textAlign: 'center' }}>
-                    Add items from your Collection or Grading tabs. Click an item to remove it.
+                    Click items to inspect. Use the card modal to remove from showcase.
                   </p>
                 </div>
 
@@ -10435,7 +10464,8 @@ return (
                         
                         {/* Add to Showcase Button */}
                         {(() => {
-                          const isInShowcase = showcase.some(s => s.type === 'graded' && s.data.id === graded.id);
+                          const showcaseIdx = showcase.findIndex(s => s.type === 'graded' && s.data.id === graded.id);
+                          const isInShowcase = showcaseIdx !== -1;
                           
                           if (showcase.length >= 5 && !isInShowcase) return null;
                           
@@ -10468,9 +10498,26 @@ return (
                                   ⭐ Add to Showcase
                                 </button>
                               ) : (
-                                <div style={{ color: '#10b981', fontSize: 12, textAlign: 'center', padding: 8 }}>
-                                  ✓ In Showcase
-                                </div>
+                                <button
+                                  onClick={() => removeFromShowcase(showcaseIdx)}
+                                  style={{
+                                    width: '100%',
+                                    padding: '10px',
+                                    background: 'rgba(239,68,68,0.15)',
+                                    color: '#f87171',
+                                    border: '1px solid rgba(239,68,68,0.4)',
+                                    borderRadius: 8,
+                                    cursor: 'pointer',
+                                    fontSize: 13,
+                                    fontWeight: 'bold',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 6
+                                  }}
+                                >
+                                  ✕ Remove from Showcase
+                                </button>
                               )}
                             </div>
                           );
@@ -10760,17 +10807,27 @@ return (
                   })()}
 
                   {/* Add to Showcase Button */}
-                  {view === 'collection' && (() => {
+                  {(() => {
                     const ownedEntry = collection[enlargedCard.id] || { normal: 0, holo: 0 };
                     const ownedNormal = ownedEntry.normal || 0;
                     const ownedHolo = ownedEntry.holo || 0;
-                    const isInShowcase = showcase.some(s => s.type === 'card' && s.data.cardId === enlargedCard.id);
                     
-                    if ((ownedNormal === 0 && ownedHolo === 0) || showcase.length >= 5) return null;
+                    // Find if this card is in showcase (check both normal and holo versions)
+                    const normalInShowcaseIdx = showcase.findIndex(s => 
+                      s.type === 'card' && s.data.cardId === enlargedCard.id && !s.data.isHolo
+                    );
+                    const holoInShowcaseIdx = showcase.findIndex(s => 
+                      s.type === 'card' && s.data.cardId === enlargedCard.id && s.data.isHolo
+                    );
+                    
+                    const normalInShowcase = normalInShowcaseIdx !== -1;
+                    const holoInShowcase = holoInShowcaseIdx !== -1;
+                    const showcaseFull = showcase.length >= 5;
                     
                     return (
                       <div style={{ marginTop: 12 }}>
-                        {!isInShowcase && ownedNormal > 0 && (
+                        {/* Add Normal to Showcase */}
+                        {!normalInShowcase && ownedNormal > 0 && !showcaseFull && (
                           <button
                             onClick={() => {
                               addToShowcase({
@@ -10805,7 +10862,34 @@ return (
                             ⭐ Add to Showcase
                           </button>
                         )}
-                        {!isInShowcase && ownedHolo > 0 && (
+                        
+                        {/* Remove Normal from Showcase */}
+                        {normalInShowcase && (
+                          <button
+                            onClick={() => removeFromShowcase(normalInShowcaseIdx)}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              marginBottom: 8,
+                              background: 'rgba(239,68,68,0.15)',
+                              color: '#f87171',
+                              border: '1px solid rgba(239,68,68,0.4)',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              fontSize: 13,
+                              fontWeight: 'bold',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 6
+                            }}
+                          >
+                            ✕ Remove from Showcase
+                          </button>
+                        )}
+                        
+                        {/* Add Holo to Showcase */}
+                        {!holoInShowcase && ownedHolo > 0 && !showcaseFull && (
                           <button
                             onClick={() => {
                               addToShowcase({
@@ -10823,6 +10907,7 @@ return (
                             style={{
                               width: '100%',
                               padding: '10px',
+                              marginBottom: 8,
                               background: 'linear-gradient(90deg, rgba(251,191,36,0.2), rgba(236,72,153,0.2))',
                               color: '#f0abfc',
                               border: '1px solid rgba(236,72,153,0.4)',
@@ -10839,10 +10924,30 @@ return (
                             ⭐ Add Holo to Showcase
                           </button>
                         )}
-                        {isInShowcase && (
-                          <div style={{ color: '#10b981', fontSize: 12, textAlign: 'center' }}>
-                            ✓ Already in Showcase
-                          </div>
+                        
+                        {/* Remove Holo from Showcase */}
+                        {holoInShowcase && (
+                          <button
+                            onClick={() => removeFromShowcase(holoInShowcaseIdx)}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              marginBottom: 8,
+                              background: 'linear-gradient(90deg, rgba(239,68,68,0.2), rgba(168,85,247,0.2))',
+                              color: '#f0abfc',
+                              border: '1px solid rgba(168,85,247,0.4)',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              fontSize: 13,
+                              fontWeight: 'bold',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 6
+                            }}
+                          >
+                            ✕ Remove Holo from Showcase
+                          </button>
                         )}
                       </div>
                     );
