@@ -2069,6 +2069,8 @@ body{
       const [activeNpcChat, setActiveNpcChat] = useState(null);
       const [npcOfferModal, setNpcOfferModal] = useState(null);
       const [userMessageInput, setUserMessageInput] = useState('');
+      const [showOfferCardPicker, setShowOfferCardPicker] = useState(false);
+      const [offerCardFilter, setOfferCardFilter] = useState({ game: 'all', rarity: 'all', search: '' });
 
       // NPC Reputation System - tracks relationship with each NPC
       const [npcReputation, setNpcReputation] = useState(() => {
@@ -2127,6 +2129,175 @@ body{
         try { localStorage.setItem('tcg-npc-chats', JSON.stringify(chats)); } catch (e) {}
         try { updateCoreSave({ npcChats: chats }); } catch (e) {}
       }, []);
+
+      // Generate NPC response when player offers a card to sell/trade
+      const handlePlayerOfferCard = useCallback((npcId, cardData, isHolo, gameId, setId) => {
+        const profile = NPC_PROFILES[npcId];
+        if (!profile) return;
+        
+        const baseValue = marketValues[cardData.id] || 1;
+        const holoMult = isHolo ? (holoMultipliers[cardData.id] || 1.5) : 1;
+        const cardValue = baseValue * holoMult;
+        const repBonus = getNpcRepBonus(npcId);
+        
+        // Check if player has the card
+        const entry = collection[cardData.id] || { normal: 0, holo: 0 };
+        const hasCard = isHolo ? entry.holo > 0 : entry.normal > 0;
+        if (!hasCard) return;
+        
+        // NPC decides: buy, trade, or decline
+        const isInterested = profile.interests.some(i => 
+          (i === 'holos' && isHolo) ||
+          (i === 'rares' && ['rare', 'ultra-rare', 'special', 'ghost-rare'].some(r => (cardData.rarity || '').toLowerCase().includes(r))) ||
+          (i === 'commons' && (cardData.rarity || '').toLowerCase() === 'common') ||
+          (i === 'graded') ||
+          (i === 'budget')
+        );
+        
+        const interestMult = isInterested ? 1.15 : 0.9;
+        
+        const roll = Math.random();
+        let offerType;
+        if (cardValue < 2) {
+          offerType = roll < 0.7 ? 'buy' : 'decline';
+        } else if (cardValue < 10) {
+          offerType = roll < 0.5 ? 'buy' : roll < 0.85 ? 'trade' : 'decline';
+        } else {
+          offerType = roll < 0.3 ? 'buy' : roll < 0.9 ? 'trade' : 'decline';
+        }
+        
+        // Add user message showing they offered the card
+        const updated = { ...npcChats };
+        if (!updated[npcId]) updated[npcId] = { messages: [], hasUnread: false };
+        
+        updated[npcId].messages.push({
+          id: `user_offer_${Date.now()}`,
+          from: 'user',
+          text: `Hey, interested in ${isHolo ? '✨ ' : ''}${cardData.name}${isHolo ? ' ✨' : ''}?`,
+          day: gameDay,
+          timestamp: Date.now()
+        });
+        
+        // Generate NPC response based on offer type
+        setTimeout(() => {
+          const emoji = profile.emojis[Math.floor(Math.random() * profile.emojis.length)];
+          let responseText = '';
+          let offer = null;
+          
+          if (offerType === 'decline') {
+            const declines = {
+              casual: ["nah not really looking for that rn", "pass on that one", "not my style tbh"],
+              formal: ["I'll have to pass on this one.", "Not quite what I'm looking for.", "I appreciate the offer but no thank you."],
+              enthusiastic: ["not feeling that one!! sorry!!", "gonna pass on this one!!", "not what im hunting for rn!!"],
+              mysterious: ["...not this time", "the cards say no...", "not meant to be"],
+              slang: ["nah fam that aint it", "gonna have to pass bruh", "not vibin with that one"]
+            };
+            responseText = (declines[profile.speechStyle] || declines.casual)[Math.floor(Math.random() * 3)] + ' ' + emoji;
+          } else if (offerType === 'buy') {
+            const buyMult = (0.7 + Math.random() * 0.2) * interestMult * (1 + repBonus);
+            const buyPrice = Math.max(0.5, cardValue * buyMult);
+            
+            const buyMsgs = {
+              casual: [`i'll give you ${buyPrice.toFixed(2)}R for it`, `how about ${buyPrice.toFixed(2)}R?`, `${buyPrice.toFixed(2)}R work for you?`],
+              formal: [`I can offer ${buyPrice.toFixed(2)} Rations for that card.`, `Would ${buyPrice.toFixed(2)}R be acceptable?`, `My offer is ${buyPrice.toFixed(2)} Rations.`],
+              enthusiastic: [`ooh!! i'll give you ${buyPrice.toFixed(2)}R for it!!`, `${buyPrice.toFixed(2)}R!! deal??`, `i want it!! ${buyPrice.toFixed(2)}R??`],
+              mysterious: [`${buyPrice.toFixed(2)} Rations... take it or leave it`, `the price is ${buyPrice.toFixed(2)}R...`, `${buyPrice.toFixed(2)}R... if you dare`],
+              slang: [`yo ${buyPrice.toFixed(2)}R for that`, `${buyPrice.toFixed(2)}R sound good?`, `i gotchu ${buyPrice.toFixed(2)}R`]
+            };
+            responseText = (buyMsgs[profile.speechStyle] || buyMsgs.casual)[Math.floor(Math.random() * 3)] + ' ' + emoji;
+            
+            offer = {
+              id: `player_offer_${Date.now()}`,
+              type: 'buy',
+              card: cardData,
+              isHolo,
+              gameId,
+              setId,
+              price: parseFloat(buyPrice.toFixed(2)),
+              status: 'pending',
+              fromPlayer: true
+            };
+          } else {
+            // Trade offer - find a card from NPC's "inventory" of similar value
+            const allCards = [];
+            Object.entries(setConfigs).forEach(([gId, sets]) => {
+              Object.entries(sets).forEach(([sId, setConfig]) => {
+                (setConfig.cards || []).forEach(card => {
+                  const val = marketValues[card.id] || 1;
+                  if (val >= cardValue * 0.7 && val <= cardValue * 1.3) {
+                    allCards.push({ ...card, gameId: gId, setId: sId, value: val });
+                  }
+                });
+              });
+            });
+            
+            if (allCards.length === 0) {
+              const buyMult = (0.7 + Math.random() * 0.2) * interestMult * (1 + repBonus);
+              const buyPrice = Math.max(0.5, cardValue * buyMult);
+              
+              responseText = `don't have anything to trade but i'll buy it for ${buyPrice.toFixed(2)}R ${emoji}`;
+              offer = {
+                id: `player_offer_${Date.now()}`,
+                type: 'buy',
+                card: cardData,
+                isHolo,
+                gameId,
+                setId,
+                price: parseFloat(buyPrice.toFixed(2)),
+                status: 'pending',
+                fromPlayer: true
+              };
+            } else {
+              const tradeCard = allCards[Math.floor(Math.random() * allCards.length)];
+              const tradeIsHolo = Math.random() < 0.15;
+              
+              const tradeMsgs = {
+                casual: [`how about a trade? i got a ${tradeIsHolo ? '✨' : ''}${tradeCard.name}${tradeIsHolo ? '✨' : ''}`, `trade for my ${tradeCard.name}?`, `would you swap for ${tradeCard.name}?`],
+                formal: [`I propose a trade: my ${tradeCard.name} for your card.`, `Would you consider trading for my ${tradeCard.name}?`, `I have a ${tradeCard.name} I could trade.`],
+                enthusiastic: [`TRADE?? i have a ${tradeIsHolo ? '✨' : ''}${tradeCard.name}${tradeIsHolo ? '✨' : ''}!!`, `swap for my ${tradeCard.name}??`, `lets trade!! i got ${tradeCard.name}!!`],
+                mysterious: [`a trade perhaps... ${tradeCard.name} for yours`, `${tradeCard.name}... an even exchange`, `trade... my ${tradeCard.name}`],
+                slang: [`yo trade for my ${tradeCard.name}?`, `swap? got a ${tradeCard.name}`, `trade this ${tradeCard.name} fr`]
+              };
+              responseText = (tradeMsgs[profile.speechStyle] || tradeMsgs.casual)[Math.floor(Math.random() * 3)] + ' ' + emoji;
+              
+              offer = {
+                id: `player_offer_${Date.now()}`,
+                type: 'trade',
+                playerCard: cardData,
+                playerIsHolo: isHolo,
+                playerGameId: gameId,
+                playerSetId: setId,
+                npcCard: tradeCard,
+                npcIsHolo: tradeIsHolo,
+                npcGameId: tradeCard.gameId,
+                npcSetId: tradeCard.setId,
+                status: 'pending',
+                fromPlayer: true
+              };
+            }
+          }
+          
+          const updatedAfter = { ...npcChats };
+          updatedAfter[npcId].messages.push({
+            id: `npc_response_${Date.now()}`,
+            from: 'npc',
+            text: responseText,
+            offer,
+            day: gameDay,
+            timestamp: Date.now()
+          });
+          
+          setNpcChats(updatedAfter);
+          saveNpcChats(updatedAfter);
+        }, 800 + Math.random() * 1200);
+        
+        setNpcChats(updated);
+        saveNpcChats(updated);
+        setShowOfferCardPicker(false);
+        
+        // Small XP gain for offering
+        addNpcXp(npcId, 2);
+      }, [npcChats, collection, marketValues, holoMultipliers, gameDay, setConfigs, saveNpcChats, addNpcXp]);
 
       // ===== Player Level System =====
       const [playerXp, setPlayerXp] = useState(() => {
@@ -9297,8 +9468,30 @@ return (
                               padding: '12px 16px',
                               borderTop: '1px solid rgba(255,255,255,0.1)',
                               display: 'flex',
-                              gap: 8
+                              gap: 8,
+                              alignItems: 'center'
                             }}>
+                              {/* Offer Card Button */}
+                              <button
+                                onClick={() => setShowOfferCardPicker(true)}
+                                title="Offer a card"
+                                style={{
+                                  width: 36,
+                                  height: 36,
+                                  borderRadius: '50%',
+                                  border: '1px solid rgba(147,51,234,0.5)',
+                                  background: 'rgba(147,51,234,0.2)',
+                                  color: '#a78bfa',
+                                  fontSize: 20,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0
+                                }}
+                              >
+                                +
+                              </button>
                               <input
                                 type="text"
                                 value={userMessageInput}
@@ -10718,88 +10911,82 @@ return (
                     }}
                   >
                     <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-                      {/* Slab Card */}
+                      {/* Slab Card - Updated design */}
                       <div style={{ 
-                        borderRadius: 16,
+                        borderRadius: 12,
                         overflow: 'hidden',
                         background: '#1a1a2e',
-                        border: `5px solid ${gradeColors.border || gradeColors.bg}`,
+                        border: `4px solid ${gradeColors.border || gradeColors.bg}`,
                         boxShadow: `0 0 40px ${gradeColors.bg === '#000000' ? '#fbbf24' : gradeColors.bg}50`,
                         flexShrink: 0,
                         alignSelf: 'flex-start',
-                        width: 220
+                        width: 200
                       }}>
-                        {/* Slab Header */}
+                        {/* Slab Header - Fixed height, smaller fonts */}
                         <div style={{
                           background: gradeColors.bg,
-                          padding: '12px 14px',
+                          padding: '8px 10px',
                           display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'flex-start',
-                          minHeight: 80,
-                          borderBottom: `3px solid ${gradeColors.border || gradeColors.bg}`
+                          height: 56,
+                          borderBottom: `2px solid ${gradeColors.border || gradeColors.bg}`
                         }}>
                           {/* Left side - Card info */}
-                          <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                             <div style={{ 
                               color: gradeColors.text, 
                               fontWeight: 700, 
-                              fontSize: cardData?.name?.length > 18 ? 9 : cardData?.name?.length > 14 ? 10 : 11, 
+                              fontSize: 9, 
                               lineHeight: 1.2,
-                              marginBottom: 4
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
                             }}>
                               {cardData?.name}
                             </div>
-                            <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 9 }}>
+                            <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 8, marginTop: 1 }}>
                               {gameConfig?.name} - {setConfig?.name}
                             </div>
-                            <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 9, marginTop: 2 }}>
-                              {cardData?.rarity?.toUpperCase()}{graded.isHolo ? ' - HOLO' : ''}
+                            <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 8 }}>
+                              {cardData?.rarity}{graded.isHolo ? ' ✨' : ''}
                             </div>
-                            <div style={{ color: gradeColors.text, opacity: 0.5, fontSize: 8, fontFamily: 'monospace', marginTop: 4 }}>
-                              SN: {serialNum}
+                            <div style={{ color: gradeColors.text, opacity: 0.5, fontSize: 7, fontFamily: 'monospace' }}>
+                              {serialNum}
                             </div>
                           </div>
                           
                           {/* Right side - Grade */}
-                          <div style={{ textAlign: 'right', marginLeft: 10 }}>
-                            <div style={{ 
-                              color: gradeColors.text, 
-                              fontSize: 11, 
-                              fontWeight: 700,
-                              letterSpacing: '1px',
-                              opacity: 0.8
-                            }}>
-                              TMSG
-                            </div>
+                          <div style={{ textAlign: 'right', marginLeft: 8, flexShrink: 0 }}>
+                            <div style={{ color: gradeColors.text, fontSize: 8, fontWeight: 700, opacity: 0.8 }}>TMSG</div>
                             <div style={{ 
                               color: gradeColors.text,
-                              fontSize: 36, 
+                              fontSize: 22, 
                               fontWeight: 900,
                               lineHeight: 1,
-                              textShadow: gradeColors.bg === '#000000' ? '0 0 15px #fbbf2460' : 'none'
+                              textShadow: gradeColors.bg === '#000000' ? '0 0 10px #fbbf2460' : 'none'
                             }}>
                               {gradeNum}
                             </div>
-                            <div style={{ 
-                              color: gradeColors.text,
-                              fontSize: 8, 
-                              fontWeight: 700,
-                              letterSpacing: '0.5px',
-                              textTransform: 'uppercase',
-                              opacity: 0.8
-                            }}>
+                            <div style={{ color: gradeColors.text, fontSize: 6, fontWeight: 700, textTransform: 'uppercase', opacity: 0.8 }}>
                               {gradeLabel}
                             </div>
                           </div>
                         </div>
                         
-                        {/* Card Image */}
-                        <div className={graded.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative', padding: 10, background: '#111', lineHeight: 0 }}>
+                        {/* Card Image - Centered */}
+                        <div className={graded.isHolo ? 'holo-overlay' : ''} style={{ 
+                          position: 'relative', 
+                          padding: 10, 
+                          background: '#111', 
+                          lineHeight: 0,
+                          display: 'flex',
+                          justifyContent: 'center'
+                        }}>
                           <img
                             src={buildImageUrl(graded.gameId, graded.setId, cardData)}
                             alt={cardData?.name}
-                            style={{ width: '100%', aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block', borderRadius: 6 }}
+                            style={{ width: '85%', aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block', borderRadius: 5 }}
                           />
                         </div>
                       </div>
@@ -11547,6 +11734,212 @@ return (
             </div>
           )}
 
+          {/* Card Picker Modal for Offering to NPC */}
+          {showOfferCardPicker && activeNpcChat && (
+            <div
+              onClick={() => setShowOfferCardPicker(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.9)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1200,
+                padding: 20
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  background: 'linear-gradient(180deg, #1f2937 0%, #111827 100%)',
+                  borderRadius: 16,
+                  padding: 20,
+                  maxWidth: 500,
+                  width: '100%',
+                  maxHeight: '80vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  border: '1px solid rgba(255,255,255,0.15)'
+                }}
+              >
+                <h3 style={{ margin: 0, marginBottom: 16, color: 'white', fontSize: 18, fontWeight: 700 }}>
+                  Offer a Card to {NPC_PROFILES[activeNpcChat]?.name}
+                </h3>
+                
+                {/* Filters */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                  <select
+                    value={offerCardFilter.game}
+                    onChange={(e) => setOfferCardFilter(f => ({ ...f, game: e.target.value }))}
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: 8,
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      background: 'rgba(0,0,0,0.3)',
+                      color: 'white',
+                      fontSize: 12
+                    }}
+                  >
+                    <option value="all">All Games</option>
+                    {Object.entries(gameConfigs).map(([id, gc]) => (
+                      <option key={id} value={id}>{gc.name}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Search cards..."
+                    value={offerCardFilter.search}
+                    onChange={(e) => setOfferCardFilter(f => ({ ...f, search: e.target.value }))}
+                    style={{
+                      flex: 1,
+                      padding: '6px 10px',
+                      borderRadius: 8,
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      background: 'rgba(0,0,0,0.3)',
+                      color: 'white',
+                      fontSize: 12,
+                      minWidth: 120
+                    }}
+                  />
+                </div>
+                
+                {/* Card Grid */}
+                <div style={{ 
+                  flex: 1, 
+                  overflowY: 'auto',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
+                  gap: 8
+                }}>
+                  {(() => {
+                    const cards = [];
+                    Object.entries(collection).forEach(([cardId, entry]) => {
+                      // Find card data
+                      let cardData = null;
+                      let foundGameId = null;
+                      let foundSetId = null;
+                      
+                      Object.entries(setConfigs).forEach(([gameId, sets]) => {
+                        Object.entries(sets).forEach(([setId, setConfig]) => {
+                          const found = setConfig.cards?.find(c => c.id === cardId);
+                          if (found) {
+                            cardData = found;
+                            foundGameId = gameId;
+                            foundSetId = setId;
+                          }
+                        });
+                      });
+                      
+                      if (!cardData) return;
+                      
+                      // Apply filters
+                      if (offerCardFilter.game !== 'all' && foundGameId !== offerCardFilter.game) return;
+                      if (offerCardFilter.search && !cardData.name.toLowerCase().includes(offerCardFilter.search.toLowerCase())) return;
+                      
+                      if (entry.normal > 0) {
+                        cards.push({ cardData, isHolo: false, count: entry.normal, gameId: foundGameId, setId: foundSetId });
+                      }
+                      if (entry.holo > 0) {
+                        cards.push({ cardData, isHolo: true, count: entry.holo, gameId: foundGameId, setId: foundSetId });
+                      }
+                    });
+                    
+                    // Sort by value
+                    cards.sort((a, b) => {
+                      const valA = (marketValues[a.cardData.id] || 1) * (a.isHolo ? 1.5 : 1);
+                      const valB = (marketValues[b.cardData.id] || 1) * (b.isHolo ? 1.5 : 1);
+                      return valB - valA;
+                    });
+                    
+                    if (cards.length === 0) {
+                      return (
+                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#9ca3af', padding: 40 }}>
+                          No cards in collection
+                        </div>
+                      );
+                    }
+                    
+                    return cards.map((item, idx) => {
+                      const value = (marketValues[item.cardData.id] || 1) * (item.isHolo ? (holoMultipliers[item.cardData.id] || 1.5) : 1);
+                      return (
+                        <div
+                          key={`${item.cardData.id}-${item.isHolo}-${idx}`}
+                          onClick={() => handlePlayerOfferCard(activeNpcChat, item.cardData, item.isHolo, item.gameId, item.setId)}
+                          style={{
+                            cursor: 'pointer',
+                            borderRadius: 8,
+                            overflow: 'hidden',
+                            border: item.isHolo ? '2px solid #ec4899' : '1px solid rgba(255,255,255,0.1)',
+                            background: 'rgba(0,0,0,0.3)',
+                            transition: 'transform 0.15s'
+                          }}
+                        >
+                          <div className={item.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative' }}>
+                            <img
+                              src={buildImageUrl(item.gameId, item.setId, item.cardData)}
+                              alt={item.cardData.name}
+                              style={{ width: '100%', aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block' }}
+                            />
+                            <div style={{
+                              position: 'absolute',
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              background: 'linear-gradient(transparent, rgba(0,0,0,0.9))',
+                              padding: '12px 4px 4px',
+                              fontSize: 9,
+                              color: 'white',
+                              textAlign: 'center'
+                            }}>
+                              <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {item.isHolo && '✨ '}{item.cardData.name}
+                              </div>
+                              <div style={{ color: '#fbbf24', fontSize: 10, fontWeight: 700 }}>
+                                {value.toFixed(2)}R
+                              </div>
+                            </div>
+                            {item.count > 1 && (
+                              <div style={{
+                                position: 'absolute',
+                                top: 4,
+                                right: 4,
+                                background: 'rgba(0,0,0,0.8)',
+                                color: 'white',
+                                fontSize: 10,
+                                fontWeight: 700,
+                                padding: '2px 6px',
+                                borderRadius: 10
+                              }}>
+                                ×{item.count}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+                
+                <button
+                  onClick={() => setShowOfferCardPicker(false)}
+                  style={{
+                    marginTop: 12,
+                    padding: '10px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'rgba(255,255,255,0.1)',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* NPC Offer Modal */}
           {npcOfferModal && (() => {
             const { msg, npcId } = npcOfferModal;
@@ -11685,6 +12078,8 @@ return (
                     } else if (offer.type === 'sell') {
                       track('npc_buys', 1); // Player bought from NPC
                       track('rations_spent', offer.price);
+                    } else if (offer.type === 'trade') {
+                      track('trades_completed', 1);
                     }
                   } catch (e) {}
                   
