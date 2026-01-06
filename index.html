@@ -1854,6 +1854,21 @@ body{
       // State for grade reveal modal
       const [revealingGrade, setRevealingGrade] = useState(null);
       const [inspectingGradedCard, setInspectingGradedCard] = useState(null);
+      const [showDailySummary, setShowDailySummary] = useState(false);
+      const [dailySummaryData, setDailySummaryData] = useState(null);
+      
+      // Historical tracking for daily summary
+      const [dailyHistory, setDailyHistory] = useState(() => {
+        try {
+          const raw = localStorage.getItem('tcg-daily-history');
+          if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return { collectionValue: [], rations: [], bestPulls: {} };
+      });
+      
+      const saveDailyHistory = (history) => {
+        try { localStorage.setItem('tcg-daily-history', JSON.stringify(history)); } catch (e) {}
+      };
 
       // Crack a slab (return graded card to collection as raw)
       const crackSlab = useCallback((gradedCardId) => {
@@ -2194,10 +2209,13 @@ body{
         // Pulling Cards
         { id: 'pull_holo', desc: 'Pull a holo card', target: 1, tracker: 'holos_pulled', xp: 30, difficulty: 'medium' },
         { id: 'pull_3_holos', desc: 'Pull 3 holo cards', target: 3, tracker: 'holos_pulled', xp: 75, difficulty: 'hard' },
-        { id: 'pull_rare', desc: 'Pull a Rare or better', target: 1, tracker: 'rares_pulled', xp: 15, difficulty: 'easy' },
-        { id: 'pull_5_rares', desc: 'Pull 5 Rares or better', target: 5, tracker: 'rares_pulled', xp: 50, difficulty: 'medium' },
-        { id: 'pull_sr', desc: 'Pull a Super Rare', target: 1, tracker: 'sr_pulled', xp: 60, difficulty: 'hard' },
-        { id: 'pull_ur', desc: 'Pull an Ultra Rare', target: 1, tracker: 'ur_pulled', xp: 120, difficulty: 'hard' },
+        { id: 'pull_rare', desc: 'Pull a rare or better', target: 1, tracker: 'rares_pulled', xp: 15, difficulty: 'easy' },
+        { id: 'pull_5_rares', desc: 'Pull 5 rares or better', target: 5, tracker: 'rares_pulled', xp: 50, difficulty: 'medium' },
+        // Game-specific rarity challenges
+        { id: 'pull_sp_ghost', desc: 'Pull a ghost-rare from Spiritual Possessions', target: 1, tracker: 'sp_ghost_pulled', xp: 150, difficulty: 'hard' },
+        { id: 'pull_sp_ultra', desc: 'Pull an ultra-rare from Spiritual Possessions', target: 1, tracker: 'sp_ultra_pulled', xp: 80, difficulty: 'hard' },
+        { id: 'pull_tta_special', desc: 'Pull a special from Through The Ages', target: 1, tracker: 'tta_special_pulled', xp: 120, difficulty: 'hard' },
+        { id: 'pull_tta_ultra', desc: 'Pull an ultra-rare from Through The Ages', target: 1, tracker: 'tta_ultra_pulled', xp: 80, difficulty: 'hard' },
         { id: 'pull_godpack', desc: 'Pull a God Pack', target: 1, tracker: 'godpacks_pulled', xp: 500, difficulty: 'legendary' },
         
         // Shopping
@@ -3299,6 +3317,11 @@ body{
           if (Array.isArray(coreBoot.gradingQueue)) {
             setGradingQueue(coreBoot.gradingQueue);
           }
+          
+          // Load daily history for summary
+          if (coreBoot.dailyHistory && typeof coreBoot.dailyHistory === 'object') {
+            setDailyHistory(coreBoot.dailyHistory);
+          }
 
           if (coreBoot.saveSeed) {
             try { localStorage.setItem('tcg-save-seed', String(coreBoot.saveSeed)); } catch (e) {}
@@ -3376,6 +3399,19 @@ body{
         } else {
           const savedStarter = localStorage.getItem('tcg-free-starter-claimed');
           if (savedStarter) setFreeStarterClaimed(savedStarter === '1' || savedStarter === 'true');
+        }
+        
+        // Load per-game/set free starter claims
+        if (coreBoot && coreBoot.freeStartersClaimed && typeof coreBoot.freeStartersClaimed === 'object') {
+          setFreeStartersClaimed(coreBoot.freeStartersClaimed);
+        } else {
+          const savedStartersClaimed = localStorage.getItem('tcg-free-starters-claimed');
+          if (savedStartersClaimed) {
+            try {
+              const parsed = JSON.parse(savedStartersClaimed);
+              if (parsed && typeof parsed === 'object') setFreeStartersClaimed(parsed);
+            } catch (e) {}
+          }
         }
 
                 // Load milestone/event log
@@ -4049,7 +4085,79 @@ body{
         saveNpcChats(newChats);
       }, [npcChats, collection, setConfigs, marketValues, holoMultipliers, gradedCards, sealedInventory, saveNpcChats, npcReputation]);
 
-      const advanceDay = () => {
+      // Calculate total collection value
+      const calculateCollectionValue = useCallback(() => {
+        let total = 0;
+        
+        // Raw collection value
+        Object.entries(collection).forEach(([cardId, entry]) => {
+          const baseValue = marketValues[cardId] || 1;
+          const holoMult = holoMultipliers[cardId] || 1.5;
+          if (entry.normal) total += entry.normal * baseValue;
+          if (entry.holo) total += entry.holo * baseValue * holoMult;
+        });
+        
+        // Graded cards value
+        gradedCards.forEach(graded => {
+          const baseValue = marketValues[graded.cardId] || 1;
+          const holoMult = graded.isHolo ? (holoMultipliers[graded.cardId] || 1.5) : 1;
+          const gradeMult = GRADE_MULTIPLIERS[graded.grade] || 1;
+          total += baseValue * holoMult * gradeMult;
+        });
+        
+        return total;
+      }, [collection, gradedCards, marketValues, holoMultipliers]);
+      
+      // Prepare daily summary and show modal
+      const prepareDailySummary = () => {
+        const currentDay = gameDay;
+        const collectionValue = calculateCollectionValue();
+        
+        // Get today's trackers
+        const todayTrackers = dailyTrackers || {};
+        
+        // Find best card pulled today
+        let bestPull = dailyHistory.bestPulls?.[currentDay] || null;
+        
+        // Update daily history with today's data
+        const newHistory = { ...dailyHistory };
+        newHistory.collectionValue = [...(newHistory.collectionValue || [])];
+        newHistory.rations = [...(newHistory.rations || [])];
+        
+        // Add today's values
+        newHistory.collectionValue.push({ day: currentDay, value: collectionValue });
+        newHistory.rations.push({ day: currentDay, value: rations });
+        
+        // Keep only last 30 days
+        newHistory.collectionValue = newHistory.collectionValue.slice(-30);
+        newHistory.rations = newHistory.rations.slice(-30);
+        
+        setDailyHistory(newHistory);
+        saveDailyHistory(newHistory);
+        try { updateCoreSave({ dailyHistory: newHistory }); } catch (e) {}
+        
+        // Create summary data
+        const summary = {
+          day: currentDay,
+          collectionValue,
+          rations,
+          packsOpened: todayTrackers.packs_opened || 0,
+          cardsSold: todayTrackers.cards_sold || 0,
+          rationsEarned: todayTrackers.rations_earned || 0,
+          rationsSpent: todayTrackers.rations_spent || 0,
+          sealedBought: (todayTrackers.packs_bought || 0) + (todayTrackers.bundles_bought || 0) + (todayTrackers.boosters_bought || 0) + (todayTrackers.cases_bought || 0),
+          tradesAccepted: todayTrackers.npc_offers_accepted || 0,
+          bestPull,
+          collectionHistory: newHistory.collectionValue,
+          rationsHistory: newHistory.rations
+        };
+        
+        setDailySummaryData(summary);
+        setShowDailySummary(true);
+      };
+      
+      // Actually advance the day (called after dismissing summary)
+      const doAdvanceDay = () => {
         const nextDay = gameDay + 1;
         localStorage.setItem('tcg-game-day', String(nextDay));
         setGameDay(nextDay);
@@ -4128,10 +4236,25 @@ body{
         } catch (e) {
           console.error('Daily challenge generation failed:', e);
         }
+        
+        // Reset daily trackers for new day
+        setDailyTrackers({});
+        setDailyTrackersDay(nextDay);
+        localStorage.setItem('tcg-daily-trackers', JSON.stringify({}));
+        localStorage.setItem('tcg-daily-trackers-day', String(nextDay));
 
         // Persist deterministic RNG state after advancing the day (debug mode only)
         persistRngState();
-};
+        
+        // Close the summary
+        setShowDailySummary(false);
+        setDailySummaryData(null);
+      };
+      
+      // Legacy function that now shows summary first
+      const advanceDay = () => {
+        prepareDailySummary();
+      };
 
 
 
@@ -4416,6 +4539,7 @@ body{
         const newClaimed = { ...freeStartersClaimed, [claimKey]: true };
         setFreeStartersClaimed(newClaimed);
         localStorage.setItem('tcg-free-starters-claimed', JSON.stringify(newClaimed));
+        try { updateCoreSave({ freeStartersClaimed: newClaimed }); } catch (e) {}
       };
 
       // Game/set-specific god pack
@@ -4886,30 +5010,51 @@ const getRareSlotCard = () => {
             const rl = (r || '').toLowerCase();
             return rl.includes('rare') || rl.includes('ultra') || rl.includes('super') || 
                    rl === 'r' || rl === 'sr' || rl === 'ur' || rl === 'sp' ||
-                   rl.includes('special') || rl.includes('secret');
-          };
-          const isSR = (r) => {
-            const rl = (r || '').toLowerCase();
-            return rl === 'sr' || rl === 'super rare' || rl.includes('super');
-          };
-          const isUR = (r) => {
-            const rl = (r || '').toLowerCase();
-            return rl === 'ur' || rl === 'sp' || rl === 'ultra rare' || 
-                   rl.includes('ultra') || rl.includes('special') || rl.includes('secret');
+                   rl.includes('special') || rl.includes('secret') || rl.includes('ghost');
           };
           
           const raresCount = newPack.filter(c => isRareOrBetter(c.rarity)).length;
-          const srCount = newPack.filter(c => isSR(c.rarity)).length;
-          const urCount = newPack.filter(c => isUR(c.rarity)).length;
-          
-          console.log('Pack rarities:', newPack.map(c => c.rarity), 'Rares:', raresCount, 'SR:', srCount, 'UR:', urCount);
-          
           if (raresCount > 0) track('rares_pulled', raresCount);
-          if (srCount > 0) track('sr_pulled', srCount);
-          if (urCount > 0) track('ur_pulled', urCount);
+          
+          // Game-specific rarity tracking
+          newPack.forEach(card => {
+            const rl = (card.rarity || '').toLowerCase();
+            // Spiritual Possessions rarities
+            if (packGameId === 'sp') {
+              if (rl.includes('ghost')) track('sp_ghost_pulled', 1);
+              if (rl.includes('ultra')) track('sp_ultra_pulled', 1);
+            }
+            // Through The Ages rarities
+            if (packGameId === 'tta') {
+              if (rl === 'special' || rl === 'sp') track('tta_special_pulled', 1);
+              if (rl.includes('ultra')) track('tta_ultra_pulled', 1);
+            }
+          });
           
           // Track god packs
           if (isGodPack) track('godpacks_pulled', 1);
+          
+          // Track best pull of the day
+          const bestCard = newPack.reduce((best, card) => {
+            const cardValue = (marketValues[card.id] || 1) * (card.isHolo ? (holoMultipliers[card.id] || 1.5) : 1);
+            if (!best || cardValue > best.value) {
+              return { 
+                card: { ...card, gameId: packGameId, setId: packSetId },
+                value: cardValue 
+              };
+            }
+            return best;
+          }, null);
+          
+          if (bestCard) {
+            const currentBest = dailyHistory.bestPulls?.[gameDay];
+            if (!currentBest || bestCard.value > currentBest.value) {
+              const newHistory = { ...dailyHistory };
+              newHistory.bestPulls = { ...newHistory.bestPulls, [gameDay]: bestCard };
+              setDailyHistory(newHistory);
+              saveDailyHistory(newHistory);
+            }
+          }
         } catch (e) { console.error('Tracking error:', e); }
         
         navigate('opening');
@@ -5138,28 +5283,51 @@ const getRareSlotCard = () => {
             const rl = (r || '').toLowerCase();
             return rl.includes('rare') || rl.includes('ultra') || rl.includes('super') || 
                    rl === 'r' || rl === 'sr' || rl === 'ur' || rl === 'sp' ||
-                   rl.includes('special') || rl.includes('secret');
-          };
-          const isSR = (r) => {
-            const rl = (r || '').toLowerCase();
-            return rl === 'sr' || rl === 'super rare' || rl.includes('super');
-          };
-          const isUR = (r) => {
-            const rl = (r || '').toLowerCase();
-            return rl === 'ur' || rl === 'sp' || rl === 'ultra rare' || 
-                   rl.includes('ultra') || rl.includes('special') || rl.includes('secret');
+                   rl.includes('special') || rl.includes('secret') || rl.includes('ghost');
           };
           
           const raresCount = newPack.filter(c => isRareOrBetter(c.rarity)).length;
-          const srCount = newPack.filter(c => isSR(c.rarity)).length;
-          const urCount = newPack.filter(c => isUR(c.rarity)).length;
-          
           if (raresCount > 0) track('rares_pulled', raresCount);
-          if (srCount > 0) track('sr_pulled', srCount);
-          if (urCount > 0) track('ur_pulled', urCount);
+          
+          // Game-specific rarity tracking
+          newPack.forEach(card => {
+            const rl = (card.rarity || '').toLowerCase();
+            // Spiritual Possessions rarities
+            if (packGameId === 'sp') {
+              if (rl.includes('ghost')) track('sp_ghost_pulled', 1);
+              if (rl.includes('ultra')) track('sp_ultra_pulled', 1);
+            }
+            // Through The Ages rarities
+            if (packGameId === 'tta') {
+              if (rl === 'special' || rl === 'sp') track('tta_special_pulled', 1);
+              if (rl.includes('ultra')) track('tta_ultra_pulled', 1);
+            }
+          });
           
           // Track god packs
           if (isGodPack) track('godpacks_pulled', 1);
+          
+          // Track best pull of the day
+          const bestCard = newPack.reduce((best, card) => {
+            const cardValue = (marketValues[card.id] || 1) * (card.isHolo ? (holoMultipliers[card.id] || 1.5) : 1);
+            if (!best || cardValue > best.value) {
+              return { 
+                card: { ...card, gameId: packGameId, setId: packSetId },
+                value: cardValue 
+              };
+            }
+            return best;
+          }, null);
+          
+          if (bestCard) {
+            const currentBest = dailyHistory.bestPulls?.[gameDay];
+            if (!currentBest || bestCard.value > currentBest.value) {
+              const newHistory = { ...dailyHistory };
+              newHistory.bestPulls = { ...newHistory.bestPulls, [gameDay]: bestCard };
+              setDailyHistory(newHistory);
+              saveDailyHistory(newHistory);
+            }
+          }
         } catch (e) {}
 
         // Persist deterministic RNG state after opening a pack (debug mode only)
@@ -6102,10 +6270,27 @@ if (!isLoaded) {
                         textAlign: 'left',
                         fontWeight: 700,
                         fontSize: 14,
-                        marginBottom: 8
+                        marginBottom: 8,
+                        position: 'relative'
                       }}
                     >
                       Grading
+                      {gradingQueue.filter(q => q.completionDay <= gameDay).length > 0 && (
+                        <span style={{
+                          position: 'absolute',
+                          right: 10,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: '#10b981',
+                          color: 'white',
+                          borderRadius: 10,
+                          padding: '2px 8px',
+                          fontSize: 11,
+                          fontWeight: 700
+                        }}>
+                          {gradingQueue.filter(q => q.completionDay <= gameDay).length} ready
+                        </span>
+                      )}
                     </button>
                     <button
                       className="menu-item"
@@ -9639,7 +9824,7 @@ return (
                           </span>
                         </div>
                         
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
                           {[...gradedCards].sort((a, b) => {
                             const setConfigA = setConfigs[a.gameId]?.[a.setId];
                             const cardDataA = setConfigA?.cards?.find(c => c.id === a.cardId);
@@ -9677,31 +9862,32 @@ return (
                                 key={graded.id} 
                                 onClick={() => setInspectingGradedCard(graded)}
                                 style={{
-                                  borderRadius: 12,
+                                  width: '100%',
+                                  maxWidth: 200,
+                                  borderRadius: 10,
                                   overflow: 'hidden',
                                   background: '#1a1a2e',
-                                  border: `4px solid ${gradeColors.border || gradeColors.bg}`,
-                                  position: 'relative',
+                                  border: `3px solid ${gradeColors.border || gradeColors.bg}`,
                                   cursor: 'pointer',
                                   boxShadow: '0 4px 12px rgba(0,0,0,0.4)'
                                 }}
                               >
-                                {/* Slab Header */}
+                                {/* Slab Header - Fixed height */}
                                 <div style={{
                                   background: gradeColors.bg,
-                                  padding: '8px 10px',
+                                  padding: '6px 8px',
                                   display: 'flex',
                                   justifyContent: 'space-between',
                                   alignItems: 'flex-start',
-                                  minHeight: 60,
+                                  height: 52,
                                   borderBottom: `2px solid ${gradeColors.border || gradeColors.bg}`
                                 }}>
                                   {/* Left side - Card info */}
-                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                                     <div style={{ 
                                       color: gradeColors.text, 
                                       fontWeight: 700, 
-                                      fontSize: 11, 
+                                      fontSize: 9, 
                                       lineHeight: 1.2,
                                       overflow: 'hidden',
                                       textOverflow: 'ellipsis',
@@ -9709,57 +9895,47 @@ return (
                                     }}>
                                       {cardData?.name}
                                     </div>
-                                    <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 9, marginTop: 2 }}>
+                                    <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 8, marginTop: 1 }}>
                                       {gameConfig?.name} - {setConfig?.name}
                                     </div>
-                                    <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 9 }}>
-                                      {cardData?.rarity}{graded.isHolo ? ' ✨ Holo' : ''}
+                                    <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 8 }}>
+                                      {cardData?.rarity}{graded.isHolo ? ' ✨' : ''}
                                     </div>
-                                    <div style={{ color: gradeColors.text, opacity: 0.5, fontSize: 8, fontFamily: 'monospace', marginTop: 2 }}>
-                                      SN: {serialNum}
+                                    <div style={{ color: gradeColors.text, opacity: 0.5, fontSize: 7, fontFamily: 'monospace' }}>
+                                      {serialNum}
                                     </div>
                                   </div>
                                   
                                   {/* Right side - Grade */}
-                                  <div style={{ textAlign: 'right', marginLeft: 8 }}>
-                                    <div style={{ 
-                                      color: gradeColors.text, 
-                                      fontSize: 10, 
-                                      fontWeight: 700,
-                                      letterSpacing: '1px',
-                                      opacity: 0.8
-                                    }}>
-                                      TMSG
-                                    </div>
+                                  <div style={{ textAlign: 'right', marginLeft: 6, flexShrink: 0 }}>
+                                    <div style={{ color: gradeColors.text, fontSize: 8, fontWeight: 700, opacity: 0.8 }}>TMSG</div>
                                     <div style={{ 
                                       color: gradeColors.text,
-                                      fontSize: 26, 
+                                      fontSize: 20, 
                                       fontWeight: 900,
-                                      lineHeight: 1,
-                                      textShadow: gradeColors.bg === '#000000' ? '0 0 10px #fbbf2440' : 'none'
+                                      lineHeight: 1
                                     }}>
                                       {gradeNum}
                                     </div>
-                                    <div style={{ 
-                                      color: gradeColors.text,
-                                      fontSize: 7, 
-                                      fontWeight: 700,
-                                      letterSpacing: '0.5px',
-                                      textTransform: 'uppercase',
-                                      opacity: 0.8
-                                    }}>
+                                    <div style={{ color: gradeColors.text, fontSize: 6, fontWeight: 700, textTransform: 'uppercase', opacity: 0.8 }}>
                                       {gradeLabel}
                                     </div>
                                   </div>
                                 </div>
                               
-                                {/* Card Image */}
-                                <div className={graded.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative', padding: 8, background: '#111' }}>
+                                {/* Card Image - Centered */}
+                                <div className={graded.isHolo ? 'holo-overlay' : ''} style={{ 
+                                  position: 'relative', 
+                                  padding: 8, 
+                                  background: '#111',
+                                  display: 'flex',
+                                  justifyContent: 'center'
+                                }}>
                                   <img
                                     src={buildImageUrl(graded.gameId, graded.setId, cardData)}
                                     alt={cardData?.name}
                                     style={{ 
-                                      width: '100%', 
+                                      width: '85%', 
                                       aspectRatio: '2.5/3.5', 
                                       objectFit: 'cover', 
                                       display: 'block',
@@ -9770,14 +9946,14 @@ return (
                               
                                 {/* Footer with value */}
                                 <div style={{ 
-                                  padding: '6px 10px', 
-                                  background: 'linear-gradient(180deg, #1a1a2e 0%, #2a2a3e 100%)',
+                                  padding: '5px 8px', 
+                                  background: '#1a1a2e',
                                   display: 'flex', 
                                   justifyContent: 'space-between', 
                                   alignItems: 'center',
                                   borderTop: `1px solid ${gradeColors.border || gradeColors.bg}30`
                                 }}>
-                                  <div style={{ color: '#fbbf24', fontSize: 11, fontWeight: 700 }}>
+                                  <div style={{ color: '#fbbf24', fontSize: 10, fontWeight: 700 }}>
                                     {value.toFixed(2)} R
                                   </div>
                                   <button
@@ -9788,12 +9964,12 @@ return (
                                       }
                                     }}
                                     style={{
-                                      padding: '3px 6px',
+                                      padding: '2px 5px',
                                       borderRadius: 4,
                                       border: 'none',
                                       background: 'rgba(239,68,68,0.25)',
                                       color: '#fca5a5',
-                                      fontSize: 9,
+                                      fontSize: 8,
                                       cursor: 'pointer'
                                     }}
                                   >
@@ -9802,7 +9978,7 @@ return (
                                 </div>
                               </div>
                             );
-                          })}
+                          })} 
                       </div>
                       </>
                     )}
@@ -10212,11 +10388,11 @@ return (
                       </div>
                       
                       {/* Card Image */}
-                      <div className={revealingGrade.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative', padding: 10, background: '#111', lineHeight: 0 }}>
+                      <div className={revealingGrade.isHolo ? 'holo-overlay' : ''} style={{ position: 'relative', padding: 10, background: '#111', lineHeight: 0, display: 'flex', justifyContent: 'center' }}>
                         <img
                           src={buildImageUrl(revealingGrade.gameId, revealingGrade.setId, cardData)}
                           alt={cardData?.name}
-                          style={{ width: 200, aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block', borderRadius: 6 }}
+                          style={{ width: 200, aspectRatio: '2.5/3.5', objectFit: 'cover', display: 'block', borderRadius: 6, margin: '0 auto' }}
                         />
                       </div>
                     </div>
@@ -10259,6 +10435,244 @@ return (
                 </div>
               );
             })()}
+
+            {/* Daily Summary Modal */}
+            {showDailySummary && dailySummaryData && (
+              <div
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  background: 'rgba(0,0,0,0.92)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1200,
+                  padding: 20,
+                  overflowY: 'auto'
+                }}
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: 'linear-gradient(180deg, #1f2937 0%, #111827 100%)',
+                    borderRadius: 20,
+                    padding: 24,
+                    maxWidth: 600,
+                    width: '100%',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    maxHeight: '90vh',
+                    overflowY: 'auto'
+                  }}
+                >
+                  <h2 style={{ 
+                    margin: 0, 
+                    marginBottom: 16, 
+                    fontSize: 24, 
+                    fontWeight: 800, 
+                    color: 'white',
+                    textAlign: 'center'
+                  }}>
+                    📊 Day {dailySummaryData.day} Summary
+                  </h2>
+                  
+                  {/* Collection Value Graph */}
+                  <div style={{ 
+                    background: 'rgba(0,0,0,0.3)', 
+                    borderRadius: 12, 
+                    padding: 16, 
+                    marginBottom: 16 
+                  }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#a855f7', marginBottom: 8 }}>
+                      Collection Value (30 Days)
+                    </div>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'flex-end', 
+                      height: 80, 
+                      gap: 2,
+                      borderBottom: '1px solid rgba(255,255,255,0.1)',
+                      paddingBottom: 4
+                    }}>
+                      {(() => {
+                        const data = dailySummaryData.collectionHistory || [];
+                        const maxVal = Math.max(...data.map(d => d.value), 1);
+                        return data.map((point, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              flex: 1,
+                              background: 'linear-gradient(180deg, #a855f7, #6366f1)',
+                              height: `${(point.value / maxVal) * 100}%`,
+                              borderRadius: '2px 2px 0 0',
+                              minHeight: 2
+                            }}
+                            title={`Day ${point.day}: ${point.value.toFixed(2)}R`}
+                          />
+                        ));
+                      })()}
+                    </div>
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      marginTop: 8,
+                      color: '#9ca3af',
+                      fontSize: 11
+                    }}>
+                      <span>Current: <span style={{ color: '#fbbf24', fontWeight: 700 }}>{dailySummaryData.collectionValue.toFixed(2)}R</span></span>
+                    </div>
+                  </div>
+                  
+                  {/* Rations Graph */}
+                  <div style={{ 
+                    background: 'rgba(0,0,0,0.3)', 
+                    borderRadius: 12, 
+                    padding: 16, 
+                    marginBottom: 16 
+                  }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#fbbf24', marginBottom: 8 }}>
+                      Rations Balance (30 Days)
+                    </div>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'flex-end', 
+                      height: 60, 
+                      gap: 2,
+                      borderBottom: '1px solid rgba(255,255,255,0.1)',
+                      paddingBottom: 4
+                    }}>
+                      {(() => {
+                        const data = dailySummaryData.rationsHistory || [];
+                        const maxVal = Math.max(...data.map(d => d.value), 1);
+                        return data.map((point, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              flex: 1,
+                              background: 'linear-gradient(180deg, #fbbf24, #f59e0b)',
+                              height: `${(point.value / maxVal) * 100}%`,
+                              borderRadius: '2px 2px 0 0',
+                              minHeight: 2
+                            }}
+                            title={`Day ${point.day}: ${point.value.toFixed(2)}R`}
+                          />
+                        ));
+                      })()}
+                    </div>
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      marginTop: 8,
+                      color: '#9ca3af',
+                      fontSize: 11
+                    }}>
+                      <span>Current: <span style={{ color: '#fbbf24', fontWeight: 700 }}>{dailySummaryData.rations.toFixed(2)}R</span></span>
+                    </div>
+                  </div>
+                  
+                  {/* Daily Stats Grid */}
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(2, 1fr)', 
+                    gap: 12, 
+                    marginBottom: 16 
+                  }}>
+                    <div style={{ 
+                      background: 'rgba(34,197,94,0.15)', 
+                      borderRadius: 10, 
+                      padding: 12,
+                      border: '1px solid rgba(34,197,94,0.3)'
+                    }}>
+                      <div style={{ fontSize: 11, color: '#9ca3af' }}>Rations Earned</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#34d399' }}>
+                        +{dailySummaryData.rationsEarned.toFixed(2)}R
+                      </div>
+                    </div>
+                    <div style={{ 
+                      background: 'rgba(239,68,68,0.15)', 
+                      borderRadius: 10, 
+                      padding: 12,
+                      border: '1px solid rgba(239,68,68,0.3)'
+                    }}>
+                      <div style={{ fontSize: 11, color: '#9ca3af' }}>Rations Spent</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#f87171' }}>
+                        -{dailySummaryData.rationsSpent.toFixed(2)}R
+                      </div>
+                    </div>
+                    <div style={{ background: 'rgba(168,85,247,0.15)', borderRadius: 10, padding: 12, border: '1px solid rgba(168,85,247,0.3)' }}>
+                      <div style={{ fontSize: 11, color: '#9ca3af' }}>Packs Opened</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#a855f7' }}>{dailySummaryData.packsOpened}</div>
+                    </div>
+                    <div style={{ background: 'rgba(99,102,241,0.15)', borderRadius: 10, padding: 12, border: '1px solid rgba(99,102,241,0.3)' }}>
+                      <div style={{ fontSize: 11, color: '#9ca3af' }}>Cards Sold</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#818cf8' }}>{dailySummaryData.cardsSold}</div>
+                    </div>
+                    <div style={{ background: 'rgba(236,72,153,0.15)', borderRadius: 10, padding: 12, border: '1px solid rgba(236,72,153,0.3)' }}>
+                      <div style={{ fontSize: 11, color: '#9ca3af' }}>Sealed Bought</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#f472b6' }}>{dailySummaryData.sealedBought}</div>
+                    </div>
+                    <div style={{ background: 'rgba(14,165,233,0.15)', borderRadius: 10, padding: 12, border: '1px solid rgba(14,165,233,0.3)' }}>
+                      <div style={{ fontSize: 11, color: '#9ca3af' }}>Trades Accepted</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#38bdf8' }}>{dailySummaryData.tradesAccepted}</div>
+                    </div>
+                  </div>
+                  
+                  {/* Best Pull of the Day */}
+                  {dailySummaryData.bestPull && (
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, rgba(251,191,36,0.2), rgba(236,72,153,0.2))', 
+                      borderRadius: 12, 
+                      padding: 16, 
+                      marginBottom: 16,
+                      border: '1px solid rgba(251,191,36,0.4)'
+                    }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#fbbf24', marginBottom: 12, textAlign: 'center' }}>
+                        ⭐ Best Pull of the Day
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'center' }}>
+                        <img
+                          src={dailySummaryData.bestPull.card.image || buildImageUrl(dailySummaryData.bestPull.card.gameId, dailySummaryData.bestPull.card.setId, dailySummaryData.bestPull.card)}
+                          alt={dailySummaryData.bestPull.card.name}
+                          style={{ 
+                            width: 80, 
+                            borderRadius: 8, 
+                            border: `2px solid ${dailySummaryData.bestPull.card.isHolo ? '#ec4899' : '#6b7280'}`
+                          }}
+                        />
+                        <div>
+                          <div style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>
+                            {dailySummaryData.bestPull.card.name}
+                            {dailySummaryData.bestPull.card.isHolo && <span style={{ color: '#f0abfc' }}> ✨</span>}
+                          </div>
+                          <div style={{ color: '#9ca3af', fontSize: 12 }}>
+                            {dailySummaryData.bestPull.card.rarity}
+                          </div>
+                          <div style={{ color: '#fbbf24', fontSize: 16, fontWeight: 800, marginTop: 4 }}>
+                            {dailySummaryData.bestPull.value.toFixed(2)}R
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <button
+                    onClick={doAdvanceDay}
+                    style={{
+                      width: '100%',
+                      padding: '16px',
+                      borderRadius: 12,
+                      border: 'none',
+                      background: 'linear-gradient(90deg, #34d399, #10b981)',
+                      color: 'white',
+                      fontWeight: 800,
+                      fontSize: 16,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Continue to Day {dailySummaryData.day + 1} →
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Graded Card Inspect Modal */}
             {inspectingGradedCard && (() => {
