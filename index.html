@@ -2022,6 +2022,7 @@ body{
       const [shopSellFilter, setShopSellFilter] = useState('all'); // all | rarity
       const [shopSellVariant, setShopSellVariant] = useState('any'); // any | normal | holo
       const [shopSellSort, setShopSellSort] = useState('payout'); // payout | name | rarity | owned
+      const [shopSellSortDir, setShopSellSortDir] = useState('desc'); // asc | desc
 
 
       const [gameDay, setGameDay] = useState(() => {
@@ -2215,10 +2216,13 @@ body{
         { id: 'sell_5_cards', desc: 'Sell 5 cards', target: 5, tracker: 'cards_sold', xp: 30, difficulty: 'medium' },
         { id: 'sell_10_cards', desc: 'Sell 10 cards', target: 10, tracker: 'cards_sold', xp: 60, difficulty: 'hard' },
         { id: 'sell_holo', desc: 'Sell a holo card', target: 1, tracker: 'holos_sold', xp: 25, difficulty: 'medium' },
-        { id: 'sell_5r_card', desc: 'Sell a card worth 5R+', target: 1, tracker: 'sales_5r_plus', xp: 20, difficulty: 'easy' },
-        { id: 'sell_10r_card', desc: 'Sell a card worth 10R+', target: 1, tracker: 'sales_10r_plus', xp: 35, difficulty: 'medium' },
-        { id: 'sell_25r_card', desc: 'Sell a card worth 25R+', target: 1, tracker: 'sales_25r_plus', xp: 60, difficulty: 'hard' },
-        { id: 'sell_50r_card', desc: 'Sell a card worth 50R+', target: 1, tracker: 'sales_50r_plus', xp: 100, difficulty: 'hard' },
+        { id: 'sell_5r_card', desc: 'Sell a card worth 5R+', target: 1, tracker: 'worth_5r_plus', xp: 20, difficulty: 'easy' },
+        { id: 'sell_10r_card', desc: 'Sell a card worth 10R+', target: 1, tracker: 'worth_10r_plus', xp: 35, difficulty: 'medium' },
+        { id: 'sell_25r_card', desc: 'Sell a card worth 25R+', target: 1, tracker: 'worth_25r_plus', xp: 60, difficulty: 'hard' },
+        { id: 'sell_50r_card', desc: 'Sell a card worth 50R+', target: 1, tracker: 'worth_50r_plus', xp: 100, difficulty: 'hard' },
+        { id: 'sale_5r_plus', desc: 'Get 5R+ from a single sale', target: 1, tracker: 'payout_5r_plus', xp: 25, difficulty: 'medium' },
+        { id: 'sale_10r_plus', desc: 'Get 10R+ from a single sale', target: 1, tracker: 'payout_10r_plus', xp: 45, difficulty: 'hard' },
+        { id: 'sale_25r_plus', desc: 'Get 25R+ from a single sale', target: 1, tracker: 'payout_25r_plus', xp: 80, difficulty: 'hard' },
         { id: 'earn_25r', desc: 'Earn 25R from sales', target: 25, tracker: 'rations_earned', xp: 20, difficulty: 'easy' },
         { id: 'earn_50r', desc: 'Earn 50R from sales', target: 50, tracker: 'rations_earned', xp: 35, difficulty: 'medium' },
         { id: 'earn_100r', desc: 'Earn 100R from sales', target: 100, tracker: 'rations_earned', xp: 65, difficulty: 'hard' },
@@ -4696,6 +4700,8 @@ const getRareSlotCard = () => {
           const card = pool[Math.floor(rand() * pool.length)];
           return {
             ...card,
+            gameId: packGameId,
+            setId: packSetId,
             image: buildImageUrl(packGameId, packSetId, card)
           };
         };
@@ -4875,10 +4881,29 @@ const getRareSlotCard = () => {
           const holoCount = newPack.filter(c => c.isHolo).length;
           if (holoCount > 0) track('holos_pulled', holoCount);
           
-          // Track rares/SR/UR pulled
-          const raresCount = newPack.filter(c => ['R', 'SR', 'UR', 'SP'].includes(c.rarity)).length;
-          const srCount = newPack.filter(c => c.rarity === 'SR').length;
-          const urCount = newPack.filter(c => ['UR', 'SP'].includes(c.rarity)).length;
+          // Track rares/SR/UR pulled - check both abbreviated and full names
+          const isRareOrBetter = (r) => {
+            const rl = (r || '').toLowerCase();
+            return rl.includes('rare') || rl.includes('ultra') || rl.includes('super') || 
+                   rl === 'r' || rl === 'sr' || rl === 'ur' || rl === 'sp' ||
+                   rl.includes('special') || rl.includes('secret');
+          };
+          const isSR = (r) => {
+            const rl = (r || '').toLowerCase();
+            return rl === 'sr' || rl === 'super rare' || rl.includes('super');
+          };
+          const isUR = (r) => {
+            const rl = (r || '').toLowerCase();
+            return rl === 'ur' || rl === 'sp' || rl === 'ultra rare' || 
+                   rl.includes('ultra') || rl.includes('special') || rl.includes('secret');
+          };
+          
+          const raresCount = newPack.filter(c => isRareOrBetter(c.rarity)).length;
+          const srCount = newPack.filter(c => isSR(c.rarity)).length;
+          const urCount = newPack.filter(c => isUR(c.rarity)).length;
+          
+          console.log('Pack rarities:', newPack.map(c => c.rarity), 'Rares:', raresCount, 'SR:', srCount, 'UR:', urCount);
+          
           if (raresCount > 0) track('rares_pulled', raresCount);
           if (srCount > 0) track('sr_pulled', srCount);
           if (urCount > 0) track('ur_pulled', urCount);
@@ -4940,6 +4965,8 @@ const getRareSlotCard = () => {
           const card = pool[Math.floor(rand() * pool.length)];
           return {
             ...card,
+            gameId: packGameId,
+            setId: packSetId,
             image: buildImageUrl(packGameId, packSetId, card)
           };
         };
@@ -5106,10 +5133,27 @@ const getRareSlotCard = () => {
           const holoCount = newPack.filter(c => c.isHolo).length;
           if (holoCount > 0) track('holos_pulled', holoCount);
           
-          // Track rares/SR/UR pulled
-          const raresCount = newPack.filter(c => ['R', 'SR', 'UR', 'SP'].includes(c.rarity)).length;
-          const srCount = newPack.filter(c => c.rarity === 'SR').length;
-          const urCount = newPack.filter(c => ['UR', 'SP'].includes(c.rarity)).length;
+          // Track rares/SR/UR pulled - check both abbreviated and full names
+          const isRareOrBetter = (r) => {
+            const rl = (r || '').toLowerCase();
+            return rl.includes('rare') || rl.includes('ultra') || rl.includes('super') || 
+                   rl === 'r' || rl === 'sr' || rl === 'ur' || rl === 'sp' ||
+                   rl.includes('special') || rl.includes('secret');
+          };
+          const isSR = (r) => {
+            const rl = (r || '').toLowerCase();
+            return rl === 'sr' || rl === 'super rare' || rl.includes('super');
+          };
+          const isUR = (r) => {
+            const rl = (r || '').toLowerCase();
+            return rl === 'ur' || rl === 'sp' || rl === 'ultra rare' || 
+                   rl.includes('ultra') || rl.includes('special') || rl.includes('secret');
+          };
+          
+          const raresCount = newPack.filter(c => isRareOrBetter(c.rarity)).length;
+          const srCount = newPack.filter(c => isSR(c.rarity)).length;
+          const urCount = newPack.filter(c => isUR(c.rarity)).length;
+          
           if (raresCount > 0) track('rares_pulled', raresCount);
           if (srCount > 0) track('sr_pulled', srCount);
           if (urCount > 0) track('ur_pulled', urCount);
@@ -5287,10 +5331,15 @@ const getRareSlotCard = () => {
         try {
           track('cards_sold', 1);
           track('rations_earned', payout);
-          if (payout >= 5) track('sales_5r_plus', 1);
-          if (payout >= 10) track('sales_10r_plus', 1);
-          if (payout >= 25) track('sales_25r_plus', 1);
-          if (payout >= 50) track('sales_50r_plus', 1);
+          // Track by card's market worth
+          if (marketValue >= 5) track('worth_5r_plus', 1);
+          if (marketValue >= 10) track('worth_10r_plus', 1);
+          if (marketValue >= 25) track('worth_25r_plus', 1);
+          if (marketValue >= 50) track('worth_50r_plus', 1);
+          // Track by actual payout received
+          if (payout >= 5) track('payout_5r_plus', 1);
+          if (payout >= 10) track('payout_10r_plus', 1);
+          if (payout >= 25) track('payout_25r_plus', 1);
         } catch (e) {}
       };
 
@@ -5319,10 +5368,15 @@ const getRareSlotCard = () => {
           track('cards_sold', 1);
           track('holos_sold', 1);
           track('rations_earned', payout);
-          if (payout >= 5) track('sales_5r_plus', 1);
-          if (payout >= 10) track('sales_10r_plus', 1);
-          if (payout >= 25) track('sales_25r_plus', 1);
-          if (payout >= 50) track('sales_50r_plus', 1);
+          // Track by card's market worth
+          if (marketValue >= 5) track('worth_5r_plus', 1);
+          if (marketValue >= 10) track('worth_10r_plus', 1);
+          if (marketValue >= 25) track('worth_25r_plus', 1);
+          if (marketValue >= 50) track('worth_50r_plus', 1);
+          // Track by actual payout received
+          if (payout >= 5) track('payout_5r_plus', 1);
+          if (payout >= 10) track('payout_10r_plus', 1);
+          if (payout >= 25) track('payout_25r_plus', 1);
         } catch (e) {}
       };
 
@@ -5662,18 +5716,25 @@ const getRareSlotCard = () => {
 
         // Sort
         cards.sort((a, b) => {
-          if (shopSellSort === 'name') return (a.name || '').localeCompare(b.name || '');
-          if (shopSellSort === 'rarity') return rarityRank(a.rarity) - rarityRank(b.rarity);
-          if (shopSellSort === 'owned') return b.owned - a.owned;
-
-          // payout (default): sort by best available payout given current variant filter
-          const ap = shopSellVariant === 'holo' ? a.holoPayout : shopSellVariant === 'normal' ? a.payout : Math.max(a.payout, a.holoPayout);
-          const bp = shopSellVariant === 'holo' ? b.holoPayout : shopSellVariant === 'normal' ? b.payout : Math.max(b.payout, b.holoPayout);
-          return bp - ap;
+          let result = 0;
+          if (shopSellSort === 'name') {
+            result = (a.name || '').localeCompare(b.name || '');
+          } else if (shopSellSort === 'rarity') {
+            result = rarityRank(a.rarity) - rarityRank(b.rarity);
+          } else if (shopSellSort === 'owned') {
+            result = b.owned - a.owned;
+          } else {
+            // payout (default): sort by best available payout given current variant filter
+            const ap = shopSellVariant === 'holo' ? a.holoPayout : shopSellVariant === 'normal' ? a.payout : Math.max(a.payout, a.holoPayout);
+            const bp = shopSellVariant === 'holo' ? b.holoPayout : shopSellVariant === 'normal' ? b.payout : Math.max(b.payout, b.holoPayout);
+            result = bp - ap;
+          }
+          // Apply sort direction
+          return shopSellSortDir === 'asc' ? -result : result;
         });
 
         return cards;
-      }, [sellGameFilter, sellSetFilter, shopSellVariant, shopSellFilter, shopSellSearch, shopSellSort, collection, marketValues, holoMultipliers, setConfigs, gameConfigs, gamesIndex, gradedCards]);
+      }, [sellGameFilter, sellSetFilter, shopSellVariant, shopSellFilter, shopSellSearch, shopSellSort, shopSellSortDir, collection, marketValues, holoMultipliers, setConfigs, gameConfigs, gamesIndex, gradedCards]);
 
 
 const movers7d = useMemo(() => {
@@ -6980,59 +7041,6 @@ if (!isLoaded) {
                                 );
                               })()}
                               
-                              {/* God Pack Test - per game/set */}
-                              {(() => {
-                                const packImageUrl = buildProductImageUrl(game.id, setId, 'single');
-                                const cardbackUrl = `${GITHUB_BASE}/${gameConfig.cardback}`;
-                                return (
-                              <div style={{
-                                background: 'rgba(31,41,55,0.8)',
-                                borderRadius: 12,
-                                padding: 16,
-                                border: '2px solid rgba(236,72,153,0.55)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center'
-                              }}>
-                                <img
-                                  src={packImageUrl}
-                                  alt="God Pack"
-                                  style={{ width: 100, height: 150, objectFit: 'cover', borderRadius: 8, marginBottom: 10, boxShadow: '0 0 20px rgba(236,72,153,0.3)' }}
-                                  onError={(e) => e.target.src = cardbackUrl}
-                                />
-                                <div style={{ color: '#f472b6', fontSize: 14, fontWeight: 'bold', marginBottom: 2 }}>God Pack</div>
-                                <div style={{ color: '#9ca3af', fontSize: 11, marginBottom: 8 }}>Test only</div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
-                                  <img src="./rations.png" alt="" style={{ width: 16, height: 16 }} />
-                                  <span style={{ color: '#fbbf24', fontSize: 16, fontWeight: 'bold' }}>0</span>
-                                </div>
-                                <button
-                                  onClick={() => setPurchaseConfirm({ 
-                                    type: 'godpack', 
-                                    gameId: game.id,
-                                    setId: setId,
-                                    title: `God Pack - ${setConfig.name}`, 
-                                    cost: 0, 
-                                    details: `Free god pack for ${game.name} - ${setConfig.name}.` 
-                                  })}
-                                  style={{
-                                    width: '100%',
-                                    padding: '8px',
-                                    background: 'linear-gradient(90deg, #ec4899, #a855f7)',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: 6,
-                                    cursor: 'pointer',
-                                    fontWeight: 'bold',
-                                    fontSize: 12
-                                  }}
-                                >
-                                  Get
-                                </button>
-                              </div>
-                                );
-                              })()}
-                              
                               {/* Products from config */}
                               {Object.entries(setConfig.sealedProducts || {}).map(([productType, productConfig]) => {
                                 const price = getProductPrice(game.id, setId, productType);
@@ -7415,6 +7423,22 @@ if (!isLoaded) {
                         <option value="name">Name (A-Z)</option>
                         <option value="rarity">Rarity</option>
                       </select>
+                      <button
+                        onClick={() => setShopSellSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+                        style={{
+                          padding: '10px 14px',
+                          borderRadius: 12,
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          background: 'rgba(0,0,0,0.25)',
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                          fontSize: 14
+                        }}
+                        title={shopSellSortDir === 'desc' ? 'Currently: High to Low' : 'Currently: Low to High'}
+                      >
+                        {shopSellSortDir === 'desc' ? '↓' : '↑'}
+                      </button>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
@@ -8460,6 +8484,24 @@ return (
                         style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #f59e0b, #d97706)', color: 'white', fontWeight: 700 }}
                       >
                         +20 Packs (each set)
+                      </button>
+                      <button
+                        onClick={() => buyGodPackForSet('sp', 'base-set')}
+                        style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #ec4899, #a855f7)', color: 'white', fontWeight: 700 }}
+                      >
+                        God Pack (SP)
+                      </button>
+                      <button
+                        onClick={() => buyGodPackForSet('tta', 'base-set')}
+                        style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #ec4899, #a855f7)', color: 'white', fontWeight: 700 }}
+                      >
+                        God Pack (TTA)
+                      </button>
+                      <button
+                        onClick={() => buyGodPackForSet('tta', 'expansion-1')}
+                        style={{ padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(90deg, #ec4899, #a855f7)', color: 'white', fontWeight: 700 }}
+                      >
+                        God Pack (TTA Exp1)
                       </button>
                     </div>
                   </div>
@@ -9668,10 +9710,10 @@ return (
                                       {cardData?.name}
                                     </div>
                                     <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 9, marginTop: 2 }}>
-                                      {gameConfig?.name}
+                                      {gameConfig?.name} - {setConfig?.name}
                                     </div>
                                     <div style={{ color: gradeColors.text, opacity: 0.7, fontSize: 9 }}>
-                                      {setConfig?.name}
+                                      {cardData?.rarity}{graded.isHolo ? ' ✨ Holo' : ''}
                                     </div>
                                     <div style={{ color: gradeColors.text, opacity: 0.5, fontSize: 8, fontFamily: 'monospace', marginTop: 2 }}>
                                       SN: {serialNum}
