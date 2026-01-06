@@ -1636,8 +1636,33 @@ body{
       const generateGrade = useCallback((preGradePrediction = null) => {
         const grades = ['IM10', 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
         
-        // If we have a pre-grade prediction, use those percentages
+        // If we have a pre-grade prediction, use those percentages with a small chance for adjacent grades
         if (preGradePrediction && typeof preGradePrediction === 'object') {
+          // Find the highest and lowest predicted grades
+          const predictedGrades = Object.keys(preGradePrediction).map(g => g === 'IM10' ? 11 : parseInt(g));
+          const highestPredicted = Math.max(...predictedGrades);
+          const lowestPredicted = Math.min(...predictedGrades);
+          
+          // Small chance (5%) to get a grade outside the prediction
+          const outsideChance = rand() * 100;
+          if (outsideChance < 5) {
+            // 50/50 whether it's higher or lower than predicted
+            const goHigher = rand() < 0.5;
+            
+            if (goHigher && highestPredicted < 11) {
+              // Can go higher - return the grade above highest predicted
+              const higherGrade = highestPredicted + 1;
+              if (higherGrade === 11) return 'IM10';
+              if (higherGrade <= 10 && higherGrade >= 1) return higherGrade;
+            } else if (!goHigher && lowestPredicted > 1) {
+              // Can go lower - return the grade below lowest predicted
+              const lowerGrade = lowestPredicted - 1;
+              if (lowerGrade >= 1) return lowerGrade;
+            }
+            // If we can't go that direction, fall through to normal prediction
+          }
+          
+          // Normal prediction roll (95% of the time, or fallback)
           const roll = rand() * 100;
           let cumulative = 0;
           for (const [grade, chance] of Object.entries(preGradePrediction)) {
@@ -7902,7 +7927,7 @@ return (
                               </div>
                               <div style={{ flex: 1 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <span style={{ fontWeight: 700, fontSize: 14 }}>{profile.name}</span>
+                                  <span style={{ fontWeight: 700, fontSize: 14, color: 'white' }}>{profile.name}</span>
                                   <span style={{ 
                                     fontSize: 10, 
                                     padding: '2px 6px', 
@@ -8292,6 +8317,9 @@ return (
                                       day: gameDay,
                                       timestamp: Date.now()
                                     });
+                                    // Small XP gain for chatting (1-2 XP)
+                                    const chatXp = 1 + Math.floor(Math.random() * 2);
+                                    addNpcXp(activeNpcChat, chatXp);
                                     // NPC responds with contextual reply
                                     setTimeout(() => {
                                       const replyText = generateNpcReply(activeNpcChat, userMessageInput.trim());
@@ -8326,6 +8354,9 @@ return (
                                     });
                                     setNpcChats(updated);
                                     saveNpcChats(updated);
+                                    // Small XP gain for chatting (1-2 XP)
+                                    const chatXp = 1 + Math.floor(Math.random() * 2);
+                                    addNpcXp(activeNpcChat, chatXp);
                                     // NPC responds with contextual reply
                                     setTimeout(() => {
                                       const replyText = generateNpcReply(activeNpcChat, userMessageInput.trim());
