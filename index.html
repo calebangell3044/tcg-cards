@@ -12222,18 +12222,19 @@ return (
                   maxHeight: '85vh',
                   display: 'flex',
                   flexDirection: 'column',
-                  border: '1px solid rgba(251,191,36,0.3)'
+                  border: '1px solid rgba(251,191,36,0.3)',
+                  overflow: 'hidden'
                 }}
               >
-                <h3 style={{ margin: 0, marginBottom: 4, color: '#fbbf24', fontSize: 20, fontWeight: 800 }}>
+                <h3 style={{ margin: 0, marginBottom: 4, color: '#fbbf24', fontSize: 20, fontWeight: 800, flexShrink: 0 }}>
                   📦 Bulk Sell Duplicates
                 </h3>
-                <div style={{ color: '#9ca3af', fontSize: 12, marginBottom: 16 }}>
+                <div style={{ color: '#9ca3af', fontSize: 12, marginBottom: 16, flexShrink: 0 }}>
                   Sell all duplicates (keeping 1 of each) at {Math.round(SELL_TO_SHOP_RATE * 100)}% market value
                 </div>
                 
                 {/* Step indicator */}
-                <div style={{ display: 'flex', gap: 6, marginBottom: 16, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 16, alignItems: 'center', flexShrink: 0 }}>
                   {['Game', 'Set', 'Rarity', 'Type', 'Confirm'].map((label, idx) => (
                     <React.Fragment key={idx}>
                       <div style={{
@@ -12574,8 +12575,8 @@ return (
                   };
                   
                   return (
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      <div style={{ color: '#9ca3af', fontSize: 13, marginBottom: 12 }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+                      <div style={{ color: '#9ca3af', fontSize: 13, marginBottom: 12, flexShrink: 0 }}>
                         Selling <span style={{ color: '#fbbf24' }}>{bulkSellVariant === 'holo' ? '✨ Holo ' : ''}{bulkSellRarity}</span> duplicates:
                       </div>
                       
@@ -12594,6 +12595,7 @@ return (
                         <>
                           <div style={{ 
                             flex: 1, 
+                            minHeight: 0,
                             overflowY: 'auto',
                             background: 'rgba(0,0,0,0.2)',
                             borderRadius: 10,
@@ -12632,7 +12634,8 @@ return (
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
-                            marginBottom: 12
+                            marginBottom: 12,
+                            flexShrink: 0
                           }}>
                             <div>
                               <div style={{ color: '#9ca3af', fontSize: 12 }}>Total Cards</div>
@@ -12648,6 +12651,7 @@ return (
                             onClick={handleBulkSell}
                             style={{
                               padding: '14px 20px',
+                              flexShrink: 0,
                               borderRadius: 10,
                               border: 'none',
                               background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
@@ -12666,7 +12670,7 @@ return (
                 })()}
                 
                 {/* Navigation buttons */}
-                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                <div style={{ display: 'flex', gap: 8, marginTop: 12, flexShrink: 0 }}>
                   {bulkSellStep > 1 && (
                     <button
                       onClick={() => {
