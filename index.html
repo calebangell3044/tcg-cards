@@ -1751,13 +1751,13 @@ body{
         
         // Track challenge progress
         try {
-          updateChallengeProgress('cards_submitted', 1);
-          updateChallengeProgress('rations_spent', totalCost);
-          if (preGradePrediction) updateChallengeProgress('pregraded', 1);
+          trackChallenge('cards_submitted', 1);
+          trackChallenge('rations_spent', totalCost);
+          if (preGradePrediction) trackChallenge('pregraded', 1);
         } catch (e) {}
         
         return true;
-      }, [rations, collection, gradingQueue, gameDay, saveCollection, saveRations, saveGradingQueue, updateChallengeProgress]);
+      }, [rations, collection, gradingQueue, gameDay, saveCollection, saveRations, saveGradingQueue]);
 
       // Receive a completed grading (called by user clicking receive button)
       // Note: We read gameDay from localStorage to avoid stale closure issues
@@ -1840,14 +1840,14 @@ body{
         
         // Track challenge progress
         try {
-          updateChallengeProgress('cards_graded', 1);
-          if (grade >= 8 || grade === 'IM10') updateChallengeProgress('grade_8_plus', 1);
-          if (grade === 10 || grade === 'IM10') updateChallengeProgress('grade_10', 1);
+          trackChallenge('cards_graded', 1);
+          if (grade >= 8 || grade === 'IM10') trackChallenge('grade_8_plus', 1);
+          if (grade === 10 || grade === 'IM10') trackChallenge('grade_10', 1);
         } catch (e) {}
         
         console.log('Returning gradedCard:', gradedCard);
         return gradedCard;
-      }, [gradingQueue, gradedCards, gameDay, generateGrade, saveGradingQueue, saveGradedCards, preGradePredictions, savePreGradePredictions, updateChallengeProgress]);
+      }, [gradingQueue, gradedCards, gameDay, generateGrade, saveGradingQueue, saveGradedCards, preGradePredictions, savePreGradePredictions]);
 
       // State for grade reveal modal
       const [revealingGrade, setRevealingGrade] = useState(null);
@@ -2171,6 +2171,9 @@ body{
         });
       }, [savePlayerXp]);
 
+      // Ref for challenge progress function (to avoid dependency issues)
+      const updateChallengeProgressRef = useRef(null);
+
       // ===== Daily Challenges System =====
       const DAILY_CHALLENGE_POOL = [
         // Pack opening challenges
@@ -2309,6 +2312,16 @@ body{
           return updated;
         });
       }, [saveDailyChallenges, addPlayerXp]);
+
+      // Keep ref updated
+      updateChallengeProgressRef.current = updateChallengeProgress;
+
+      // Helper that uses ref (safe to call from anywhere)
+      const trackChallenge = (type, amount = 1) => {
+        if (updateChallengeProgressRef.current) {
+          updateChallengeProgressRef.current(type, amount);
+        }
+      };
 
       // Check if a challenge is complete
       const isChallengeComplete = (challengeId) => {
@@ -4028,7 +4041,7 @@ body{
             generateDailyChallenges(nextDay);
           }
           // Track day advanced for challenges
-          updateChallengeProgress('days_advanced', 1);
+          trackChallenge('days_advanced', 1);
         } catch (e) {
           console.error('Daily challenge generation failed:', e);
         }
@@ -4973,22 +4986,22 @@ const getRareSlotCard = () => {
 
         // Track challenge progress
         try {
-          updateChallengeProgress('packs_opened', 1);
+          trackChallenge('packs_opened', 1);
           
           // Track holos pulled
           const holoCount = newPack.filter(c => c.isHolo).length;
-          if (holoCount > 0) updateChallengeProgress('holos_pulled', holoCount);
+          if (holoCount > 0) trackChallenge('holos_pulled', holoCount);
           
           // Track rares/SR/UR pulled
           const raresCount = newPack.filter(c => ['R', 'SR', 'UR', 'SP'].includes(c.rarity)).length;
           const srCount = newPack.filter(c => c.rarity === 'SR').length;
           const urCount = newPack.filter(c => ['UR', 'SP'].includes(c.rarity)).length;
-          if (raresCount > 0) updateChallengeProgress('rares_pulled', raresCount);
-          if (srCount > 0) updateChallengeProgress('sr_pulled', srCount);
-          if (urCount > 0) updateChallengeProgress('ur_pulled', urCount);
+          if (raresCount > 0) trackChallenge('rares_pulled', raresCount);
+          if (srCount > 0) trackChallenge('sr_pulled', srCount);
+          if (urCount > 0) trackChallenge('ur_pulled', urCount);
           
           // Track god packs
-          if (isGodPack) updateChallengeProgress('godpacks', 1);
+          if (isGodPack) trackChallenge('godpacks', 1);
         } catch (e) {}
 
         // Persist deterministic RNG state after opening a pack (debug mode only)
@@ -5158,11 +5171,11 @@ const getRareSlotCard = () => {
         
         // Track challenge progress
         try {
-          updateChallengeProgress('cards_sold', 1);
-          updateChallengeProgress('rations_earned', payout);
-          if (payout >= 5) updateChallengeProgress('cards_sold_5r', 1);
-          if (payout >= 10) updateChallengeProgress('cards_sold_10r', 1);
-          if (payout >= 25) updateChallengeProgress('cards_sold_25r', 1);
+          trackChallenge('cards_sold', 1);
+          trackChallenge('rations_earned', payout);
+          if (payout >= 5) trackChallenge('cards_sold_5r', 1);
+          if (payout >= 10) trackChallenge('cards_sold_10r', 1);
+          if (payout >= 25) trackChallenge('cards_sold_25r', 1);
         } catch (e) {}
       };
 
@@ -5188,12 +5201,12 @@ const getRareSlotCard = () => {
         
         // Track challenge progress
         try {
-          updateChallengeProgress('cards_sold', 1);
-          updateChallengeProgress('holos_sold', 1);
-          updateChallengeProgress('rations_earned', payout);
-          if (payout >= 5) updateChallengeProgress('cards_sold_5r', 1);
-          if (payout >= 10) updateChallengeProgress('cards_sold_10r', 1);
-          if (payout >= 25) updateChallengeProgress('cards_sold_25r', 1);
+          trackChallenge('cards_sold', 1);
+          trackChallenge('holos_sold', 1);
+          trackChallenge('rations_earned', payout);
+          if (payout >= 5) trackChallenge('cards_sold_5r', 1);
+          if (payout >= 10) trackChallenge('cards_sold_10r', 1);
+          if (payout >= 25) trackChallenge('cards_sold_25r', 1);
         } catch (e) {}
       };
 
@@ -8892,7 +8905,7 @@ return (
                                     const chatXp = 1 + Math.floor(Math.random() * 2);
                                     addNpcXp(activeNpcChat, chatXp);
                                     // Track challenge progress
-                                    try { updateChallengeProgress('messages_sent', 1); } catch (e) {}
+                                    try { trackChallenge('messages_sent', 1); } catch (e) {}
                                     // NPC responds with contextual reply
                                     setTimeout(() => {
                                       const replyText = generateNpcReply(activeNpcChat, userMessageInput.trim());
@@ -8931,7 +8944,7 @@ return (
                                     const chatXp = 1 + Math.floor(Math.random() * 2);
                                     addNpcXp(activeNpcChat, chatXp);
                                     // Track challenge progress
-                                    try { updateChallengeProgress('messages_sent', 1); } catch (e) {}
+                                    try { trackChallenge('messages_sent', 1); } catch (e) {}
                                     // NPC responds with contextual reply
                                     setTimeout(() => {
                                       const replyText = generateNpcReply(activeNpcChat, userMessageInput.trim());
@@ -10252,6 +10265,49 @@ return (
                           Graded on Day {graded.gradedDay}
                         </div>
                         
+                        {/* Add to Showcase Button */}
+                        {(() => {
+                          const isInShowcase = showcase.some(s => s.type === 'graded' && s.data.id === graded.id);
+                          
+                          if (showcase.length >= 5 && !isInShowcase) return null;
+                          
+                          return (
+                            <div style={{ marginBottom: 12 }}>
+                              {!isInShowcase ? (
+                                <button
+                                  onClick={() => {
+                                    addToShowcase({
+                                      type: 'graded',
+                                      data: graded
+                                    });
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '10px',
+                                    background: 'rgba(251,191,36,0.15)',
+                                    color: '#fbbf24',
+                                    border: '1px solid rgba(251,191,36,0.4)',
+                                    borderRadius: 8,
+                                    cursor: 'pointer',
+                                    fontSize: 13,
+                                    fontWeight: 'bold',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 6
+                                  }}
+                                >
+                                  ⭐ Add to Showcase
+                                </button>
+                              ) : (
+                                <div style={{ color: '#10b981', fontSize: 12, textAlign: 'center', padding: 8 }}>
+                                  ✓ In Showcase
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                        
                         {/* Actions */}
                         <div style={{ display: 'flex', gap: 10 }}>
                           <button
@@ -10535,6 +10591,95 @@ return (
                     );
                   })()}
 
+                  {/* Add to Showcase Button */}
+                  {view === 'collection' && (() => {
+                    const ownedEntry = collection[enlargedCard.id] || { normal: 0, holo: 0 };
+                    const ownedNormal = ownedEntry.normal || 0;
+                    const ownedHolo = ownedEntry.holo || 0;
+                    const isInShowcase = showcase.some(s => s.type === 'card' && s.data.cardId === enlargedCard.id);
+                    
+                    if ((ownedNormal === 0 && ownedHolo === 0) || showcase.length >= 5) return null;
+                    
+                    return (
+                      <div style={{ marginTop: 12 }}>
+                        {!isInShowcase && ownedNormal > 0 && (
+                          <button
+                            onClick={() => {
+                              addToShowcase({
+                                type: 'card',
+                                data: {
+                                  cardId: enlargedCard.id,
+                                  gameId: enlargedCard.gameId || currentGameId,
+                                  setId: enlargedCard.setId || currentSetId,
+                                  name: enlargedCard.name,
+                                  rarity: enlargedCard.rarity,
+                                  isHolo: false
+                                }
+                              });
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              marginBottom: 8,
+                              background: 'rgba(251,191,36,0.15)',
+                              color: '#fbbf24',
+                              border: '1px solid rgba(251,191,36,0.4)',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              fontSize: 13,
+                              fontWeight: 'bold',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 6
+                            }}
+                          >
+                            ⭐ Add to Showcase
+                          </button>
+                        )}
+                        {!isInShowcase && ownedHolo > 0 && (
+                          <button
+                            onClick={() => {
+                              addToShowcase({
+                                type: 'card',
+                                data: {
+                                  cardId: enlargedCard.id,
+                                  gameId: enlargedCard.gameId || currentGameId,
+                                  setId: enlargedCard.setId || currentSetId,
+                                  name: enlargedCard.name,
+                                  rarity: enlargedCard.rarity,
+                                  isHolo: true
+                                }
+                              });
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              background: 'linear-gradient(90deg, rgba(251,191,36,0.2), rgba(236,72,153,0.2))',
+                              color: '#f0abfc',
+                              border: '1px solid rgba(236,72,153,0.4)',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              fontSize: 13,
+                              fontWeight: 'bold',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 6
+                            }}
+                          >
+                            ⭐ Add Holo to Showcase
+                          </button>
+                        )}
+                        {isInShowcase && (
+                          <div style={{ color: '#10b981', fontSize: 12, textAlign: 'center' }}>
+                            ✓ Already in Showcase
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
 <button
                     onClick={() => setEnlargedCard(null)}
                     style={{
@@ -10804,13 +10949,13 @@ return (
                   
                   // Track challenge progress
                   try {
-                    updateChallengeProgress('npc_trades', 1);
+                    trackChallenge('npc_trades', 1);
                     if (offer.type === 'buy') {
-                      updateChallengeProgress('npc_sells', 1); // Player sold to NPC
-                      updateChallengeProgress('rations_earned', offer.price);
+                      trackChallenge('npc_sells', 1); // Player sold to NPC
+                      trackChallenge('rations_earned', offer.price);
                     } else if (offer.type === 'sell') {
-                      updateChallengeProgress('npc_buys', 1); // Player bought from NPC
-                      updateChallengeProgress('rations_spent', offer.price);
+                      trackChallenge('npc_buys', 1); // Player bought from NPC
+                      trackChallenge('rations_spent', offer.price);
                     }
                   } catch (e) {}
                   
