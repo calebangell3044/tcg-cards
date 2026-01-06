@@ -2038,6 +2038,15 @@ body{
       const [shopSellVariant, setShopSellVariant] = useState('any'); // any | normal | holo
       const [shopSellSort, setShopSellSort] = useState('payout'); // payout | name | rarity | owned
       const [shopSellSortDir, setShopSellSortDir] = useState('desc'); // asc | desc
+      
+      // Bulk sell state
+      const [showBulkSellModal, setShowBulkSellModal] = useState(false);
+      const [bulkSellStep, setBulkSellStep] = useState(1); // 1=game, 2=set, 3=rarity, 4=variant, 5=confirm
+      const [bulkSellGame, setBulkSellGame] = useState(null);
+      const [bulkSellSet, setBulkSellSet] = useState(null);
+      const [bulkSellRarity, setBulkSellRarity] = useState(null);
+      const [bulkSellVariant, setBulkSellVariant] = useState(null); // 'normal' | 'holo'
+      const [bulkSellPreview, setBulkSellPreview] = useState([]);
 
 
       const [gameDay, setGameDay] = useState(() => {
@@ -7532,6 +7541,7 @@ if (!isLoaded) {
                         onChange={(e) => {
                           setSellGameFilter(e.target.value);
                           setSellSetFilter('all');
+                          setShopSellFilter('all'); // Reset rarity filter when game changes
                         }}
                         style={{ 
                           padding: '8px 12px',
@@ -7567,6 +7577,37 @@ if (!isLoaded) {
                           );
                         })}
                       </select>
+                    </div>
+
+                    {/* Bulk Sell Button */}
+                    <div style={{ marginBottom: 14 }}>
+                      <button
+                        onClick={() => {
+                          setBulkSellStep(1);
+                          setBulkSellGame(null);
+                          setBulkSellSet(null);
+                          setBulkSellRarity(null);
+                          setBulkSellVariant(null);
+                          setBulkSellPreview([]);
+                          setShowBulkSellModal(true);
+                        }}
+                        style={{
+                          padding: '12px 20px',
+                          borderRadius: 10,
+                          border: '1px solid rgba(251,191,36,0.4)',
+                          background: 'linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.15))',
+                          color: '#fbbf24',
+                          fontSize: 14,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8
+                        }}
+                      >
+                        <span style={{ fontSize: 18 }}>📦</span>
+                        Bulk Sell Duplicates
+                      </button>
                     </div>
 
                     <div style={{ marginBottom: 14, padding: '12px 12px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(0,0,0,0.18)' }}>
@@ -7739,11 +7780,16 @@ if (!isLoaded) {
                         }}
                       >
                         <option value="all">All rarities</option>
-                        {RARITY_ORDER.map(rarity => (
-                          <option key={rarity} value={rarity} style={{ textTransform: 'capitalize' }}>
-                            {currentGameConfig.rarities.find(r => r.id === rarity)?.name || rarity}
-                          </option>
-                        ))}
+                        {(() => {
+                          // Get rarities based on sellGameFilter, not currentGameConfig
+                          const filterGameConfig = sellGameFilter !== 'all' ? gameConfigs[sellGameFilter] : currentGameConfig;
+                          const rarityOrder = filterGameConfig?.rarityOrder || RARITY_ORDER;
+                          return rarityOrder.map(rarity => (
+                            <option key={rarity} value={rarity} style={{ textTransform: 'capitalize' }}>
+                              {filterGameConfig?.rarities?.find(r => r.id === rarity)?.name || rarity}
+                            </option>
+                          ));
+                        })()}
                       </select>
 
                       <select
@@ -12132,6 +12178,523 @@ return (
                       setOfferPickerSet(null);
                       setOfferPickerRarity(null);
                     }}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: 'rgba(255,255,255,0.1)',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontWeight: 600
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bulk Sell Modal */}
+          {showBulkSellModal && (
+            <div
+              onClick={() => setShowBulkSellModal(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.9)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1200,
+                padding: 20
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  background: 'linear-gradient(180deg, #1f2937 0%, #111827 100%)',
+                  borderRadius: 16,
+                  padding: 20,
+                  maxWidth: 550,
+                  width: '100%',
+                  maxHeight: '85vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  border: '1px solid rgba(251,191,36,0.3)'
+                }}
+              >
+                <h3 style={{ margin: 0, marginBottom: 4, color: '#fbbf24', fontSize: 20, fontWeight: 800 }}>
+                  📦 Bulk Sell Duplicates
+                </h3>
+                <div style={{ color: '#9ca3af', fontSize: 12, marginBottom: 16 }}>
+                  Sell all duplicates (keeping 1 of each) at {Math.round(SELL_TO_SHOP_RATE * 100)}% market value
+                </div>
+                
+                {/* Step indicator */}
+                <div style={{ display: 'flex', gap: 6, marginBottom: 16, alignItems: 'center' }}>
+                  {['Game', 'Set', 'Rarity', 'Type', 'Confirm'].map((label, idx) => (
+                    <React.Fragment key={idx}>
+                      <div style={{
+                        padding: '4px 10px',
+                        borderRadius: 12,
+                        background: bulkSellStep > idx + 1 ? '#fbbf24' : bulkSellStep === idx + 1 ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.1)',
+                        color: bulkSellStep > idx + 1 ? '#000' : bulkSellStep === idx + 1 ? '#fbbf24' : '#6b7280',
+                        fontSize: 11,
+                        fontWeight: 700
+                      }}>
+                        {label}
+                      </div>
+                      {idx < 4 && (
+                        <div style={{
+                          width: 12,
+                          height: 2,
+                          background: bulkSellStep > idx + 1 ? '#fbbf24' : 'rgba(255,255,255,0.1)'
+                        }} />
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+                
+                {/* Step 1: Select Game */}
+                {bulkSellStep === 1 && (() => {
+                  const gamesWithCards = new Set();
+                  Object.keys(collection).forEach(cardId => {
+                    const entry = collection[cardId];
+                    if ((entry.normal || 0) + (entry.holo || 0) === 0) return;
+                    Object.entries(setConfigs).forEach(([gameId, sets]) => {
+                      Object.values(sets).forEach(setConfig => {
+                        if (setConfig.cards?.some(c => c.id === cardId)) {
+                          gamesWithCards.add(gameId);
+                        }
+                      });
+                    });
+                  });
+                  
+                  return (
+                    <div style={{ flex: 1, overflowY: 'auto' }}>
+                      <div style={{ color: '#e5e7eb', fontSize: 14, marginBottom: 12 }}>Select a game:</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {Array.from(gamesWithCards).map(gameId => (
+                          <button
+                            key={gameId}
+                            onClick={() => {
+                              setBulkSellGame(gameId);
+                              setBulkSellStep(2);
+                            }}
+                            style={{
+                              padding: '14px 16px',
+                              borderRadius: 10,
+                              border: '1px solid rgba(251,191,36,0.3)',
+                              background: 'rgba(251,191,36,0.1)',
+                              color: 'white',
+                              fontSize: 15,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10
+                            }}
+                          >
+                            <span style={{ fontSize: 20 }}>{gameConfigs[gameId]?.icon || '🎴'}</span>
+                            {gameConfigs[gameId]?.name || gameId}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+                
+                {/* Step 2: Select Set */}
+                {bulkSellStep === 2 && bulkSellGame && (() => {
+                  const setsWithCards = new Set();
+                  Object.keys(collection).forEach(cardId => {
+                    const entry = collection[cardId];
+                    if ((entry.normal || 0) + (entry.holo || 0) === 0) return;
+                    const gameSets = setConfigs[bulkSellGame] || {};
+                    Object.entries(gameSets).forEach(([setId, setConfig]) => {
+                      if (setConfig.cards?.some(c => c.id === cardId)) {
+                        setsWithCards.add(setId);
+                      }
+                    });
+                  });
+                  
+                  return (
+                    <div style={{ flex: 1, overflowY: 'auto' }}>
+                      <div style={{ color: '#9ca3af', fontSize: 13, marginBottom: 12 }}>
+                        <span style={{ color: '#fbbf24' }}>{gameConfigs[bulkSellGame]?.name}</span> → Select a set:
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {Array.from(setsWithCards).map(setId => (
+                          <button
+                            key={setId}
+                            onClick={() => {
+                              setBulkSellSet(setId);
+                              setBulkSellStep(3);
+                            }}
+                            style={{
+                              padding: '14px 16px',
+                              borderRadius: 10,
+                              border: '1px solid rgba(251,191,36,0.3)',
+                              background: 'rgba(251,191,36,0.1)',
+                              color: 'white',
+                              fontSize: 15,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              textAlign: 'left'
+                            }}
+                          >
+                            {setConfigs[bulkSellGame]?.[setId]?.name || setId}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+                
+                {/* Step 3: Select Rarity */}
+                {bulkSellStep === 3 && bulkSellGame && bulkSellSet && (() => {
+                  const setConfig = setConfigs[bulkSellGame]?.[bulkSellSet];
+                  const gameConfig = gameConfigs[bulkSellGame];
+                  const raritiesWithCards = new Map();
+                  
+                  Object.keys(collection).forEach(cardId => {
+                    const entry = collection[cardId];
+                    const count = (entry.normal || 0) + (entry.holo || 0);
+                    if (count === 0) return;
+                    
+                    const card = setConfig?.cards?.find(c => c.id === cardId);
+                    if (card) {
+                      const rarity = card.rarity || 'common';
+                      raritiesWithCards.set(rarity, (raritiesWithCards.get(rarity) || 0) + count);
+                    }
+                  });
+                  
+                  // Sort by game's rarity order
+                  const rarityOrder = gameConfig?.rarityOrder || ['common', 'uncommon', 'rare', 'ultra-rare'];
+                  const sortedRarities = Array.from(raritiesWithCards.entries()).sort((a, b) => {
+                    const idxA = rarityOrder.indexOf(a[0]);
+                    const idxB = rarityOrder.indexOf(b[0]);
+                    return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+                  });
+                  
+                  return (
+                    <div style={{ flex: 1, overflowY: 'auto' }}>
+                      <div style={{ color: '#9ca3af', fontSize: 13, marginBottom: 12 }}>
+                        <span style={{ color: '#fbbf24' }}>{setConfig?.name}</span> → Select rarity:
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {sortedRarities.map(([rarity, count]) => {
+                          const rarityName = gameConfig?.rarities?.find(r => r.id === rarity)?.name || rarity;
+                          return (
+                            <button
+                              key={rarity}
+                              onClick={() => {
+                                setBulkSellRarity(rarity);
+                                setBulkSellStep(4);
+                              }}
+                              style={{
+                                padding: '14px 16px',
+                                borderRadius: 10,
+                                border: '1px solid rgba(251,191,36,0.3)',
+                                background: 'rgba(251,191,36,0.1)',
+                                color: 'white',
+                                fontSize: 15,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                              }}
+                            >
+                              <span style={{ textTransform: 'capitalize' }}>{rarityName}</span>
+                              <span style={{ color: '#9ca3af', fontSize: 13 }}>{count} cards</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+                
+                {/* Step 4: Select Variant (Holo/Non-Holo) */}
+                {bulkSellStep === 4 && bulkSellGame && bulkSellSet && bulkSellRarity && (() => {
+                  const setConfig = setConfigs[bulkSellGame]?.[bulkSellSet];
+                  let normalCount = 0;
+                  let holoCount = 0;
+                  
+                  Object.entries(collection).forEach(([cardId, entry]) => {
+                    const card = setConfig?.cards?.find(c => c.id === cardId);
+                    if (!card || (card.rarity || 'common') !== bulkSellRarity) return;
+                    normalCount += entry.normal || 0;
+                    holoCount += entry.holo || 0;
+                  });
+                  
+                  return (
+                    <div style={{ flex: 1, overflowY: 'auto' }}>
+                      <div style={{ color: '#9ca3af', fontSize: 13, marginBottom: 12 }}>
+                        <span style={{ color: '#fbbf24', textTransform: 'capitalize' }}>{bulkSellRarity}</span> → Select type:
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {normalCount > 0 && (
+                          <button
+                            onClick={() => {
+                              setBulkSellVariant('normal');
+                              // Generate preview
+                              const preview = [];
+                              const setConfig = setConfigs[bulkSellGame]?.[bulkSellSet];
+                              Object.entries(collection).forEach(([cardId, entry]) => {
+                                const card = setConfig?.cards?.find(c => c.id === cardId);
+                                if (!card || (card.rarity || 'common') !== bulkSellRarity) return;
+                                const duplicates = (entry.normal || 0) - 1; // Keep 1
+                                if (duplicates > 0) {
+                                  const baseValue = marketValues[cardId] || 1;
+                                  const sellValue = baseValue * SELL_TO_SHOP_RATE;
+                                  preview.push({
+                                    cardId,
+                                    name: card.name,
+                                    count: duplicates,
+                                    unitValue: sellValue,
+                                    totalValue: sellValue * duplicates
+                                  });
+                                }
+                              });
+                              setBulkSellPreview(preview);
+                              setBulkSellStep(5);
+                            }}
+                            style={{
+                              padding: '14px 16px',
+                              borderRadius: 10,
+                              border: '1px solid rgba(251,191,36,0.3)',
+                              background: 'rgba(251,191,36,0.1)',
+                              color: 'white',
+                              fontSize: 15,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
+                            }}
+                          >
+                            <span>Normal (Non-Holo)</span>
+                            <span style={{ color: '#9ca3af', fontSize: 13 }}>{normalCount} cards</span>
+                          </button>
+                        )}
+                        {holoCount > 0 && (
+                          <button
+                            onClick={() => {
+                              setBulkSellVariant('holo');
+                              // Generate preview
+                              const preview = [];
+                              const setConfig = setConfigs[bulkSellGame]?.[bulkSellSet];
+                              Object.entries(collection).forEach(([cardId, entry]) => {
+                                const card = setConfig?.cards?.find(c => c.id === cardId);
+                                if (!card || (card.rarity || 'common') !== bulkSellRarity) return;
+                                const duplicates = (entry.holo || 0) - 1; // Keep 1
+                                if (duplicates > 0) {
+                                  const baseValue = marketValues[cardId] || 1;
+                                  const holoMult = holoMultipliers[cardId] || 1.5;
+                                  const sellValue = baseValue * holoMult * SELL_TO_SHOP_RATE;
+                                  preview.push({
+                                    cardId,
+                                    name: card.name,
+                                    count: duplicates,
+                                    unitValue: sellValue,
+                                    totalValue: sellValue * duplicates,
+                                    isHolo: true
+                                  });
+                                }
+                              });
+                              setBulkSellPreview(preview);
+                              setBulkSellStep(5);
+                            }}
+                            style={{
+                              padding: '14px 16px',
+                              borderRadius: 10,
+                              border: '1px solid rgba(236,72,153,0.4)',
+                              background: 'rgba(236,72,153,0.15)',
+                              color: 'white',
+                              fontSize: 15,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
+                            }}
+                          >
+                            <span>✨ Holo</span>
+                            <span style={{ color: '#9ca3af', fontSize: 13 }}>{holoCount} cards</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+                
+                {/* Step 5: Confirmation */}
+                {bulkSellStep === 5 && bulkSellPreview && (() => {
+                  const totalCards = bulkSellPreview.reduce((sum, item) => sum + item.count, 0);
+                  const totalValue = bulkSellPreview.reduce((sum, item) => sum + item.totalValue, 0);
+                  
+                  const handleBulkSell = () => {
+                    if (totalCards === 0) return;
+                    
+                    // Remove cards from collection
+                    const newCollection = { ...collection };
+                    bulkSellPreview.forEach(item => {
+                      const entry = newCollection[item.cardId] || { normal: 0, holo: 0 };
+                      if (item.isHolo) {
+                        entry.holo = Math.max(0, (entry.holo || 0) - item.count);
+                      } else {
+                        entry.normal = Math.max(0, (entry.normal || 0) - item.count);
+                      }
+                      newCollection[item.cardId] = entry;
+                    });
+                    setCollection(newCollection);
+                    saveCollection(newCollection);
+                    
+                    // Add rations
+                    const newRations = rations + totalValue;
+                    setRations(newRations);
+                    saveRations(newRations);
+                    
+                    // Track progress
+                    try {
+                      track('cards_sold', totalCards);
+                      track('rations_earned', totalValue);
+                    } catch (e) {}
+                    
+                    // Close modal
+                    setShowBulkSellModal(false);
+                  };
+                  
+                  return (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ color: '#9ca3af', fontSize: 13, marginBottom: 12 }}>
+                        Selling <span style={{ color: '#fbbf24' }}>{bulkSellVariant === 'holo' ? '✨ Holo ' : ''}{bulkSellRarity}</span> duplicates:
+                      </div>
+                      
+                      {bulkSellPreview.length === 0 ? (
+                        <div style={{ 
+                          flex: 1, 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          color: '#6b7280',
+                          padding: 40
+                        }}>
+                          No duplicates to sell (you only have 1 of each)
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ 
+                            flex: 1, 
+                            overflowY: 'auto',
+                            background: 'rgba(0,0,0,0.2)',
+                            borderRadius: 10,
+                            padding: 12,
+                            marginBottom: 12
+                          }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                              <thead>
+                                <tr style={{ color: '#9ca3af', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                  <th style={{ textAlign: 'left', padding: '8px 4px', fontWeight: 600 }}>Card</th>
+                                  <th style={{ textAlign: 'center', padding: '8px 4px', fontWeight: 600 }}>Qty</th>
+                                  <th style={{ textAlign: 'right', padding: '8px 4px', fontWeight: 600 }}>Each</th>
+                                  <th style={{ textAlign: 'right', padding: '8px 4px', fontWeight: 600 }}>Total</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {bulkSellPreview.map((item, idx) => (
+                                  <tr key={item.cardId} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <td style={{ padding: '8px 4px', color: 'white' }}>
+                                      {item.isHolo && <span style={{ color: '#ec4899' }}>✨ </span>}
+                                      {item.name}
+                                    </td>
+                                    <td style={{ textAlign: 'center', padding: '8px 4px', color: '#9ca3af' }}>×{item.count}</td>
+                                    <td style={{ textAlign: 'right', padding: '8px 4px', color: '#9ca3af' }}>{item.unitValue.toFixed(2)}R</td>
+                                    <td style={{ textAlign: 'right', padding: '8px 4px', color: '#fbbf24', fontWeight: 600 }}>{item.totalValue.toFixed(2)}R</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          
+                          <div style={{ 
+                            padding: '12px 16px',
+                            background: 'rgba(251,191,36,0.15)',
+                            borderRadius: 10,
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 12
+                          }}>
+                            <div>
+                              <div style={{ color: '#9ca3af', fontSize: 12 }}>Total Cards</div>
+                              <div style={{ color: 'white', fontSize: 18, fontWeight: 800 }}>{totalCards}</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ color: '#9ca3af', fontSize: 12 }}>Total Value</div>
+                              <div style={{ color: '#fbbf24', fontSize: 22, fontWeight: 900 }}>{totalValue.toFixed(2)} R</div>
+                            </div>
+                          </div>
+                          
+                          <button
+                            onClick={handleBulkSell}
+                            style={{
+                              padding: '14px 20px',
+                              borderRadius: 10,
+                              border: 'none',
+                              background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+                              color: '#000',
+                              fontSize: 16,
+                              fontWeight: 800,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Sell All for {totalValue.toFixed(2)} R
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
+                
+                {/* Navigation buttons */}
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  {bulkSellStep > 1 && (
+                    <button
+                      onClick={() => {
+                        if (bulkSellStep === 2) setBulkSellGame(null);
+                        else if (bulkSellStep === 3) setBulkSellSet(null);
+                        else if (bulkSellStep === 4) setBulkSellRarity(null);
+                        else if (bulkSellStep === 5) {
+                          setBulkSellVariant(null);
+                          setBulkSellPreview([]);
+                        }
+                        setBulkSellStep(bulkSellStep - 1);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '10px',
+                        borderRadius: 8,
+                        border: '1px solid rgba(251,191,36,0.3)',
+                        background: 'transparent',
+                        color: '#fbbf24',
+                        cursor: 'pointer',
+                        fontWeight: 600
+                      }}
+                    >
+                      ← Back
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowBulkSellModal(false)}
                     style={{
                       flex: 1,
                       padding: '10px',
