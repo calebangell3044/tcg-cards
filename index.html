@@ -1749,8 +1749,15 @@ body{
         setRations(newRations);
         saveRations(newRations);
         
+        // Track challenge progress
+        try {
+          updateChallengeProgress('cards_submitted', 1);
+          updateChallengeProgress('rations_spent', totalCost);
+          if (preGradePrediction) updateChallengeProgress('pregraded', 1);
+        } catch (e) {}
+        
         return true;
-      }, [rations, collection, gradingQueue, gameDay, saveCollection, saveRations, saveGradingQueue]);
+      }, [rations, collection, gradingQueue, gameDay, saveCollection, saveRations, saveGradingQueue, updateChallengeProgress]);
 
       // Receive a completed grading (called by user clicking receive button)
       // Note: We read gameDay from localStorage to avoid stale closure issues
@@ -1831,9 +1838,16 @@ body{
           savePreGradePredictions(newPreds);
         }
         
+        // Track challenge progress
+        try {
+          updateChallengeProgress('cards_graded', 1);
+          if (grade >= 8 || grade === 'IM10') updateChallengeProgress('grade_8_plus', 1);
+          if (grade === 10 || grade === 'IM10') updateChallengeProgress('grade_10', 1);
+        } catch (e) {}
+        
         console.log('Returning gradedCard:', gradedCard);
         return gradedCard;
-      }, [gradingQueue, gradedCards, gameDay, generateGrade, saveGradingQueue, saveGradedCards, preGradePredictions, savePreGradePredictions]);
+      }, [gradingQueue, gradedCards, gameDay, generateGrade, saveGradingQueue, saveGradedCards, preGradePredictions, savePreGradePredictions, updateChallengeProgress]);
 
       // State for grade reveal modal
       const [revealingGrade, setRevealingGrade] = useState(null);
@@ -2092,6 +2106,256 @@ body{
         try { localStorage.setItem('tcg-npc-chats', JSON.stringify(chats)); } catch (e) {}
         try { updateCoreSave({ npcChats: chats }); } catch (e) {}
       }, []);
+
+      // ===== Player Level System =====
+      const [playerXp, setPlayerXp] = useState(() => {
+        try {
+          const core = readCoreSave();
+          if (core && typeof core.playerXp === 'number') return core.playerXp;
+          const raw = localStorage.getItem('tcg-player-xp');
+          if (raw) return parseInt(raw, 10) || 0;
+        } catch (e) {}
+        return 0;
+      });
+
+      const savePlayerXp = useCallback((xp) => {
+        try { localStorage.setItem('tcg-player-xp', String(xp)); } catch (e) {}
+        try { updateCoreSave({ playerXp: xp }); } catch (e) {}
+      }, []);
+
+      // XP required for each level (1-100) - scales exponentially
+      const getXpForLevel = (level) => {
+        if (level <= 1) return 0;
+        // Easy early levels, harder later: base 50 XP, scaling factor 1.15
+        return Math.floor(50 * Math.pow(1.15, level - 2));
+      };
+
+      // Get player level from XP
+      const getPlayerLevel = (xp) => {
+        let level = 1;
+        let totalXpNeeded = 0;
+        while (level < 100) {
+          totalXpNeeded += getXpForLevel(level + 1);
+          if (xp < totalXpNeeded) break;
+          level++;
+        }
+        return level;
+      };
+
+      // Get XP progress within current level
+      const getPlayerLevelProgress = (xp) => {
+        let level = 1;
+        let xpSpent = 0;
+        while (level < 100) {
+          const needed = getXpForLevel(level + 1);
+          if (xp < xpSpent + needed) {
+            return {
+              level,
+              currentXp: xp - xpSpent,
+              neededXp: needed,
+              progress: (xp - xpSpent) / needed
+            };
+          }
+          xpSpent += needed;
+          level++;
+        }
+        return { level: 100, currentXp: 0, neededXp: 0, progress: 1 };
+      };
+
+      // Add XP to player
+      const addPlayerXp = useCallback((amount) => {
+        setPlayerXp(prev => {
+          const newXp = prev + amount;
+          savePlayerXp(newXp);
+          return newXp;
+        });
+      }, [savePlayerXp]);
+
+      // ===== Daily Challenges System =====
+      const DAILY_CHALLENGE_POOL = [
+        // Pack opening challenges
+        { id: 'open_1_pack', desc: 'Open 1 pack', target: 1, type: 'packs_opened', xp: 10 },
+        { id: 'open_3_packs', desc: 'Open 3 packs', target: 3, type: 'packs_opened', xp: 25 },
+        { id: 'open_5_packs', desc: 'Open 5 packs', target: 5, type: 'packs_opened', xp: 40 },
+        { id: 'open_10_packs', desc: 'Open 10 packs', target: 10, type: 'packs_opened', xp: 75 },
+        
+        // Card collection challenges
+        { id: 'collect_any_holo', desc: 'Pull a holo card', target: 1, type: 'holos_pulled', xp: 30 },
+        { id: 'collect_rare', desc: 'Pull a Rare or better', target: 1, type: 'rares_pulled', xp: 20 },
+        { id: 'collect_sr', desc: 'Pull a Super Rare', target: 1, type: 'sr_pulled', xp: 50 },
+        { id: 'collect_ur', desc: 'Pull an Ultra Rare', target: 1, type: 'ur_pulled', xp: 100 },
+        { id: 'collect_5_cards', desc: 'Collect 5 new cards', target: 5, type: 'new_cards', xp: 35 },
+        
+        // Shop/Purchase challenges
+        { id: 'buy_pack', desc: 'Buy a pack from the shop', target: 1, type: 'packs_bought', xp: 10 },
+        { id: 'buy_3_packs', desc: 'Buy 3 packs', target: 3, type: 'packs_bought', xp: 25 },
+        { id: 'buy_bundle', desc: 'Buy a bundle', target: 1, type: 'bundles_bought', xp: 30 },
+        { id: 'buy_booster', desc: 'Buy a booster box', target: 1, type: 'boosters_bought', xp: 50 },
+        { id: 'spend_50r', desc: 'Spend 50 rations', target: 50, type: 'rations_spent', xp: 25 },
+        { id: 'spend_100r', desc: 'Spend 100 rations', target: 100, type: 'rations_spent', xp: 45 },
+        
+        // Selling challenges
+        { id: 'sell_card', desc: 'Sell a card', target: 1, type: 'cards_sold', xp: 10 },
+        { id: 'sell_3_cards', desc: 'Sell 3 cards', target: 3, type: 'cards_sold', xp: 25 },
+        { id: 'sell_card_5r', desc: 'Sell a card worth 5R+', target: 1, type: 'cards_sold_5r', xp: 20 },
+        { id: 'sell_card_10r', desc: 'Sell a card worth 10R+', target: 1, type: 'cards_sold_10r', xp: 35 },
+        { id: 'sell_card_25r', desc: 'Sell a card worth 25R+', target: 1, type: 'cards_sold_25r', xp: 60 },
+        { id: 'sell_holo', desc: 'Sell a holo card', target: 1, type: 'holos_sold', xp: 30 },
+        { id: 'earn_50r', desc: 'Earn 50 rations from sales', target: 50, type: 'rations_earned', xp: 30 },
+        { id: 'earn_100r', desc: 'Earn 100 rations from sales', target: 100, type: 'rations_earned', xp: 55 },
+        
+        // Grading challenges
+        { id: 'submit_grading', desc: 'Submit a card for grading', target: 1, type: 'cards_submitted', xp: 20 },
+        { id: 'submit_3_grading', desc: 'Submit 3 cards for grading', target: 3, type: 'cards_submitted', xp: 50 },
+        { id: 'receive_graded', desc: 'Receive a graded card', target: 1, type: 'cards_graded', xp: 25 },
+        { id: 'grade_8_plus', desc: 'Get a grade of 8 or higher', target: 1, type: 'grade_8_plus', xp: 40 },
+        { id: 'grade_10', desc: 'Get a perfect 10 grade', target: 1, type: 'grade_10', xp: 100 },
+        { id: 'use_pregrade', desc: 'Use pre-grading service', target: 1, type: 'pregraded', xp: 30 },
+        
+        // Community/NPC challenges
+        { id: 'accept_trade', desc: 'Accept an NPC offer', target: 1, type: 'npc_trades', xp: 25 },
+        { id: 'accept_3_trades', desc: 'Accept 3 NPC offers', target: 3, type: 'npc_trades', xp: 60 },
+        { id: 'send_message', desc: 'Send a message to an NPC', target: 1, type: 'messages_sent', xp: 5 },
+        { id: 'send_5_messages', desc: 'Send 5 messages', target: 5, type: 'messages_sent', xp: 15 },
+        { id: 'buy_from_npc', desc: 'Buy a card from an NPC', target: 1, type: 'npc_buys', xp: 30 },
+        { id: 'sell_to_npc', desc: 'Sell a card to an NPC', target: 1, type: 'npc_sells', xp: 30 },
+        
+        // Market challenges
+        { id: 'check_market', desc: 'View the market', target: 1, type: 'market_views', xp: 5 },
+        { id: 'find_rising', desc: 'Find a card that went up 10%+', target: 1, type: 'rising_found', xp: 15 },
+        
+        // Collection challenges
+        { id: 'view_collection', desc: 'Check your collection', target: 1, type: 'collection_views', xp: 5 },
+        { id: 'own_50_cards', desc: 'Own 50+ total cards', target: 50, type: 'total_cards', xp: 40 },
+        { id: 'own_100_cards', desc: 'Own 100+ total cards', target: 100, type: 'total_cards', xp: 75 },
+        
+        // Daily login bonus type
+        { id: 'advance_day', desc: 'Advance to a new day', target: 1, type: 'days_advanced', xp: 15 },
+        
+        // Misc challenges
+        { id: 'open_sealed', desc: 'Open a sealed product', target: 1, type: 'sealed_opened', xp: 35 },
+        { id: 'daily_shop', desc: 'Buy from the daily shop', target: 1, type: 'daily_shop_buys', xp: 20 },
+        { id: 'get_godpack', desc: 'Pull a god pack', target: 1, type: 'godpacks', xp: 200 },
+        { id: 'complete_set_10', desc: 'Own 10% of a set', target: 10, type: 'set_completion', xp: 50 },
+        { id: 'complete_set_25', desc: 'Own 25% of a set', target: 25, type: 'set_completion', xp: 100 },
+      ];
+
+      const [dailyChallenges, setDailyChallenges] = useState(() => {
+        try {
+          const core = readCoreSave();
+          if (core && core.dailyChallenges) return core.dailyChallenges;
+          const raw = localStorage.getItem('tcg-daily-challenges');
+          if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return { day: 0, challenges: [], progress: {} };
+      });
+
+      const saveDailyChallenges = useCallback((data) => {
+        try { localStorage.setItem('tcg-daily-challenges', JSON.stringify(data)); } catch (e) {}
+        try { updateCoreSave({ dailyChallenges: data }); } catch (e) {}
+      }, []);
+
+      // Generate new daily challenges for a given day
+      const generateDailyChallenges = useCallback((day) => {
+        // Shuffle and pick 3 unique challenges
+        const shuffled = [...DAILY_CHALLENGE_POOL].sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, 3);
+        
+        const newData = {
+          day,
+          challenges: selected,
+          progress: {}
+        };
+        
+        // Initialize progress for each challenge
+        selected.forEach(c => {
+          newData.progress[c.id] = 0;
+        });
+        
+        setDailyChallenges(newData);
+        saveDailyChallenges(newData);
+        return newData;
+      }, [saveDailyChallenges]);
+
+      // Update challenge progress
+      const updateChallengeProgress = useCallback((type, amount = 1) => {
+        setDailyChallenges(prev => {
+          if (!prev || !prev.challenges) return prev;
+          
+          const updated = { ...prev, progress: { ...prev.progress } };
+          let xpEarned = 0;
+          
+          prev.challenges.forEach(challenge => {
+            if (challenge.type === type) {
+              const oldProgress = updated.progress[challenge.id] || 0;
+              const wasComplete = oldProgress >= challenge.target;
+              
+              updated.progress[challenge.id] = oldProgress + amount;
+              
+              const isNowComplete = updated.progress[challenge.id] >= challenge.target;
+              
+              // Award XP if just completed
+              if (!wasComplete && isNowComplete) {
+                xpEarned += challenge.xp;
+              }
+            }
+          });
+          
+          if (xpEarned > 0) {
+            addPlayerXp(xpEarned);
+          }
+          
+          saveDailyChallenges(updated);
+          return updated;
+        });
+      }, [saveDailyChallenges, addPlayerXp]);
+
+      // Check if a challenge is complete
+      const isChallengeComplete = (challengeId) => {
+        if (!dailyChallenges || !dailyChallenges.challenges) return false;
+        const challenge = dailyChallenges.challenges.find(c => c.id === challengeId);
+        if (!challenge) return false;
+        return (dailyChallenges.progress[challengeId] || 0) >= challenge.target;
+      };
+
+      // ===== Showcase System =====
+      const [showcase, setShowcase] = useState(() => {
+        try {
+          const core = readCoreSave();
+          if (core && core.showcase) return core.showcase;
+          const raw = localStorage.getItem('tcg-showcase');
+          if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return []; // Array of { type: 'card'|'graded', data: {...} }
+      });
+
+      const saveShowcase = useCallback((data) => {
+        try { localStorage.setItem('tcg-showcase', JSON.stringify(data)); } catch (e) {}
+        try { updateCoreSave({ showcase: data }); } catch (e) {}
+      }, []);
+
+      const addToShowcase = useCallback((item) => {
+        setShowcase(prev => {
+          if (prev.length >= 5) return prev; // Max 5 items
+          // Check for duplicates
+          const isDupe = prev.some(p => 
+            p.type === item.type && 
+            (p.type === 'graded' ? p.data.id === item.data.id : p.data.cardId === item.data.cardId && p.data.isHolo === item.data.isHolo)
+          );
+          if (isDupe) return prev;
+          const updated = [...prev, item];
+          saveShowcase(updated);
+          return updated;
+        });
+      }, [saveShowcase]);
+
+      const removeFromShowcase = useCallback((index) => {
+        setShowcase(prev => {
+          const updated = prev.filter((_, i) => i !== index);
+          saveShowcase(updated);
+          return updated;
+        });
+      }, [saveShowcase]);
 
       // ===== Settings / Save / Debug =====
       const [saveSeed, setSaveSeed] = useState(() => {
@@ -3261,6 +3525,24 @@ body{
           });
         } catch (e) {}
 
+        // Initialize daily challenges if not set for current day
+        try {
+          const currentChallenges = dailyChallenges;
+          if (!currentChallenges || !currentChallenges.challenges || currentChallenges.challenges.length === 0 || currentChallenges.day !== currentDay) {
+            // Generate new challenges for today
+            const shuffled = [...DAILY_CHALLENGE_POOL].sort(() => Math.random() - 0.5);
+            const selected = shuffled.slice(0, 3);
+            const newData = {
+              day: currentDay,
+              challenges: selected,
+              progress: {}
+            };
+            selected.forEach(c => { newData.progress[c.id] = 0; });
+            setDailyChallenges(newData);
+            saveDailyChallenges(newData);
+          }
+        } catch (e) {}
+
         setIsLoaded(true);
       }, []);
 
@@ -3738,6 +4020,17 @@ body{
           generateNpcOffers(nextDay);
         } catch (e) {
           console.error('NPC offer generation failed:', e);
+        }
+
+        // Generate new daily challenges if it's a new day
+        try {
+          if (!dailyChallenges || dailyChallenges.day !== nextDay) {
+            generateDailyChallenges(nextDay);
+          }
+          // Track day advanced for challenges
+          updateChallengeProgress('days_advanced', 1);
+        } catch (e) {
+          console.error('Daily challenge generation failed:', e);
         }
 
         // Persist deterministic RNG state after advancing the day (debug mode only)
@@ -4678,6 +4971,26 @@ const getRareSlotCard = () => {
         setSlidingCards([]);
         setIsPeeking(false);
 
+        // Track challenge progress
+        try {
+          updateChallengeProgress('packs_opened', 1);
+          
+          // Track holos pulled
+          const holoCount = newPack.filter(c => c.isHolo).length;
+          if (holoCount > 0) updateChallengeProgress('holos_pulled', holoCount);
+          
+          // Track rares/SR/UR pulled
+          const raresCount = newPack.filter(c => ['R', 'SR', 'UR', 'SP'].includes(c.rarity)).length;
+          const srCount = newPack.filter(c => c.rarity === 'SR').length;
+          const urCount = newPack.filter(c => ['UR', 'SP'].includes(c.rarity)).length;
+          if (raresCount > 0) updateChallengeProgress('rares_pulled', raresCount);
+          if (srCount > 0) updateChallengeProgress('sr_pulled', srCount);
+          if (urCount > 0) updateChallengeProgress('ur_pulled', urCount);
+          
+          // Track god packs
+          if (isGodPack) updateChallengeProgress('godpacks', 1);
+        } catch (e) {}
+
         // Persist deterministic RNG state after opening a pack (debug mode only)
         persistRngState();
 };
@@ -4828,19 +5141,29 @@ const getRareSlotCard = () => {
         if (!entry || (entry.normal || 0) === 0) return;
 
         const marketValue = getBaseMarketValue(cardId);
+        const payout = marketValue * SELL_TO_SHOP_RATE;
         const newCollection = { ...collection };
         const nextEntry = { ...(newCollection[cardId] || { normal: 0, holo: 0 }) };
         nextEntry.normal = Math.max(0, (nextEntry.normal || 0) - 1);
         if ((nextEntry.normal || 0) + (nextEntry.holo || 0) === 0) delete newCollection[cardId];
         else newCollection[cardId] = nextEntry;
 
-        const newRations = rations + (marketValue * SELL_TO_SHOP_RATE);
+        const newRations = rations + payout;
 
         setCollection(newCollection);
         setRations(newRations);
         saveCollection(newCollection);
         saveRations(newRations);
         setSellConfirm(null);
+        
+        // Track challenge progress
+        try {
+          updateChallengeProgress('cards_sold', 1);
+          updateChallengeProgress('rations_earned', payout);
+          if (payout >= 5) updateChallengeProgress('cards_sold_5r', 1);
+          if (payout >= 10) updateChallengeProgress('cards_sold_10r', 1);
+          if (payout >= 25) updateChallengeProgress('cards_sold_25r', 1);
+        } catch (e) {}
       };
 
       const sellHoloCard = (cardId) => {
@@ -4848,19 +5171,30 @@ const getRareSlotCard = () => {
         if (!entry || (entry.holo || 0) === 0) return;
 
         const marketValue = getHoloMarketValue(cardId);
+        const payout = marketValue * SELL_TO_SHOP_RATE;
         const newCollection = { ...collection };
         const nextEntry = { ...(newCollection[cardId] || { normal: 0, holo: 0 }) };
         nextEntry.holo = Math.max(0, (nextEntry.holo || 0) - 1);
         if ((nextEntry.normal || 0) + (nextEntry.holo || 0) === 0) delete newCollection[cardId];
         else newCollection[cardId] = nextEntry;
 
-        const newRations = rations + (marketValue * SELL_TO_SHOP_RATE);
+        const newRations = rations + payout;
 
         setCollection(newCollection);
         setRations(newRations);
         saveCollection(newCollection);
         saveRations(newRations);
         setSellConfirm(null);
+        
+        // Track challenge progress
+        try {
+          updateChallengeProgress('cards_sold', 1);
+          updateChallengeProgress('holos_sold', 1);
+          updateChallengeProgress('rations_earned', payout);
+          if (payout >= 5) updateChallengeProgress('cards_sold_5r', 1);
+          if (payout >= 10) updateChallengeProgress('cards_sold_10r', 1);
+          if (payout >= 25) updateChallengeProgress('cards_sold_25r', 1);
+        } catch (e) {}
       };
 
 
@@ -5410,7 +5744,7 @@ if (!isLoaded) {
                 </div>
                 <nav className="topbar-nav" style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => navigate('home')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'home' || view === 'opening' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
-                  Inventory
+                  Home
                 </button>
                 <button onClick={() => navigate('shop')} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: view === 'shop' ? '#9333ea' : 'rgba(107,114,128,0.5)', color: 'white', fontSize: 14 }}>
                   Shop
@@ -5466,7 +5800,7 @@ if (!isLoaded) {
                         marginBottom: 8
                       }}
                     >
-                      Inventory
+                      Home
                     </button>
                     <button
                       className="menu-item"
@@ -5612,97 +5946,333 @@ if (!isLoaded) {
           <main style={{ maxWidth: 1200, margin: '0 auto', padding: 32 }}>
             {view === 'home' && (
               <div>
-                <h2 style={{ color: 'white', fontSize: 28, fontWeight: 'bold', marginBottom: 24, textAlign: 'center' }}>
-                  Inventory
-                </h2>
-
-                {/* All owned inventory grouped by game then set */}
+                {/* Player Level & XP Section */}
                 {(() => {
-                  // Collect all owned items
-                  const ownedByGame = {};
+                  const levelInfo = getPlayerLevelProgress(playerXp);
+                  return (
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, rgba(147,51,234,0.2), rgba(236,72,153,0.2))',
+                      borderRadius: 16,
+                      padding: 20,
+                      marginBottom: 24,
+                      border: '1px solid rgba(147,51,234,0.3)'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <div>
+                          <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>Player Level</div>
+                          <div style={{ fontSize: 36, fontWeight: 900, color: 'white' }}>
+                            {levelInfo.level}
+                            {levelInfo.level >= 100 && <span style={{ fontSize: 16, color: '#fbbf24', marginLeft: 8 }}>MAX</span>}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 12, color: '#9ca3af' }}>Total XP</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, color: '#a855f7' }}>{playerXp.toLocaleString()}</div>
+                        </div>
+                      </div>
+                      {levelInfo.level < 100 && (
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>
+                            <span>Progress to Level {levelInfo.level + 1}</span>
+                            <span>{levelInfo.currentXp} / {levelInfo.neededXp} XP</span>
+                          </div>
+                          <div style={{ height: 8, background: 'rgba(0,0,0,0.3)', borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{ 
+                              width: `${levelInfo.progress * 100}%`, 
+                              height: '100%', 
+                              background: 'linear-gradient(90deg, #9333ea, #ec4899)',
+                              borderRadius: 4,
+                              transition: 'width 0.3s'
+                            }} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Daily Challenges Section */}
+                <div style={{ 
+                  background: 'rgba(0,0,0,0.2)',
+                  borderRadius: 16,
+                  padding: 20,
+                  marginBottom: 24,
+                  border: '1px solid rgba(255,255,255,0.1)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: 'white' }}>📋 Daily Challenges</h3>
+                    <span style={{ fontSize: 12, color: '#9ca3af' }}>Day {gameDay}</span>
+                  </div>
                   
-                  // Add single packs from packInventory
-                  packInventory.forEach(pack => {
-                    const gameId = pack.gameId || 'tta';
-                    const setId = pack.setId || 'base-set';
-                    if (!ownedByGame[gameId]) ownedByGame[gameId] = {};
-                    if (!ownedByGame[gameId][setId]) ownedByGame[gameId][setId] = { packs: [], sealed: {} };
-                    ownedByGame[gameId][setId].packs.push(pack);
-                  });
+                  {(!dailyChallenges || !dailyChallenges.challenges || dailyChallenges.challenges.length === 0 || dailyChallenges.day !== gameDay) ? (
+                    <div style={{ textAlign: 'center', padding: 20, color: '#9ca3af' }}>
+                      <p>No challenges yet! Advance the day to get new challenges.</p>
+                      <button
+                        onClick={() => generateDailyChallenges(gameDay)}
+                        style={{
+                          marginTop: 8,
+                          padding: '8px 16px',
+                          background: '#9333ea',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          fontSize: 13
+                        }}
+                      >
+                        Generate Challenges
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      {dailyChallenges.challenges.map(challenge => {
+                        const progress = dailyChallenges.progress[challenge.id] || 0;
+                        const isComplete = progress >= challenge.target;
+                        const progressPct = Math.min(100, (progress / challenge.target) * 100);
+                        
+                        return (
+                          <div 
+                            key={challenge.id}
+                            style={{ 
+                              padding: '12px 16px',
+                              background: isComplete ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)',
+                              borderRadius: 12,
+                              border: isComplete ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(255,255,255,0.1)'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                              <span style={{ 
+                                color: isComplete ? '#10b981' : 'white', 
+                                fontWeight: 600,
+                                fontSize: 14
+                              }}>
+                                {isComplete && '✓ '}{challenge.desc}
+                              </span>
+                              <span style={{ 
+                                color: isComplete ? '#10b981' : '#fbbf24', 
+                                fontWeight: 700,
+                                fontSize: 12
+                              }}>
+                                +{challenge.xp} XP
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{ flex: 1, height: 6, background: 'rgba(0,0,0,0.3)', borderRadius: 3, overflow: 'hidden' }}>
+                                <div style={{ 
+                                  width: `${progressPct}%`, 
+                                  height: '100%', 
+                                  background: isComplete ? '#10b981' : '#9333ea',
+                                  borderRadius: 3
+                                }} />
+                              </div>
+                              <span style={{ fontSize: 11, color: '#9ca3af', minWidth: 50, textAlign: 'right' }}>
+                                {Math.min(progress, challenge.target)}/{challenge.target}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Showcase Section */}
+                <div style={{ 
+                  background: 'rgba(0,0,0,0.2)',
+                  borderRadius: 16,
+                  padding: 20,
+                  marginBottom: 24,
+                  border: '1px solid rgba(255,255,255,0.1)'
+                }}>
+                  <h3 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 800, color: 'white' }}>🏆 Showcase</h3>
+                  <p style={{ color: '#9ca3af', fontSize: 12, marginBottom: 16 }}>
+                    Display your prized cards! Add up to 5 items from your collection or graded slabs.
+                  </p>
                   
-                  // Add sealed products
-                  Object.entries(sealedInventory).forEach(([gameId, sets]) => {
-                    Object.entries(sets).forEach(([setId, products]) => {
-                      Object.entries(products).forEach(([productType, count]) => {
-                        if (count > 0) {
-                          if (!ownedByGame[gameId]) ownedByGame[gameId] = {};
-                          if (!ownedByGame[gameId][setId]) ownedByGame[gameId][setId] = { packs: [], sealed: {} };
-                          ownedByGame[gameId][setId].sealed[productType] = count;
-                        }
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    {[0, 1, 2, 3, 4].map(idx => {
+                      const item = showcase[idx];
+                      
+                      if (!item) {
+                        return (
+                          <div 
+                            key={idx}
+                            style={{
+                              width: 80,
+                              height: 112,
+                              borderRadius: 8,
+                              border: '2px dashed rgba(255,255,255,0.2)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#6b7280',
+                              fontSize: 24
+                            }}
+                          >
+                            +
+                          </div>
+                        );
+                      }
+                      
+                      // Render showcase item
+                      if (item.type === 'graded') {
+                        const graded = item.data;
+                        const cardData = setConfigs[graded.gameId]?.[graded.setId]?.cards?.find(c => c.id === graded.cardId);
+                        const imageUrl = buildImageUrl(graded.gameId, graded.setId, cardData);
+                        const gradeColors = GRADE_COLORS[graded.grade] || GRADE_COLORS[8];
+                        
+                        return (
+                          <div 
+                            key={idx}
+                            onClick={() => removeFromShowcase(idx)}
+                            style={{
+                              width: 80,
+                              borderRadius: 8,
+                              overflow: 'hidden',
+                              border: `3px solid ${gradeColors.border || gradeColors.bg}`,
+                              boxShadow: `0 0 15px ${gradeColors.bg}50`,
+                              cursor: 'pointer',
+                              position: 'relative'
+                            }}
+                            title="Click to remove"
+                          >
+                            <div style={{ background: gradeColors.bg, padding: '2px 4px', textAlign: 'center' }}>
+                              <span style={{ color: gradeColors.text, fontSize: 10, fontWeight: 700 }}>TMSG {graded.grade}</span>
+                            </div>
+                            <img src={imageUrl} alt="" style={{ width: '100%', display: 'block' }} />
+                          </div>
+                        );
+                      } else {
+                        // Regular card
+                        const card = item.data;
+                        const imageUrl = buildImageUrl(card.gameId, card.setId, card);
+                        const colors = RARITY_COLORS[card.rarity] || { border: '#6b7280' };
+                        
+                        return (
+                          <div 
+                            key={idx}
+                            onClick={() => removeFromShowcase(idx)}
+                            className={card.isHolo ? 'holo-overlay' : ''}
+                            style={{
+                              width: 80,
+                              borderRadius: 8,
+                              overflow: 'hidden',
+                              border: `3px solid ${colors.border}`,
+                              cursor: 'pointer',
+                              position: 'relative'
+                            }}
+                            title="Click to remove"
+                          >
+                            <img src={imageUrl} alt="" style={{ width: '100%', display: 'block' }} />
+                            {card.isHolo && (
+                              <div style={{ position: 'absolute', top: 2, right: 2, fontSize: 10 }}>✨</div>
+                            )}
+                          </div>
+                        );
+                      }
+                    })}
+                  </div>
+                  
+                  <p style={{ color: '#6b7280', fontSize: 10, marginTop: 12, textAlign: 'center' }}>
+                    Add items from your Collection or Grading tabs. Click an item to remove it.
+                  </p>
+                </div>
+
+                {/* Inventory Section */}
+                <div style={{ 
+                  background: 'rgba(0,0,0,0.2)',
+                  borderRadius: 16,
+                  padding: 20,
+                  border: '1px solid rgba(255,255,255,0.1)'
+                }}>
+                  <h3 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 800, color: 'white' }}>📦 Inventory</h3>
+                  
+                  {(() => {
+                    // Collect all owned items
+                    const ownedByGame = {};
+                    
+                    // Add single packs from packInventory
+                    packInventory.forEach(pack => {
+                      const gameId = pack.gameId || 'tta';
+                      const setId = pack.setId || 'base-set';
+                      if (!ownedByGame[gameId]) ownedByGame[gameId] = {};
+                      if (!ownedByGame[gameId][setId]) ownedByGame[gameId][setId] = { packs: [], sealed: {} };
+                      ownedByGame[gameId][setId].packs.push(pack);
+                    });
+                    
+                    // Add sealed products
+                    Object.entries(sealedInventory).forEach(([gameId, sets]) => {
+                      Object.entries(sets).forEach(([setId, products]) => {
+                        Object.entries(products).forEach(([productType, count]) => {
+                          if (count > 0) {
+                            if (!ownedByGame[gameId]) ownedByGame[gameId] = {};
+                            if (!ownedByGame[gameId][setId]) ownedByGame[gameId][setId] = { packs: [], sealed: {} };
+                            ownedByGame[gameId][setId].sealed[productType] = count;
+                          }
+                        });
                       });
                     });
-                  });
-                  
-                  const hasAnyInventory = Object.keys(ownedByGame).length > 0;
-                  
-                  if (!hasAnyInventory) {
-                    return (
-                      <div style={{ textAlign: 'center', padding: 40 }}>
-                        <p style={{ color: '#9ca3af', fontSize: 18, marginBottom: 20 }}>Your inventory is empty</p>
-                        <button 
-                          onClick={() => navigate('shop')}
-                          style={{
-                            padding: '12px 24px',
-                            background: 'linear-gradient(90deg, #9333ea, #ec4899)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: 8,
-                            cursor: 'pointer',
-                            fontSize: 16,
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          Visit Shop
-                        </button>
-                      </div>
-                    );
-                  }
-                  
-                  return Object.entries(ownedByGame).map(([gameId, sets]) => {
-                    const gameConfig = gameConfigs[gameId];
-                    const gameName = gameConfig?.name || gameId;
                     
-                    return (
-                      <div key={gameId} style={{ marginBottom: 32 }}>
-                        <h3 style={{ 
-                          color: '#a855f7', 
-                          fontSize: 20, 
-                          fontWeight: 'bold', 
-                          margin: '0 0 16px',
-                          padding: '8px 0',
-                          borderBottom: '2px solid rgba(168,85,247,0.3)'
-                        }}>
-                          {gameName}
-                        </h3>
-                        
-                        {Object.entries(sets).map(([setId, inventory]) => {
-                          const setConfig = setConfigs[gameId]?.[setId];
-                          const setName = setConfig?.name || setId;
-                          const cardbackUrl = `${GITHUB_BASE}/${gameConfig?.cardback || 'cardback.png'}`;
-                          const packImageUrl = buildProductImageUrl(gameId, setId, 'single');
+                    const hasAnyInventory = Object.keys(ownedByGame).length > 0;
+                    
+                    if (!hasAnyInventory) {
+                      return (
+                        <div style={{ textAlign: 'center', padding: 20 }}>
+                          <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 16 }}>Your inventory is empty</p>
+                          <button 
+                            onClick={() => navigate('shop')}
+                            style={{
+                              padding: '10px 20px',
+                              background: 'linear-gradient(90deg, #9333ea, #ec4899)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              fontSize: 14,
+                              fontWeight: 'bold'
+                            }}
+                          >
+                            Visit Shop
+                          </button>
+                        </div>
+                      );
+                    }
+                    
+                    return Object.entries(ownedByGame).map(([gameId, sets]) => {
+                      const gameConfig = gameConfigs[gameId];
+                      const gameName = gameConfig?.name || gameId;
+                      
+                      return (
+                        <div key={gameId} style={{ marginBottom: 20 }}>
+                          <h4 style={{ 
+                            color: '#a855f7', 
+                            fontSize: 16, 
+                            fontWeight: 'bold', 
+                            margin: '0 0 12px',
+                            padding: '6px 0',
+                            borderBottom: '1px solid rgba(168,85,247,0.3)'
+                          }}>
+                            {gameName}
+                          </h4>
                           
-                          const totalPacks = inventory.packs.length;
-                          const sealedItems = Object.entries(inventory.sealed);
-                          
-                          return (
-                            <div key={setId} style={{ marginBottom: 20, padding: 16, background: 'rgba(0,0,0,0.2)', borderRadius: 12 }}>
-                              <h4 style={{ color: '#d1d5db', fontSize: 16, fontWeight: 'bold', margin: '0 0 12px' }}>
-                                {setName}
-                              </h4>
-                              
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                                {/* Single Packs */}
-                                {totalPacks > 0 && (
+                          {Object.entries(sets).map(([setId, inventory]) => {
+                            const setConfig = setConfigs[gameId]?.[setId];
+                            const setName = setConfig?.name || setId;
+                            const cardbackUrl = `${GITHUB_BASE}/${gameConfig?.cardback || 'cardback.png'}`;
+                            const packImageUrl = buildProductImageUrl(gameId, setId, 'single');
+                            
+                            const totalPacks = inventory.packs.length;
+                            const sealedItems = Object.entries(inventory.sealed);
+                            
+                            return (
+                              <div key={setId} style={{ marginBottom: 12, padding: 12, background: 'rgba(0,0,0,0.2)', borderRadius: 10 }}>
+                                <h5 style={{ color: '#d1d5db', fontSize: 14, fontWeight: 'bold', margin: '0 0 10px' }}>
+                                  {setName}
+                                </h5>
+                                
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                                  {/* Single Packs */}
+                                  {totalPacks > 0 && (
                                   <div 
                                     onClick={() => setInspectProduct({ 
                                       type: 'packs', 
@@ -8320,6 +8890,8 @@ return (
                                     // Small XP gain for chatting (1-2 XP)
                                     const chatXp = 1 + Math.floor(Math.random() * 2);
                                     addNpcXp(activeNpcChat, chatXp);
+                                    // Track challenge progress
+                                    try { updateChallengeProgress('messages_sent', 1); } catch (e) {}
                                     // NPC responds with contextual reply
                                     setTimeout(() => {
                                       const replyText = generateNpcReply(activeNpcChat, userMessageInput.trim());
@@ -8357,6 +8929,8 @@ return (
                                     // Small XP gain for chatting (1-2 XP)
                                     const chatXp = 1 + Math.floor(Math.random() * 2);
                                     addNpcXp(activeNpcChat, chatXp);
+                                    // Track challenge progress
+                                    try { updateChallengeProgress('messages_sent', 1); } catch (e) {}
                                     // NPC responds with contextual reply
                                     setTimeout(() => {
                                       const replyText = generateNpcReply(activeNpcChat, userMessageInput.trim());
@@ -10226,6 +10800,18 @@ return (
                   
                   // Add reputation XP
                   const xpGained = addNpcXp(npcId, transactionValue);
+                  
+                  // Track challenge progress
+                  try {
+                    updateChallengeProgress('npc_trades', 1);
+                    if (offer.type === 'buy') {
+                      updateChallengeProgress('npc_sells', 1); // Player sold to NPC
+                      updateChallengeProgress('rations_earned', offer.price);
+                    } else if (offer.type === 'sell') {
+                      updateChallengeProgress('npc_buys', 1); // Player bought from NPC
+                      updateChallengeProgress('rations_spent', offer.price);
+                    }
+                  } catch (e) {}
                   
                   // Add NPC happy response with XP gain notification
                   const emoji = profile.emojis[Math.floor(Math.random() * profile.emojis.length)];
