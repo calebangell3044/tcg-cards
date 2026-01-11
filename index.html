@@ -2398,10 +2398,10 @@ body{
         { id: 'pull_rare', desc: 'Pull a rare or better', target: 1, tracker: 'rares_pulled', xp: 15, difficulty: 'easy' },
         { id: 'pull_5_rares', desc: 'Pull 5 rares or better', target: 5, tracker: 'rares_pulled', xp: 50, difficulty: 'medium' },
         // Game-specific rarity challenges
-        { id: 'pull_sp_ghost', desc: 'Pull a ghost-rare from Spiritual Possessions', target: 1, tracker: 'sp_ghost_pulled', xp: 150, difficulty: 'hard' },
-        { id: 'pull_sp_ultra', desc: 'Pull an ultra-rare from Spiritual Possessions', target: 1, tracker: 'sp_ultra_pulled', xp: 80, difficulty: 'hard' },
-        { id: 'pull_tta_special', desc: 'Pull a special from Through The Ages', target: 1, tracker: 'tta_special_pulled', xp: 120, difficulty: 'hard' },
-        { id: 'pull_tta_ultra', desc: 'Pull an ultra-rare from Through The Ages', target: 1, tracker: 'tta_ultra_pulled', xp: 80, difficulty: 'hard' },
+        { id: 'pull_sp_ghost', desc: 'Pull a ghost rare from Spiritual Possessions', target: 1, tracker: 'sp_ghost_pulled', xp: 150, difficulty: 'hard' },
+        { id: 'pull_sp_xrare', desc: 'Pull an X rare from Spiritual Possessions', target: 1, tracker: 'sp_xrare_pulled', xp: 80, difficulty: 'hard' },
+        { id: 'pull_tta_ultra', desc: 'Pull an ultra X rare from Through The Ages', target: 1, tracker: 'tta_ultra_pulled', xp: 120, difficulty: 'hard' },
+        { id: 'pull_tta_legendary', desc: 'Pull a legendary from Through The Ages', target: 1, tracker: 'tta_legendary_pulled', xp: 80, difficulty: 'hard' },
         { id: 'pull_godpack', desc: 'Pull a God Pack', target: 1, tracker: 'godpacks_pulled', xp: 500, difficulty: 'legendary' },
         
         // Shopping
@@ -5205,15 +5205,16 @@ const getRareSlotCard = () => {
           // Game-specific rarity tracking
           newPack.forEach(card => {
             const rl = (card.rarity || '').toLowerCase();
-            // Spiritual Possessions rarities
+            // Spiritual Possessions rarities: common, uncommon, rare, legendary, x-rare, ghost-rare, x-special-rare
             if (packGameId === 'sp') {
               if (rl.includes('ghost')) track('sp_ghost_pulled', 1);
-              if (rl.includes('ultra')) track('sp_ultra_pulled', 1);
+              if (rl === 'x-rare' || rl === 'x rare' || rl === 'xrare') track('sp_xrare_pulled', 1);
+              if (rl.includes('x-special') || rl.includes('x special')) track('sp_xrare_pulled', 1);
             }
-            // Through The Ages rarities
+            // Through The Ages rarities: common, uncommon, rare, legendary, ultra-x-rare
             if (packGameId === 'tta') {
-              if (rl === 'special' || rl === 'sp') track('tta_special_pulled', 1);
               if (rl.includes('ultra')) track('tta_ultra_pulled', 1);
+              if (rl === 'legendary') track('tta_legendary_pulled', 1);
             }
           });
           
@@ -5478,15 +5479,16 @@ const getRareSlotCard = () => {
           // Game-specific rarity tracking
           newPack.forEach(card => {
             const rl = (card.rarity || '').toLowerCase();
-            // Spiritual Possessions rarities
+            // Spiritual Possessions rarities: common, uncommon, rare, legendary, x-rare, ghost-rare, x-special-rare
             if (packGameId === 'sp') {
               if (rl.includes('ghost')) track('sp_ghost_pulled', 1);
-              if (rl.includes('ultra')) track('sp_ultra_pulled', 1);
+              if (rl === 'x-rare' || rl === 'x rare' || rl === 'xrare') track('sp_xrare_pulled', 1);
+              if (rl.includes('x-special') || rl.includes('x special')) track('sp_xrare_pulled', 1);
             }
-            // Through The Ages rarities
+            // Through The Ages rarities: common, uncommon, rare, legendary, ultra-x-rare
             if (packGameId === 'tta') {
-              if (rl === 'special' || rl === 'sp') track('tta_special_pulled', 1);
               if (rl.includes('ultra')) track('tta_ultra_pulled', 1);
+              if (rl === 'legendary') track('tta_legendary_pulled', 1);
             }
           });
           
