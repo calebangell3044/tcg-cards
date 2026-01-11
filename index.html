@@ -7428,7 +7428,7 @@ if (!isLoaded) {
                     <div style={{ maxWidth: 1200, margin: '0 auto 28px', padding: 16, borderRadius: 16, background: 'linear-gradient(135deg, rgba(147,51,234,0.2), rgba(236,72,153,0.15))', border: '1px solid rgba(147,51,234,0.3)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                         <h3 style={{ color: '#a855f7', fontSize: 18, fontWeight: 'bold', margin: 0 }}>🎟️ Your Vouchers</h3>
-                        <span style={{ color: '#9ca3af', fontSize: 12 }}>Level rewards to redeem</span>
+                        <span style={{ color: '#9ca3af', fontSize: 12 }}>Click a product to use</span>
                       </div>
                       
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
@@ -7445,7 +7445,7 @@ if (!isLoaded) {
                               🎁 Free Packs: {vouchers.freePacks}
                             </div>
                             <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
-                              Pick any game & set below, then click "Use Voucher"
+                              Click any single pack to redeem
                             </div>
                           </div>
                         )}
@@ -7463,7 +7463,7 @@ if (!isLoaded) {
                               📦 Booster Box: {vouchers.boosterBox}
                             </div>
                             <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
-                              Free booster box from any set
+                              Click any booster box to redeem
                             </div>
                           </div>
                         )}
@@ -7481,7 +7481,7 @@ if (!isLoaded) {
                               📦 Case: {vouchers.caseBox}
                             </div>
                             <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
-                              Free case from any set
+                              Click any case to redeem
                             </div>
                           </div>
                         )}
@@ -7499,7 +7499,7 @@ if (!isLoaded) {
                               🎟️ Sealed Voucher: {vouchers.sealedVoucher}
                             </div>
                             <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
-                              ANY sealed product free!
+                              Click ANY product to redeem
                             </div>
                           </div>
                         )}
@@ -7810,123 +7810,6 @@ if (!isLoaded) {
                                     >
                                       {isSoldOut ? 'Sold Out' : canAfford ? 'Buy' : 'Need More'}
                                     </button>
-                                    
-                                    {/* Voucher redemption buttons */}
-                                    {!isSoldOut && (() => {
-                                      // Determine which vouchers apply
-                                      const canUseFreePackVoucher = isSinglePack && vouchers.freePacks > 0;
-                                      const canUseBoosterBoxVoucher = packs >= 15 && packs < 80 && vouchers.boosterBox > 0;
-                                      const canUseCaseVoucher = packs >= 80 && vouchers.caseBox > 0;
-                                      const canUseSealedVoucher = vouchers.sealedVoucher > 0;
-                                      
-                                      const handleVoucherRedeem = (voucherType) => {
-                                        // Deduct voucher
-                                        const newVouchers = { ...vouchers };
-                                        if (voucherType === 'freePacks') newVouchers.freePacks = Math.max(0, (newVouchers.freePacks || 0) - 1);
-                                        else if (voucherType === 'boosterBox') newVouchers.boosterBox = Math.max(0, (newVouchers.boosterBox || 0) - 1);
-                                        else if (voucherType === 'caseBox') newVouchers.caseBox = Math.max(0, (newVouchers.caseBox || 0) - 1);
-                                        else if (voucherType === 'sealedVoucher') newVouchers.sealedVoucher = Math.max(0, (newVouchers.sealedVoucher || 0) - 1);
-                                        setVouchers(newVouchers);
-                                        saveVouchers(newVouchers);
-                                        
-                                        // Add packs
-                                        if (isSinglePack) {
-                                          setPackInventory(prev => {
-                                            const newPacks = [...prev, { gameId: game.id, setId: setId }];
-                                            savePackInventory(newPacks);
-                                            return newPacks;
-                                          });
-                                        } else {
-                                          setSealedInventory(prev => {
-                                            const newInv = { ...prev };
-                                            if (!newInv[game.id]) newInv[game.id] = {};
-                                            if (!newInv[game.id][setId]) newInv[game.id][setId] = {};
-                                            newInv[game.id][setId][productType] = (newInv[game.id][setId][productType] || 0) + 1;
-                                            saveSealedInventory(newInv);
-                                            return newInv;
-                                          });
-                                        }
-                                      };
-                                      
-                                      if (!canUseFreePackVoucher && !canUseBoosterBoxVoucher && !canUseCaseVoucher && !canUseSealedVoucher) return null;
-                                      
-                                      return (
-                                        <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                          {canUseFreePackVoucher && (
-                                            <button
-                                              onClick={() => handleVoucherRedeem('freePacks')}
-                                              style={{
-                                                width: '100%',
-                                                padding: '6px',
-                                                background: 'linear-gradient(90deg, rgba(147,51,234,0.3), rgba(236,72,153,0.3))',
-                                                color: '#a855f7',
-                                                border: '1px solid rgba(147,51,234,0.4)',
-                                                borderRadius: 6,
-                                                cursor: 'pointer',
-                                                fontWeight: 'bold',
-                                                fontSize: 10
-                                              }}
-                                            >
-                                              🎁 Use Free Pack ({vouchers.freePacks})
-                                            </button>
-                                          )}
-                                          {canUseBoosterBoxVoucher && (
-                                            <button
-                                              onClick={() => handleVoucherRedeem('boosterBox')}
-                                              style={{
-                                                width: '100%',
-                                                padding: '6px',
-                                                background: 'linear-gradient(90deg, rgba(147,51,234,0.3), rgba(236,72,153,0.3))',
-                                                color: '#a855f7',
-                                                border: '1px solid rgba(147,51,234,0.4)',
-                                                borderRadius: 6,
-                                                cursor: 'pointer',
-                                                fontWeight: 'bold',
-                                                fontSize: 10
-                                              }}
-                                            >
-                                              📦 Use Box Voucher ({vouchers.boosterBox})
-                                            </button>
-                                          )}
-                                          {canUseCaseVoucher && (
-                                            <button
-                                              onClick={() => handleVoucherRedeem('caseBox')}
-                                              style={{
-                                                width: '100%',
-                                                padding: '6px',
-                                                background: 'linear-gradient(90deg, rgba(147,51,234,0.3), rgba(236,72,153,0.3))',
-                                                color: '#a855f7',
-                                                border: '1px solid rgba(147,51,234,0.4)',
-                                                borderRadius: 6,
-                                                cursor: 'pointer',
-                                                fontWeight: 'bold',
-                                                fontSize: 10
-                                              }}
-                                            >
-                                              📦 Use Case Voucher ({vouchers.caseBox})
-                                            </button>
-                                          )}
-                                          {canUseSealedVoucher && (
-                                            <button
-                                              onClick={() => handleVoucherRedeem('sealedVoucher')}
-                                              style={{
-                                                width: '100%',
-                                                padding: '6px',
-                                                background: 'linear-gradient(90deg, rgba(251,191,36,0.3), rgba(245,158,11,0.3))',
-                                                color: '#fbbf24',
-                                                border: '1px solid rgba(251,191,36,0.4)',
-                                                borderRadius: 6,
-                                                cursor: 'pointer',
-                                                fontWeight: 'bold',
-                                                fontSize: 10
-                                              }}
-                                            >
-                                              🎟️ Use ANY Voucher ({vouchers.sealedVoucher})
-                                            </button>
-                                          )}
-                                        </div>
-                                      );
-                                    })()}
                                   </div>
                                 );
                               })}
@@ -12497,6 +12380,149 @@ return (
                     Confirm Purchase
                   </button>
                 </div>
+                
+                {/* Voucher redemption options */}
+                {purchaseConfirm.gameId && purchaseConfirm.setId && purchaseConfirm.productType && (() => {
+                  const { gameId, setId, productType, isSealedProduct } = purchaseConfirm;
+                  const productConfig = setConfigs[gameId]?.[setId]?.sealedProducts?.[productType];
+                  const packs = productConfig?.packs || 1;
+                  const isSinglePack = packs === 1;
+                  
+                  // Determine which vouchers can be used
+                  const canUseFreePackVoucher = isSinglePack && vouchers.freePacks > 0;
+                  const canUseBoosterBoxVoucher = packs >= 15 && packs < 80 && vouchers.boosterBox > 0;
+                  const canUseCaseVoucher = packs >= 80 && vouchers.caseBox > 0;
+                  const canUseSealedVoucher = vouchers.sealedVoucher > 0;
+                  
+                  if (!canUseFreePackVoucher && !canUseBoosterBoxVoucher && !canUseCaseVoucher && !canUseSealedVoucher) {
+                    return null;
+                  }
+                  
+                  const handleVoucherRedeem = (voucherType) => {
+                    // Consume shop stock first
+                    if (!consumeShopStock(gameId, setId, productType)) {
+                      alert('This product is sold out!');
+                      return;
+                    }
+                    
+                    // Deduct voucher
+                    const newVouchers = { ...vouchers };
+                    if (voucherType === 'freePacks') newVouchers.freePacks = Math.max(0, (newVouchers.freePacks || 0) - 1);
+                    else if (voucherType === 'boosterBox') newVouchers.boosterBox = Math.max(0, (newVouchers.boosterBox || 0) - 1);
+                    else if (voucherType === 'caseBox') newVouchers.caseBox = Math.max(0, (newVouchers.caseBox || 0) - 1);
+                    else if (voucherType === 'sealedVoucher') newVouchers.sealedVoucher = Math.max(0, (newVouchers.sealedVoucher || 0) - 1);
+                    setVouchers(newVouchers);
+                    saveVouchers(newVouchers);
+                    
+                    // Add product to inventory
+                    if (isSinglePack) {
+                      setPackInventory(prev => {
+                        const newPacks = [...prev, { gameId, setId }];
+                        savePackInventory(newPacks);
+                        return newPacks;
+                      });
+                    } else {
+                      setSealedInventory(prev => {
+                        const newInv = { ...prev };
+                        if (!newInv[gameId]) newInv[gameId] = {};
+                        if (!newInv[gameId][setId]) newInv[gameId][setId] = {};
+                        newInv[gameId][setId][productType] = (newInv[gameId][setId][productType] || 0) + 1;
+                        saveSealedInventory(newInv);
+                        return newInv;
+                      });
+                    }
+                    
+                    setPurchaseConfirm(null);
+                  };
+                  
+                  return (
+                    <div style={{ 
+                      marginTop: 16, 
+                      padding: 12, 
+                      borderRadius: 10, 
+                      background: 'linear-gradient(135deg, rgba(147,51,234,0.15), rgba(236,72,153,0.1))',
+                      border: '1px solid rgba(147,51,234,0.3)'
+                    }}>
+                      <div style={{ fontSize: 12, color: '#a855f7', fontWeight: 700, marginBottom: 10 }}>
+                        🎟️ Or use a voucher (FREE):
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {canUseFreePackVoucher && (
+                          <button
+                            onClick={() => handleVoucherRedeem('freePacks')}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              background: 'linear-gradient(90deg, rgba(147,51,234,0.3), rgba(236,72,153,0.3))',
+                              color: '#a855f7',
+                              border: '1px solid rgba(147,51,234,0.4)',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              fontSize: 13
+                            }}
+                          >
+                            🎁 Use Free Pack Voucher ({vouchers.freePacks} left)
+                          </button>
+                        )}
+                        {canUseBoosterBoxVoucher && (
+                          <button
+                            onClick={() => handleVoucherRedeem('boosterBox')}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              background: 'linear-gradient(90deg, rgba(147,51,234,0.3), rgba(236,72,153,0.3))',
+                              color: '#a855f7',
+                              border: '1px solid rgba(147,51,234,0.4)',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              fontSize: 13
+                            }}
+                          >
+                            📦 Use Booster Box Voucher ({vouchers.boosterBox} left)
+                          </button>
+                        )}
+                        {canUseCaseVoucher && (
+                          <button
+                            onClick={() => handleVoucherRedeem('caseBox')}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              background: 'linear-gradient(90deg, rgba(147,51,234,0.3), rgba(236,72,153,0.3))',
+                              color: '#a855f7',
+                              border: '1px solid rgba(147,51,234,0.4)',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              fontSize: 13
+                            }}
+                          >
+                            📦 Use Case Voucher ({vouchers.caseBox} left)
+                          </button>
+                        )}
+                        {canUseSealedVoucher && (
+                          <button
+                            onClick={() => handleVoucherRedeem('sealedVoucher')}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              background: 'linear-gradient(90deg, rgba(251,191,36,0.3), rgba(245,158,11,0.3))',
+                              color: '#fbbf24',
+                              border: '1px solid rgba(251,191,36,0.4)',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              fontSize: 13
+                            }}
+                          >
+                            🎟️ Use Sealed Product Voucher ({vouchers.sealedVoucher} left)
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
