@@ -215,6 +215,11 @@ html, body {
   50% { box-shadow: 0 0 18px rgba(249, 115, 22, 0.8), 0 0 36px rgba(249, 115, 22, 0.5); }
 }
 
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
 .rainbow-text {
   background: linear-gradient(90deg, #ff3ea5, #2ee9ff, #ffe155, #ff3ea5);
   -webkit-background-clip: text;
@@ -2377,6 +2382,174 @@ body{
           return newXp;
         });
       }, [savePlayerXp]);
+
+      // ===== Level Rewards System =====
+      // Reward types: rations, free_packs, free_pregrades, free_express, guaranteed_10, guaranteed_im10, sealed_voucher, booster_box, case_box, make_holo
+      const LEVEL_REWARDS = [
+        // Early levels (1-5) - one each
+        { level: 1, type: 'free_packs', amount: 1, icon: '🎁', name: '1 Free Pack', desc: 'Welcome gift! Pick any pack.' },
+        { level: 2, type: 'rations', amount: 50, icon: '💰', name: '50 Rations', desc: 'Starting funds to grow your collection.' },
+        { level: 3, type: 'rations', amount: 100, icon: '💰', name: '100 Rations', desc: 'Keep the momentum going!' },
+        { level: 4, type: 'free_pregrades', amount: 1, icon: '🔍', name: '1 Free Pre-Grade', desc: 'Try out the grading system.' },
+        { level: 5, type: 'free_packs', amount: 3, icon: '🎁', name: '3 Free Packs', desc: 'Triple pack reward!' },
+        // Mid levels (10-50) - every 5 levels
+        { level: 10, type: 'free_packs', amount: 5, icon: '📦', name: '5 Free Packs', desc: 'A nice stack of packs to open.' },
+        { level: 15, type: 'rations', amount: 250, icon: '💰', name: '250 Rations', desc: 'Cash injection for your collection.' },
+        { level: 20, type: 'free_pregrades', amount: 3, icon: '🔍', name: '3 Free Pre-Grades', desc: 'Grade your best pulls risk-free.' },
+        { level: 25, type: 'free_express', amount: 1, icon: '⚡', name: 'Free Express Grading', desc: 'Skip the wait - instant results!' },
+        { level: 30, type: 'rations', amount: 500, icon: '💰', name: '500 Rations', desc: 'Half a thousand rations!' },
+        { level: 35, type: 'guaranteed_10', amount: 1, icon: '🏆', name: 'Guaranteed 10 Grade', desc: 'Your next graded card is a perfect 10.' },
+        { level: 40, type: 'booster_box', amount: 1, icon: '📦', name: '1 Booster Box', desc: 'Pick any booster box!' },
+        { level: 45, type: 'rations', amount: 750, icon: '💰', name: '750 Rations', desc: 'Getting serious now.' },
+        { level: 50, type: 'sealed_voucher', amount: 1, icon: '🎟️', name: 'Sealed Product Voucher', desc: 'Pick ANY sealed product for free!' },
+        // High levels (55-100) - every 10 levels (with 55 for make_holo)
+        { level: 55, type: 'make_holo', amount: 1, icon: '✨', name: 'Make Holo Voucher', desc: 'Turn any card into a holo version!' },
+        { level: 60, type: 'booster_box', amount: 2, icon: '📦', name: '2 Booster Boxes', desc: 'Double boxes of your choice.' },
+        { level: 70, type: 'rations', amount: 2000, icon: '💰', name: '2,000 Rations', desc: 'Major bankroll boost!' },
+        { level: 80, type: 'case_box', amount: 1, icon: '📦', name: '1 Case', desc: 'A full case of any set!' },
+        { level: 90, type: 'guaranteed_im10', amount: 1, icon: '👑', name: 'Guaranteed IM10', desc: 'Your next graded card is Immaculate!' },
+        { level: 100, type: 'rations', amount: 10000, icon: '🏆', name: '10,000 Rations', desc: 'The ultimate achievement reward!' },
+      ];
+
+      // Claimed rewards state
+      const [claimedRewards, setClaimedRewards] = useState(() => {
+        try {
+          const core = readCoreSave();
+          if (core && Array.isArray(core.claimedRewards)) return core.claimedRewards;
+          const raw = localStorage.getItem('tcg-claimed-rewards');
+          if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return [];
+      });
+
+      // Vouchers state
+      const [vouchers, setVouchers] = useState(() => {
+        try {
+          const core = readCoreSave();
+          if (core && core.vouchers) return core.vouchers;
+          const raw = localStorage.getItem('tcg-vouchers');
+          if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return {
+          freePacks: 0,
+          freePregrades: 0,
+          freeExpress: 0,
+          guaranteed10: 0,
+          guaranteedIM10: 0,
+          sealedVoucher: 0,
+          boosterBox: 0,
+          caseBox: 0,
+          makeHolo: 0
+        };
+      });
+
+      const saveClaimedRewards = useCallback((rewards) => {
+        try { localStorage.setItem('tcg-claimed-rewards', JSON.stringify(rewards)); } catch (e) {}
+        try { updateCoreSave({ claimedRewards: rewards }); } catch (e) {}
+      }, []);
+
+      const saveVouchers = useCallback((v) => {
+        try { localStorage.setItem('tcg-vouchers', JSON.stringify(v)); } catch (e) {}
+        try { updateCoreSave({ vouchers: v }); } catch (e) {}
+      }, []);
+
+      // Show level rewards modal
+      const [showLevelRewardsModal, setShowLevelRewardsModal] = useState(false);
+
+      // Claim a reward
+      const claimReward = useCallback((level) => {
+        const reward = LEVEL_REWARDS.find(r => r.level === level);
+        if (!reward) return;
+        if (claimedRewards.includes(level)) return;
+        
+        const playerLevel = getPlayerLevel(playerXp);
+        if (playerLevel < level) return;
+
+        // Apply reward based on type
+        switch (reward.type) {
+          case 'rations':
+            setRations(prev => {
+              const newVal = prev + reward.amount;
+              saveRations(newVal);
+              return newVal;
+            });
+            break;
+          case 'free_packs':
+            setVouchers(prev => {
+              const newVal = { ...prev, freePacks: (prev.freePacks || 0) + reward.amount };
+              saveVouchers(newVal);
+              return newVal;
+            });
+            break;
+          case 'free_pregrades':
+            setVouchers(prev => {
+              const newVal = { ...prev, freePregrades: (prev.freePregrades || 0) + reward.amount };
+              saveVouchers(newVal);
+              return newVal;
+            });
+            break;
+          case 'free_express':
+            setVouchers(prev => {
+              const newVal = { ...prev, freeExpress: (prev.freeExpress || 0) + reward.amount };
+              saveVouchers(newVal);
+              return newVal;
+            });
+            break;
+          case 'guaranteed_10':
+            setVouchers(prev => {
+              const newVal = { ...prev, guaranteed10: (prev.guaranteed10 || 0) + reward.amount };
+              saveVouchers(newVal);
+              return newVal;
+            });
+            break;
+          case 'guaranteed_im10':
+            setVouchers(prev => {
+              const newVal = { ...prev, guaranteedIM10: (prev.guaranteedIM10 || 0) + reward.amount };
+              saveVouchers(newVal);
+              return newVal;
+            });
+            break;
+          case 'sealed_voucher':
+            setVouchers(prev => {
+              const newVal = { ...prev, sealedVoucher: (prev.sealedVoucher || 0) + reward.amount };
+              saveVouchers(newVal);
+              return newVal;
+            });
+            break;
+          case 'booster_box':
+            setVouchers(prev => {
+              const newVal = { ...prev, boosterBox: (prev.boosterBox || 0) + reward.amount };
+              saveVouchers(newVal);
+              return newVal;
+            });
+            break;
+          case 'case_box':
+            setVouchers(prev => {
+              const newVal = { ...prev, caseBox: (prev.caseBox || 0) + reward.amount };
+              saveVouchers(newVal);
+              return newVal;
+            });
+            break;
+          case 'make_holo':
+            setVouchers(prev => {
+              const newVal = { ...prev, makeHolo: (prev.makeHolo || 0) + reward.amount };
+              saveVouchers(newVal);
+              return newVal;
+            });
+            break;
+        }
+
+        // Mark as claimed
+        const newClaimed = [...claimedRewards, level];
+        setClaimedRewards(newClaimed);
+        saveClaimedRewards(newClaimed);
+      }, [claimedRewards, playerXp, saveClaimedRewards, saveVouchers, saveRations]);
+
+      // Get unclaimed rewards count
+      const getUnclaimedRewardsCount = useCallback(() => {
+        const playerLevel = getPlayerLevel(playerXp);
+        return LEVEL_REWARDS.filter(r => r.level <= playerLevel && !claimedRewards.includes(r.level)).length;
+      }, [playerXp, claimedRewards]);
 
       // Ref for challenge progress function (to avoid dependency issues)
       const updateChallengeProgressRef = useRef(null);
@@ -5186,6 +5359,7 @@ const getRareSlotCard = () => {
         // Track challenge progress
         try {
           track('packs_opened', 1);
+          addPlayerXp(2); // 2 XP per pack opened
           
           // Track holos pulled
           const holoCount = newPack.filter(c => c.isHolo).length;
@@ -5460,6 +5634,7 @@ const getRareSlotCard = () => {
         // Track challenge progress
         try {
           track('packs_opened', 1);
+          addPlayerXp(2); // 2 XP per pack opened
           
           // Track holos pulled
           const holoCount = newPack.filter(c => c.isHolo).length;
@@ -5686,6 +5861,7 @@ const getRareSlotCard = () => {
         // Track challenge progress
         try {
           track('cards_sold', 1);
+          addPlayerXp(1); // 1 XP per card sold
           track('rations_earned', payout);
           // Track by card's market worth
           if (marketValue >= 5) track('worth_5r_plus', 1);
@@ -5722,6 +5898,7 @@ const getRareSlotCard = () => {
         // Track challenge progress
         try {
           track('cards_sold', 1);
+          addPlayerXp(1); // 1 XP per card sold
           track('holos_sold', 1);
           track('rations_earned', payout);
           // Track by card's market worth
@@ -6512,14 +6689,41 @@ if (!isLoaded) {
                 {/* Player Level & XP Section */}
                 {(() => {
                   const levelInfo = getPlayerLevelProgress(playerXp);
+                  const unclaimedCount = getUnclaimedRewardsCount();
                   return (
-                    <div style={{ 
-                      background: 'linear-gradient(135deg, rgba(147,51,234,0.2), rgba(236,72,153,0.2))',
-                      borderRadius: 16,
-                      padding: 20,
-                      marginBottom: 24,
-                      border: '1px solid rgba(147,51,234,0.3)'
-                    }}>
+                    <div 
+                      onClick={() => setShowLevelRewardsModal(true)}
+                      style={{ 
+                        background: 'linear-gradient(135deg, rgba(147,51,234,0.2), rgba(236,72,153,0.2))',
+                        borderRadius: 16,
+                        padding: 20,
+                        marginBottom: 24,
+                        border: '1px solid rgba(147,51,234,0.3)',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        transition: 'transform 0.15s, box-shadow 0.15s'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.01)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(147,51,234,0.3)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
+                    >
+                      {/* Unclaimed rewards badge */}
+                      {unclaimedCount > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: -8,
+                          right: -8,
+                          background: 'linear-gradient(135deg, #ef4444, #f97316)',
+                          color: 'white',
+                          borderRadius: 12,
+                          padding: '4px 10px',
+                          fontSize: 12,
+                          fontWeight: 800,
+                          boxShadow: '0 2px 8px rgba(239,68,68,0.5)',
+                          animation: 'pulse 2s infinite'
+                        }}>
+                          {unclaimedCount} Reward{unclaimedCount > 1 ? 's' : ''}!
+                        </div>
+                      )}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <div>
                           <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>Player Level</div>
@@ -6550,6 +6754,9 @@ if (!isLoaded) {
                           </div>
                         </div>
                       )}
+                      <div style={{ marginTop: 12, fontSize: 11, color: '#a855f7', textAlign: 'center' }}>
+                        Click to view rewards →
+                      </div>
                     </div>
                   );
                 })()}
@@ -12209,6 +12416,251 @@ return (
             </div>
           )}
 
+          {/* Level Rewards Modal */}
+          {showLevelRewardsModal && (
+            <div
+              onClick={() => setShowLevelRewardsModal(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.9)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1200,
+                padding: 20
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  background: 'linear-gradient(180deg, #1f2937 0%, #111827 100%)',
+                  borderRadius: 16,
+                  padding: 20,
+                  maxWidth: 500,
+                  width: '100%',
+                  maxHeight: '85vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  border: '1px solid rgba(147,51,234,0.3)',
+                  overflow: 'hidden'
+                }}
+              >
+                {/* Header */}
+                <div style={{ flexShrink: 0, marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0, color: 'white', fontSize: 22, fontWeight: 800 }}>
+                      🏆 Level Rewards
+                    </h3>
+                    <button
+                      onClick={() => setShowLevelRewardsModal(false)}
+                      style={{
+                        background: 'rgba(255,255,255,0.1)',
+                        border: 'none',
+                        color: 'white',
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        fontSize: 18
+                      }}
+                    >×</button>
+                  </div>
+                  <div style={{ color: '#9ca3af', fontSize: 12, marginTop: 4 }}>
+                    Level up to unlock rewards! Current Level: <span style={{ color: '#a855f7', fontWeight: 700 }}>{getPlayerLevel(playerXp)}</span>
+                  </div>
+                </div>
+
+                {/* Vouchers Summary */}
+                {(() => {
+                  const totalVouchers = Object.values(vouchers).reduce((a, b) => a + b, 0);
+                  if (totalVouchers === 0) return null;
+                  return (
+                    <div style={{ 
+                      flexShrink: 0,
+                      background: 'rgba(147,51,234,0.15)',
+                      borderRadius: 10,
+                      padding: 12,
+                      marginBottom: 16,
+                      border: '1px solid rgba(147,51,234,0.3)'
+                    }}>
+                      <div style={{ fontSize: 12, color: '#a855f7', fontWeight: 700, marginBottom: 8 }}>Your Vouchers:</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {vouchers.freePacks > 0 && (
+                          <span style={{ background: 'rgba(0,0,0,0.3)', padding: '4px 8px', borderRadius: 6, fontSize: 11, color: '#d1d5db' }}>
+                            🎁 {vouchers.freePacks} Free Pack{vouchers.freePacks > 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {vouchers.freePregrades > 0 && (
+                          <span style={{ background: 'rgba(0,0,0,0.3)', padding: '4px 8px', borderRadius: 6, fontSize: 11, color: '#d1d5db' }}>
+                            🔍 {vouchers.freePregrades} Pre-Grade{vouchers.freePregrades > 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {vouchers.freeExpress > 0 && (
+                          <span style={{ background: 'rgba(0,0,0,0.3)', padding: '4px 8px', borderRadius: 6, fontSize: 11, color: '#d1d5db' }}>
+                            ⚡ {vouchers.freeExpress} Express Grade{vouchers.freeExpress > 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {vouchers.guaranteed10 > 0 && (
+                          <span style={{ background: 'rgba(0,0,0,0.3)', padding: '4px 8px', borderRadius: 6, fontSize: 11, color: '#d1d5db' }}>
+                            🏆 {vouchers.guaranteed10} Guaranteed 10
+                          </span>
+                        )}
+                        {vouchers.guaranteedIM10 > 0 && (
+                          <span style={{ background: 'rgba(0,0,0,0.3)', padding: '4px 8px', borderRadius: 6, fontSize: 11, color: '#d1d5db' }}>
+                            👑 {vouchers.guaranteedIM10} Guaranteed IM10
+                          </span>
+                        )}
+                        {vouchers.sealedVoucher > 0 && (
+                          <span style={{ background: 'rgba(0,0,0,0.3)', padding: '4px 8px', borderRadius: 6, fontSize: 11, color: '#d1d5db' }}>
+                            🎟️ {vouchers.sealedVoucher} Sealed Voucher{vouchers.sealedVoucher > 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {vouchers.boosterBox > 0 && (
+                          <span style={{ background: 'rgba(0,0,0,0.3)', padding: '4px 8px', borderRadius: 6, fontSize: 11, color: '#d1d5db' }}>
+                            📦 {vouchers.boosterBox} Booster Box{vouchers.boosterBox > 1 ? 'es' : ''}
+                          </span>
+                        )}
+                        {vouchers.caseBox > 0 && (
+                          <span style={{ background: 'rgba(0,0,0,0.3)', padding: '4px 8px', borderRadius: 6, fontSize: 11, color: '#d1d5db' }}>
+                            📦 {vouchers.caseBox} Case{vouchers.caseBox > 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {vouchers.makeHolo > 0 && (
+                          <span style={{ background: 'rgba(0,0,0,0.3)', padding: '4px 8px', borderRadius: 6, fontSize: 11, color: '#d1d5db' }}>
+                            ✨ {vouchers.makeHolo} Make Holo
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Rewards List */}
+                <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+                  {LEVEL_REWARDS.map((reward, idx) => {
+                    const playerLevel = getPlayerLevel(playerXp);
+                    const isUnlocked = playerLevel >= reward.level;
+                    const isClaimed = claimedRewards.includes(reward.level);
+                    
+                    return (
+                      <div 
+                        key={reward.level}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '12px 14px',
+                          marginBottom: 8,
+                          borderRadius: 10,
+                          background: isClaimed 
+                            ? 'rgba(34,197,94,0.1)' 
+                            : isUnlocked 
+                              ? 'rgba(147,51,234,0.2)' 
+                              : 'rgba(0,0,0,0.2)',
+                          border: isClaimed 
+                            ? '1px solid rgba(34,197,94,0.3)' 
+                            : isUnlocked 
+                              ? '1px solid rgba(147,51,234,0.4)' 
+                              : '1px solid rgba(255,255,255,0.05)',
+                          opacity: isUnlocked ? 1 : 0.5
+                        }}
+                      >
+                        {/* Level Badge */}
+                        <div style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 10,
+                          background: isClaimed 
+                            ? 'linear-gradient(135deg, #22c55e, #16a34a)'
+                            : isUnlocked 
+                              ? 'linear-gradient(135deg, #9333ea, #ec4899)'
+                              : 'rgba(107,114,128,0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 900,
+                          fontSize: 16,
+                          color: 'white',
+                          flexShrink: 0
+                        }}>
+                          {isClaimed ? '✓' : reward.level}
+                        </div>
+
+                        {/* Reward Info */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 6,
+                            marginBottom: 2
+                          }}>
+                            <span style={{ fontSize: 18 }}>{reward.icon}</span>
+                            <span style={{ 
+                              fontWeight: 700, 
+                              color: isClaimed ? '#22c55e' : 'white',
+                              fontSize: 14
+                            }}>
+                              {reward.name}
+                            </span>
+                          </div>
+                          <div style={{ 
+                            fontSize: 11, 
+                            color: '#9ca3af',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}>
+                            {reward.desc}
+                          </div>
+                        </div>
+
+                        {/* Claim Button */}
+                        <div style={{ flexShrink: 0 }}>
+                          {isClaimed ? (
+                            <div style={{ 
+                              color: '#22c55e', 
+                              fontSize: 11, 
+                              fontWeight: 700,
+                              padding: '6px 12px'
+                            }}>
+                              Claimed
+                            </div>
+                          ) : isUnlocked ? (
+                            <button
+                              onClick={() => claimReward(reward.level)}
+                              style={{
+                                padding: '8px 16px',
+                                borderRadius: 8,
+                                border: 'none',
+                                background: 'linear-gradient(135deg, #9333ea, #ec4899)',
+                                color: 'white',
+                                fontSize: 12,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 8px rgba(147,51,234,0.4)'
+                              }}
+                            >
+                              Claim
+                            </button>
+                          ) : (
+                            <div style={{ 
+                              color: '#6b7280', 
+                              fontSize: 11,
+                              padding: '6px 12px'
+                            }}>
+                              🔒 Lvl {reward.level}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Bulk Sell Modal */}
           {showBulkSellModal && (
             <div
@@ -12580,6 +13032,7 @@ return (
                     // Track progress
                     try {
                       track('cards_sold', totalCards);
+                      addPlayerXp(totalCards); // 1 XP per card sold
                       track('rations_earned', totalValue);
                     } catch (e) {}
                     
