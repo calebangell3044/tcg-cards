@@ -1706,12 +1706,12 @@ body{
       }, [marketValues, holoMultipliers]);
 
       // Submit card for grading (preGradePrediction is the prediction object if pre-graded)
-      const submitForGrading = useCallback((cardId, gameId, setId, isHolo, tier, preGradePrediction = null) => {
+      const submitForGrading = useCallback((cardId, gameId, setId, isHolo, tier, preGradePrediction = null, skipCost = false, guaranteedGrade = null) => {
         const tierConfig = GRADING_TIERS[tier];
         if (!tierConfig) return false;
         
         // Cost is just the tier cost - pre-grade was paid separately
-        let totalCost = tierConfig.cost;
+        let totalCost = skipCost ? 0 : tierConfig.cost;
         
         if (rations < totalCost) return false;
         
@@ -1739,12 +1739,13 @@ body{
           submittedDay: gameDay,
           tier,
           preGradePrediction, // Store the prediction to use when grading
-          completionDay: gameDay + tierConfig.days
+          completionDay: gameDay + tierConfig.days,
+          guaranteedGrade // If set, will force this grade on completion
         };
         
         const newQueue = [...gradingQueue, submission];
         
-        // Deduct cost
+        // Deduct cost (0 if skipCost)
         const newRations = rations - totalCost;
         
         setCollection(newCollection);
@@ -1757,7 +1758,7 @@ body{
         // Track challenge progress
         try {
           track('grading_submitted', 1);
-          track('rations_spent', totalCost);
+          if (totalCost > 0) track('rations_spent', totalCost);
           if (preGradePrediction) track('pregrades_used', 1);
         } catch (e) {}
         
@@ -1801,9 +1802,9 @@ body{
           return null;
         }
         
-        // Generate grade using prediction if available
-        const grade = generateGrade(item.preGradePrediction);
-        console.log('Generated grade:', grade);
+        // Generate grade - use guaranteed grade if set, otherwise use prediction
+        const grade = item.guaranteedGrade || generateGrade(item.preGradePrediction);
+        console.log('Generated grade:', grade, item.guaranteedGrade ? '(GUARANTEED)' : '');
         
         const gradedCard = {
           id: `graded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -7417,6 +7418,96 @@ if (!isLoaded) {
                 {shopTab === 'buy' && (
                   <>
 
+                {/* Voucher Redemption Section */}
+                {(() => {
+                  const totalVouchers = (vouchers.freePacks || 0) + (vouchers.sealedVoucher || 0) + 
+                                       (vouchers.boosterBox || 0) + (vouchers.caseBox || 0);
+                  if (totalVouchers === 0) return null;
+                  
+                  return (
+                    <div style={{ maxWidth: 1200, margin: '0 auto 28px', padding: 16, borderRadius: 16, background: 'linear-gradient(135deg, rgba(147,51,234,0.2), rgba(236,72,153,0.15))', border: '1px solid rgba(147,51,234,0.3)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <h3 style={{ color: '#a855f7', fontSize: 18, fontWeight: 'bold', margin: 0 }}>🎟️ Your Vouchers</h3>
+                        <span style={{ color: '#9ca3af', fontSize: 12 }}>Level rewards to redeem</span>
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                        {/* Free Packs Voucher */}
+                        {vouchers.freePacks > 0 && (
+                          <div style={{ 
+                            background: 'rgba(0,0,0,0.3)', 
+                            borderRadius: 10, 
+                            padding: 12,
+                            border: '1px solid rgba(147,51,234,0.3)',
+                            minWidth: 160
+                          }}>
+                            <div style={{ fontSize: 12, color: '#a855f7', fontWeight: 700, marginBottom: 8 }}>
+                              🎁 Free Packs: {vouchers.freePacks}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
+                              Pick any game & set below, then click "Use Voucher"
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Booster Box Voucher */}
+                        {vouchers.boosterBox > 0 && (
+                          <div style={{ 
+                            background: 'rgba(0,0,0,0.3)', 
+                            borderRadius: 10, 
+                            padding: 12,
+                            border: '1px solid rgba(147,51,234,0.3)',
+                            minWidth: 160
+                          }}>
+                            <div style={{ fontSize: 12, color: '#a855f7', fontWeight: 700, marginBottom: 8 }}>
+                              📦 Booster Box: {vouchers.boosterBox}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
+                              Free booster box from any set
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Case Voucher */}
+                        {vouchers.caseBox > 0 && (
+                          <div style={{ 
+                            background: 'rgba(0,0,0,0.3)', 
+                            borderRadius: 10, 
+                            padding: 12,
+                            border: '1px solid rgba(147,51,234,0.3)',
+                            minWidth: 160
+                          }}>
+                            <div style={{ fontSize: 12, color: '#a855f7', fontWeight: 700, marginBottom: 8 }}>
+                              📦 Case: {vouchers.caseBox}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
+                              Free case from any set
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Sealed Product Voucher */}
+                        {vouchers.sealedVoucher > 0 && (
+                          <div style={{ 
+                            background: 'rgba(0,0,0,0.3)', 
+                            borderRadius: 10, 
+                            padding: 12,
+                            border: '1px solid rgba(251,191,36,0.3)',
+                            minWidth: 160
+                          }}>
+                            <div style={{ fontSize: 12, color: '#fbbf24', fontWeight: 700, marginBottom: 8 }}>
+                              🎟️ Sealed Voucher: {vouchers.sealedVoucher}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
+                              ANY sealed product free!
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
 
                 {/* Daily Singles - Price Tier Based */}
                 <div style={{ maxWidth: 1200, margin: '0 auto 28px', padding: 16, borderRadius: 16, background: 'rgba(17,24,39,0.55)', border: '1px solid rgba(255,255,255,0.10)' }}>
@@ -7719,6 +7810,123 @@ if (!isLoaded) {
                                     >
                                       {isSoldOut ? 'Sold Out' : canAfford ? 'Buy' : 'Need More'}
                                     </button>
+                                    
+                                    {/* Voucher redemption buttons */}
+                                    {!isSoldOut && (() => {
+                                      // Determine which vouchers apply
+                                      const canUseFreePackVoucher = isSinglePack && vouchers.freePacks > 0;
+                                      const canUseBoosterBoxVoucher = packs >= 15 && packs < 80 && vouchers.boosterBox > 0;
+                                      const canUseCaseVoucher = packs >= 80 && vouchers.caseBox > 0;
+                                      const canUseSealedVoucher = vouchers.sealedVoucher > 0;
+                                      
+                                      const handleVoucherRedeem = (voucherType) => {
+                                        // Deduct voucher
+                                        const newVouchers = { ...vouchers };
+                                        if (voucherType === 'freePacks') newVouchers.freePacks = Math.max(0, (newVouchers.freePacks || 0) - 1);
+                                        else if (voucherType === 'boosterBox') newVouchers.boosterBox = Math.max(0, (newVouchers.boosterBox || 0) - 1);
+                                        else if (voucherType === 'caseBox') newVouchers.caseBox = Math.max(0, (newVouchers.caseBox || 0) - 1);
+                                        else if (voucherType === 'sealedVoucher') newVouchers.sealedVoucher = Math.max(0, (newVouchers.sealedVoucher || 0) - 1);
+                                        setVouchers(newVouchers);
+                                        saveVouchers(newVouchers);
+                                        
+                                        // Add packs
+                                        if (isSinglePack) {
+                                          setPackInventory(prev => {
+                                            const newPacks = [...prev, { gameId: game.id, setId: setId }];
+                                            savePackInventory(newPacks);
+                                            return newPacks;
+                                          });
+                                        } else {
+                                          setSealedInventory(prev => {
+                                            const newInv = { ...prev };
+                                            if (!newInv[game.id]) newInv[game.id] = {};
+                                            if (!newInv[game.id][setId]) newInv[game.id][setId] = {};
+                                            newInv[game.id][setId][productType] = (newInv[game.id][setId][productType] || 0) + 1;
+                                            saveSealedInventory(newInv);
+                                            return newInv;
+                                          });
+                                        }
+                                      };
+                                      
+                                      if (!canUseFreePackVoucher && !canUseBoosterBoxVoucher && !canUseCaseVoucher && !canUseSealedVoucher) return null;
+                                      
+                                      return (
+                                        <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                          {canUseFreePackVoucher && (
+                                            <button
+                                              onClick={() => handleVoucherRedeem('freePacks')}
+                                              style={{
+                                                width: '100%',
+                                                padding: '6px',
+                                                background: 'linear-gradient(90deg, rgba(147,51,234,0.3), rgba(236,72,153,0.3))',
+                                                color: '#a855f7',
+                                                border: '1px solid rgba(147,51,234,0.4)',
+                                                borderRadius: 6,
+                                                cursor: 'pointer',
+                                                fontWeight: 'bold',
+                                                fontSize: 10
+                                              }}
+                                            >
+                                              🎁 Use Free Pack ({vouchers.freePacks})
+                                            </button>
+                                          )}
+                                          {canUseBoosterBoxVoucher && (
+                                            <button
+                                              onClick={() => handleVoucherRedeem('boosterBox')}
+                                              style={{
+                                                width: '100%',
+                                                padding: '6px',
+                                                background: 'linear-gradient(90deg, rgba(147,51,234,0.3), rgba(236,72,153,0.3))',
+                                                color: '#a855f7',
+                                                border: '1px solid rgba(147,51,234,0.4)',
+                                                borderRadius: 6,
+                                                cursor: 'pointer',
+                                                fontWeight: 'bold',
+                                                fontSize: 10
+                                              }}
+                                            >
+                                              📦 Use Box Voucher ({vouchers.boosterBox})
+                                            </button>
+                                          )}
+                                          {canUseCaseVoucher && (
+                                            <button
+                                              onClick={() => handleVoucherRedeem('caseBox')}
+                                              style={{
+                                                width: '100%',
+                                                padding: '6px',
+                                                background: 'linear-gradient(90deg, rgba(147,51,234,0.3), rgba(236,72,153,0.3))',
+                                                color: '#a855f7',
+                                                border: '1px solid rgba(147,51,234,0.4)',
+                                                borderRadius: 6,
+                                                cursor: 'pointer',
+                                                fontWeight: 'bold',
+                                                fontSize: 10
+                                              }}
+                                            >
+                                              📦 Use Case Voucher ({vouchers.caseBox})
+                                            </button>
+                                          )}
+                                          {canUseSealedVoucher && (
+                                            <button
+                                              onClick={() => handleVoucherRedeem('sealedVoucher')}
+                                              style={{
+                                                width: '100%',
+                                                padding: '6px',
+                                                background: 'linear-gradient(90deg, rgba(251,191,36,0.3), rgba(245,158,11,0.3))',
+                                                color: '#fbbf24',
+                                                border: '1px solid rgba(251,191,36,0.4)',
+                                                borderRadius: 6,
+                                                cursor: 'pointer',
+                                                fontWeight: 'bold',
+                                                fontSize: 10
+                                              }}
+                                            >
+                                              🎟️ Use ANY Voucher ({vouchers.sealedVoucher})
+                                            </button>
+                                          )}
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
                                 );
                               })}
@@ -9949,6 +10157,74 @@ return (
                 {/* Submit Tab */}
                 {gradingTab === 'submit' && (
                   <div>
+                    {/* Grading Vouchers */}
+                    {(() => {
+                      const totalGradingVouchers = (vouchers.freePregrades || 0) + (vouchers.freeExpress || 0) + 
+                                                   (vouchers.guaranteed10 || 0) + (vouchers.guaranteedIM10 || 0);
+                      if (totalGradingVouchers === 0) return null;
+                      
+                      return (
+                        <div style={{ 
+                          padding: 16, 
+                          borderRadius: 14, 
+                          background: 'linear-gradient(135deg, rgba(147,51,234,0.2), rgba(236,72,153,0.15))',
+                          border: '1px solid rgba(147,51,234,0.3)',
+                          marginBottom: 20
+                        }}>
+                          <h3 style={{ margin: 0, marginBottom: 12, fontSize: 16, color: '#a855f7' }}>🎟️ Your Grading Vouchers</h3>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                            {vouchers.freePregrades > 0 && (
+                              <div style={{ 
+                                background: 'rgba(0,0,0,0.3)', 
+                                padding: '8px 12px', 
+                                borderRadius: 8,
+                                border: '1px solid rgba(147,51,234,0.3)'
+                              }}>
+                                <div style={{ color: '#a855f7', fontSize: 13, fontWeight: 700 }}>🔍 Free Pre-Grade</div>
+                                <div style={{ color: '#9ca3af', fontSize: 11 }}>{vouchers.freePregrades} available</div>
+                              </div>
+                            )}
+                            {vouchers.freeExpress > 0 && (
+                              <div style={{ 
+                                background: 'rgba(0,0,0,0.3)', 
+                                padding: '8px 12px', 
+                                borderRadius: 8,
+                                border: '1px solid rgba(251,191,36,0.3)'
+                              }}>
+                                <div style={{ color: '#fbbf24', fontSize: 13, fontWeight: 700 }}>⚡ Free Express</div>
+                                <div style={{ color: '#9ca3af', fontSize: 11 }}>{vouchers.freeExpress} available</div>
+                              </div>
+                            )}
+                            {vouchers.guaranteed10 > 0 && (
+                              <div style={{ 
+                                background: 'rgba(0,0,0,0.3)', 
+                                padding: '8px 12px', 
+                                borderRadius: 8,
+                                border: '1px solid rgba(34,197,94,0.3)'
+                              }}>
+                                <div style={{ color: '#22c55e', fontSize: 13, fontWeight: 700 }}>🏆 Guaranteed 10</div>
+                                <div style={{ color: '#9ca3af', fontSize: 11 }}>{vouchers.guaranteed10} available</div>
+                              </div>
+                            )}
+                            {vouchers.guaranteedIM10 > 0 && (
+                              <div style={{ 
+                                background: 'rgba(0,0,0,0.3)', 
+                                padding: '8px 12px', 
+                                borderRadius: 8,
+                                border: '1px solid rgba(251,191,36,0.4)'
+                              }}>
+                                <div style={{ color: '#fbbf24', fontSize: 13, fontWeight: 700 }}>👑 Guaranteed IM10</div>
+                                <div style={{ color: '#9ca3af', fontSize: 11 }}>{vouchers.guaranteedIM10} available</div>
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ marginTop: 10, color: '#9ca3af', fontSize: 11 }}>
+                            Select a card below to use your vouchers
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    
                     {/* Pricing Info */}
                     <div style={{ 
                       padding: 16, 
@@ -10560,7 +10836,7 @@ return (
                             {storedPrediction && <span style={{ color: '#10b981', fontSize: 11 }}>(Already purchased)</span>}
                           </label>
                           {(selectedCardForGrading.usePreGrade || storedPrediction) && !currentPrediction && (
-                            <div style={{ marginTop: 8 }}>
+                            <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                               <button
                                 onClick={() => {
                                   if (rations < PRE_GRADE_COST) {
@@ -10590,6 +10866,33 @@ return (
                               >
                                 Pay {PRE_GRADE_COST}R to Pre-Grade
                               </button>
+                              {vouchers.freePregrades > 0 && (
+                                <button
+                                  onClick={() => {
+                                    const prediction = generatePreGradePrediction();
+                                    // Save prediction persistently
+                                    const newPreds = { ...preGradePredictions, [predKey]: prediction };
+                                    setPreGradePredictions(newPreds);
+                                    savePreGradePredictions(newPreds);
+                                    setSelectedCardForGrading(prev => ({ ...prev, preGradePrediction: prediction }));
+                                    // Deduct voucher
+                                    const newVouchers = { ...vouchers, freePregrades: Math.max(0, (vouchers.freePregrades || 0) - 1) };
+                                    setVouchers(newVouchers);
+                                    saveVouchers(newVouchers);
+                                  }}
+                                  style={{
+                                    padding: '8px 16px',
+                                    borderRadius: 8,
+                                    border: '1px solid rgba(147,51,234,0.4)',
+                                    background: 'linear-gradient(90deg, rgba(147,51,234,0.3), rgba(236,72,153,0.3))',
+                                    color: '#a855f7',
+                                    fontWeight: 700,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  🎟️ Use Free Pre-Grade ({vouchers.freePregrades})
+                                </button>
+                              )}
                             </div>
                           )}
                           {currentPrediction && (
@@ -10730,6 +11033,153 @@ return (
                           Submit
                         </button>
                       </div>
+                      
+                      {/* Voucher Submission Options */}
+                      {(vouchers.freeExpress > 0 || vouchers.guaranteed10 > 0 || vouchers.guaranteedIM10 > 0) && (
+                        <div style={{ 
+                          marginTop: 12, 
+                          padding: 12, 
+                          borderRadius: 10, 
+                          background: 'rgba(147,51,234,0.1)',
+                          border: '1px solid rgba(147,51,234,0.3)'
+                        }}>
+                          <div style={{ fontSize: 12, color: '#a855f7', fontWeight: 700, marginBottom: 8 }}>
+                            🎟️ Or use a voucher:
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {vouchers.freeExpress > 0 && (
+                              <button
+                                onClick={() => {
+                                  const predKey = `${selectedCardForGrading.id}-${selectedCardForGrading.isHolo}`;
+                                  const storedPrediction = preGradePredictions[predKey];
+                                  const success = submitForGrading(
+                                    selectedCardForGrading.id,
+                                    selectedCardForGrading.gameId,
+                                    selectedCardForGrading.setId,
+                                    selectedCardForGrading.isHolo,
+                                    'express', // Free express tier
+                                    selectedCardForGrading.preGradePrediction || storedPrediction || null,
+                                    true // skipCost flag
+                                  );
+                                  
+                                  if (success) {
+                                    // Deduct voucher
+                                    const newVouchers = { ...vouchers, freeExpress: Math.max(0, (vouchers.freeExpress || 0) - 1) };
+                                    setVouchers(newVouchers);
+                                    saveVouchers(newVouchers);
+                                    // Clear stored prediction
+                                    if (storedPrediction) {
+                                      const newPreds = { ...preGradePredictions };
+                                      delete newPreds[predKey];
+                                      setPreGradePredictions(newPreds);
+                                      savePreGradePredictions(newPreds);
+                                    }
+                                    setSelectedCardForGrading(null);
+                                  }
+                                }}
+                                style={{
+                                  padding: '10px 16px',
+                                  borderRadius: 8,
+                                  border: '1px solid rgba(251,191,36,0.4)',
+                                  background: 'linear-gradient(90deg, rgba(251,191,36,0.2), rgba(245,158,11,0.2))',
+                                  color: '#fbbf24',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  fontSize: 13
+                                }}
+                              >
+                                ⚡ Use Free Express Grading ({vouchers.freeExpress})
+                              </button>
+                            )}
+                            {vouchers.guaranteed10 > 0 && (
+                              <button
+                                onClick={() => {
+                                  const predKey = `${selectedCardForGrading.id}-${selectedCardForGrading.isHolo}`;
+                                  const storedPrediction = preGradePredictions[predKey];
+                                  const success = submitForGrading(
+                                    selectedCardForGrading.id,
+                                    selectedCardForGrading.gameId,
+                                    selectedCardForGrading.setId,
+                                    selectedCardForGrading.isHolo,
+                                    'express',
+                                    selectedCardForGrading.preGradePrediction || storedPrediction || null,
+                                    true, // skipCost
+                                    '10' // guaranteedGrade
+                                  );
+                                  
+                                  if (success) {
+                                    const newVouchers = { ...vouchers, guaranteed10: Math.max(0, (vouchers.guaranteed10 || 0) - 1) };
+                                    setVouchers(newVouchers);
+                                    saveVouchers(newVouchers);
+                                    if (storedPrediction) {
+                                      const newPreds = { ...preGradePredictions };
+                                      delete newPreds[predKey];
+                                      setPreGradePredictions(newPreds);
+                                      savePreGradePredictions(newPreds);
+                                    }
+                                    setSelectedCardForGrading(null);
+                                  }
+                                }}
+                                style={{
+                                  padding: '10px 16px',
+                                  borderRadius: 8,
+                                  border: '1px solid rgba(34,197,94,0.4)',
+                                  background: 'linear-gradient(90deg, rgba(34,197,94,0.2), rgba(22,163,74,0.2))',
+                                  color: '#22c55e',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  fontSize: 13
+                                }}
+                              >
+                                🏆 Use Guaranteed 10 ({vouchers.guaranteed10})
+                              </button>
+                            )}
+                            {vouchers.guaranteedIM10 > 0 && (
+                              <button
+                                onClick={() => {
+                                  const predKey = `${selectedCardForGrading.id}-${selectedCardForGrading.isHolo}`;
+                                  const storedPrediction = preGradePredictions[predKey];
+                                  const success = submitForGrading(
+                                    selectedCardForGrading.id,
+                                    selectedCardForGrading.gameId,
+                                    selectedCardForGrading.setId,
+                                    selectedCardForGrading.isHolo,
+                                    'express',
+                                    selectedCardForGrading.preGradePrediction || storedPrediction || null,
+                                    true, // skipCost
+                                    'IM10' // guaranteedGrade
+                                  );
+                                  
+                                  if (success) {
+                                    const newVouchers = { ...vouchers, guaranteedIM10: Math.max(0, (vouchers.guaranteedIM10 || 0) - 1) };
+                                    setVouchers(newVouchers);
+                                    saveVouchers(newVouchers);
+                                    if (storedPrediction) {
+                                      const newPreds = { ...preGradePredictions };
+                                      delete newPreds[predKey];
+                                      setPreGradePredictions(newPreds);
+                                      savePreGradePredictions(newPreds);
+                                    }
+                                    setSelectedCardForGrading(null);
+                                  }
+                                }}
+                                style={{
+                                  padding: '10px 16px',
+                                  borderRadius: 8,
+                                  border: '1px solid rgba(251,191,36,0.5)',
+                                  background: 'linear-gradient(90deg, rgba(251,191,36,0.3), rgba(234,179,8,0.3))',
+                                  color: '#fbbf24',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  fontSize: 13
+                                }}
+                              >
+                                👑 Use Guaranteed IM10 ({vouchers.guaranteedIM10})
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -11866,6 +12316,47 @@ return (
                             }}
                           >
                             ✕ Remove Holo from Showcase
+                          </button>
+                        )}
+                        
+                        {/* Make Holo Voucher */}
+                        {vouchers.makeHolo > 0 && ownedNormal > 0 && (
+                          <button
+                            onClick={() => {
+                              // Convert one normal to holo
+                              const newCollection = { ...collection };
+                              const entry = newCollection[enlargedCard.id] || { normal: 0, holo: 0 };
+                              if (entry.normal > 0) {
+                                entry.normal -= 1;
+                                entry.holo = (entry.holo || 0) + 1;
+                                newCollection[enlargedCard.id] = entry;
+                                setCollection(newCollection);
+                                saveCollection(newCollection);
+                                
+                                // Deduct voucher
+                                const newVouchers = { ...vouchers, makeHolo: Math.max(0, (vouchers.makeHolo || 0) - 1) };
+                                setVouchers(newVouchers);
+                                saveVouchers(newVouchers);
+                              }
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              marginBottom: 8,
+                              background: 'linear-gradient(90deg, rgba(236,72,153,0.2), rgba(168,85,247,0.2))',
+                              color: '#f0abfc',
+                              border: '1px solid rgba(236,72,153,0.4)',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              fontSize: 13,
+                              fontWeight: 'bold',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 6
+                            }}
+                          >
+                            ✨ Use Make Holo Voucher ({vouchers.makeHolo})
                           </button>
                         )}
                       </div>
