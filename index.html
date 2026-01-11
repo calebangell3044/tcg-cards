@@ -1115,7 +1115,8 @@ body{
         bulk: { name: 'Bulk', cost: 5, days: 14 },
         standard: { name: 'Standard', cost: 15, days: 7 },
         express: { name: 'Express', cost: 35, days: 3 },
-        superExpress: { name: 'Super Express', cost: 75, days: 1 }
+        superExpress: { name: 'Super Express', cost: 75, days: 1 },
+        sameDay: { name: 'Same Day', cost: 250, days: 0 }
       };
 
       const PRE_GRADE_COST = 10; // Extra cost to pre-grade
@@ -10127,7 +10128,9 @@ return (
                           }}>
                             <div style={{ fontWeight: 700, color: 'white', marginBottom: 4 }}>{tier.name}</div>
                             <div style={{ color: '#fbbf24', fontSize: 14 }}>{tier.cost} rations</div>
-                            <div style={{ color: '#9ca3af', fontSize: 12 }}>{tier.days} day{tier.days > 1 ? 's' : ''}</div>
+                            <div style={{ color: '#9ca3af', fontSize: 12 }}>
+                              {tier.days === 0 ? 'Instant' : `${tier.days} day${tier.days > 1 ? 's' : ''}`}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -10690,7 +10693,7 @@ return (
                           }}
                         >
                           <div style={{ fontWeight: 700 }}>{tier.name}</div>
-                          <div style={{ fontSize: 12, color: '#fbbf24' }}>{tier.cost}R • {tier.days}d</div>
+                          <div style={{ fontSize: 12, color: '#fbbf24' }}>{tier.cost}R • {tier.days === 0 ? 'Instant' : `${tier.days}d`}</div>
                         </button>
                       ))}
                     </div>
