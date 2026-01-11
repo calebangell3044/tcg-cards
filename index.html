@@ -1013,6 +1013,7 @@ body{
       const [collectionSearch, setCollectionSearch] = useState('');
       const [ownedFilter, setOwnedFilter] = useState('all'); // all | owned | unowned
       const [holoFilter, setHoloFilter] = useState('all');   // all | hasHolo | noHolo
+      const [gradedFilter, setGradedFilter] = useState('all'); // all | raw | graded
       const [sortKey, setSortKey] = useState('owned');       // owned | name | rarity | value | holoValue | change | holoMult
       const [sortDir, setSortDir] = useState('desc');        // asc | desc
       const [hideUnknown, setHideUnknown] = useState(false);
@@ -2441,9 +2442,26 @@ body{
           sealedVoucher: 0,
           boosterBox: 0,
           caseBox: 0,
-          makeHolo: 0
+          makeHolo: 0,
+          godPack: 0
         };
       });
+      
+      // Track which sets have been completed and rewarded
+      const [completedSets, setCompletedSets] = useState(() => {
+        try {
+          const core = readCoreSave();
+          if (core && core.completedSets) return core.completedSets;
+          const raw = localStorage.getItem('tcg-completed-sets');
+          if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return {};
+      });
+      
+      const saveCompletedSets = useCallback((sets) => {
+        try { localStorage.setItem('tcg-completed-sets', JSON.stringify(sets)); } catch (e) {}
+        try { updateCoreSave({ completedSets: sets }); } catch (e) {}
+      }, []);
 
       const saveClaimedRewards = useCallback((rewards) => {
         try { localStorage.setItem('tcg-claimed-rewards', JSON.stringify(rewards)); } catch (e) {}
@@ -6037,47 +6055,110 @@ const getRareSlotCard = () => {
           cards = cards.filter(c => (c.name || '').toLowerCase().includes(q));
         }
 
-        // Enrich with ownership + market data
-        let enriched = cards.map(card => {
-          const entry = collection[card.id] || { normal: 0, holo: 0 };
-          const ownedNormal = entry.normal || 0;
-          const ownedHolo = entry.holo || 0;
-          const owned = ownedNormal + ownedHolo;
-
-          const marketValue = marketValues[card.id] || 1;
-          const holoMult = holoMultipliers[card.id] || 1.5;
-          const holoValue = marketValue * holoMult;
-
-          const history = priceHistory[card.id] || [];
-          let priceChange = 0;
-          if (history.length >= 2) {
-            const prev = history[history.length - 2].value || 1;
-            const curr = history[history.length - 1].value || marketValue;
-            priceChange = prev ? ((curr - prev) / prev) * 100 : 0;
+        // Count graded cards per cardId for ownership
+        const gradedCountsByCard = {};
+        gradedCards.forEach(g => {
+          const key = g.cardId;
+          if (!gradedCountsByCard[key]) gradedCountsByCard[key] = { normal: 0, holo: 0, cards: [] };
+          if (g.isHolo) {
+            gradedCountsByCard[key].holo += 1;
+          } else {
+            gradedCountsByCard[key].normal += 1;
           }
-
-          return {
-            ...card,
-            image: buildImageUrl(card.gameId, card.setId, card),
-            owned,
-            ownedNormal,
-            ownedHolo,
-            marketValue,
-            holoMult,
-            holoValue,
-            priceChange
-          };
+          gradedCountsByCard[key].cards.push(g);
         });
+
+        // Enrich with ownership + market data (raw cards only for gradedFilter !== 'graded')
+        let enriched = [];
+        
+        if (gradedFilter !== 'graded') {
+          enriched = cards.map(card => {
+            const entry = collection[card.id] || { normal: 0, holo: 0 };
+            const gradedEntry = gradedCountsByCard[card.id] || { normal: 0, holo: 0 };
+            const ownedNormal = entry.normal || 0;
+            const ownedHolo = entry.holo || 0;
+            const gradedNormal = gradedEntry.normal || 0;
+            const gradedHolo = gradedEntry.holo || 0;
+            const owned = ownedNormal + ownedHolo;
+            const totalOwned = owned + gradedNormal + gradedHolo;
+
+            const marketValue = marketValues[card.id] || 1;
+            const holoMult = holoMultipliers[card.id] || 1.5;
+            const holoValue = marketValue * holoMult;
+
+            const history = priceHistory[card.id] || [];
+            let priceChange = 0;
+            if (history.length >= 2) {
+              const prev = history[history.length - 2].value || 1;
+              const curr = history[history.length - 1].value || marketValue;
+              priceChange = prev ? ((curr - prev) / prev) * 100 : 0;
+            }
+
+            return {
+              ...card,
+              image: buildImageUrl(card.gameId, card.setId, card),
+              owned,
+              totalOwned,
+              ownedNormal,
+              ownedHolo,
+              gradedNormal,
+              gradedHolo,
+              marketValue,
+              holoMult,
+              holoValue,
+              priceChange,
+              isGraded: false
+            };
+          });
+        }
+        
+        // Add graded cards as separate entries (for gradedFilter !== 'raw')
+        if (gradedFilter !== 'raw') {
+          cards.forEach(card => {
+            const gradedEntry = gradedCountsByCard[card.id];
+            if (!gradedEntry || gradedEntry.cards.length === 0) return;
+            
+            const marketValue = marketValues[card.id] || 1;
+            const holoMult = holoMultipliers[card.id] || 1.5;
+            
+            gradedEntry.cards.forEach(gradedCard => {
+              // Filter by game/set
+              if (collectionGameFilter !== 'all' && gradedCard.gameId !== collectionGameFilter) return;
+              if (collectionSetFilter !== 'all' && gradedCard.setId !== collectionSetFilter) return;
+              
+              const gradeMultiplier = GRADE_MULTIPLIERS[gradedCard.grade] || 1;
+              const baseValue = gradedCard.isHolo ? marketValue * holoMult : marketValue;
+              const gradedValue = baseValue * gradeMultiplier;
+              
+              enriched.push({
+                ...card,
+                image: buildImageUrl(gradedCard.gameId, gradedCard.setId, card),
+                owned: 1,
+                totalOwned: 1,
+                ownedNormal: gradedCard.isHolo ? 0 : 1,
+                ownedHolo: gradedCard.isHolo ? 1 : 0,
+                marketValue: gradedValue,
+                holoMult,
+                holoValue: gradedValue,
+                priceChange: 0,
+                isGraded: true,
+                gradedCard: gradedCard,
+                grade: gradedCard.grade,
+                uniqueKey: gradedCard.id
+              });
+            });
+          });
+        }
 
         // Owned / unowned / hide unknown filters
         if (hideUnknown) {
-          enriched = enriched.filter(c => c.owned > 0);
+          enriched = enriched.filter(c => c.owned > 0 || c.isGraded);
         }
 
         if (ownedFilter === 'owned') {
-          enriched = enriched.filter(c => c.owned > 0);
+          enriched = enriched.filter(c => c.owned > 0 || c.isGraded);
         } else if (ownedFilter === 'unowned') {
-          enriched = enriched.filter(c => c.owned === 0);
+          enriched = enriched.filter(c => c.owned === 0 && !c.isGraded);
         }
 
         if (holoFilter === 'hasHolo') {
@@ -6131,7 +6212,7 @@ const getRareSlotCard = () => {
         });
 
         return enriched;
-      }, [collectionGameFilter, collectionSetFilter, collectionFilter, collectionSearch, collection, marketValues, holoMultipliers, priceHistory, hideUnknown, ownedFilter, holoFilter, sortDir, sortKey, setConfigs, gameConfigs, gamesIndex]);
+      }, [collectionGameFilter, collectionSetFilter, collectionFilter, collectionSearch, collection, marketValues, holoMultipliers, priceHistory, hideUnknown, ownedFilter, holoFilter, gradedFilter, sortDir, sortKey, setConfigs, gameConfigs, gamesIndex, gradedCards]);
 
       
       
@@ -7422,7 +7503,7 @@ if (!isLoaded) {
                 {/* Voucher Redemption Section */}
                 {(() => {
                   const totalVouchers = (vouchers.freePacks || 0) + (vouchers.sealedVoucher || 0) + 
-                                       (vouchers.boosterBox || 0) + (vouchers.caseBox || 0);
+                                       (vouchers.boosterBox || 0) + (vouchers.caseBox || 0) + (vouchers.godPack || 0);
                   if (totalVouchers === 0) return null;
                   
                   return (
@@ -7501,6 +7582,53 @@ if (!isLoaded) {
                             </div>
                             <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
                               Click ANY product to redeem
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* God Pack Voucher */}
+                        {vouchers.godPack > 0 && (
+                          <div style={{ 
+                            background: 'linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.2))', 
+                            borderRadius: 10, 
+                            padding: 12,
+                            border: '2px solid rgba(251,191,36,0.5)',
+                            minWidth: 200
+                          }}>
+                            <div style={{ fontSize: 13, color: '#fbbf24', fontWeight: 700, marginBottom: 8 }}>
+                              ✨ God Pack: {vouchers.godPack}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 10 }}>
+                              Set completion reward! Choose a set:
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                              {gamesIndex.games.filter(g => g.enabled).map(game => 
+                                gameConfigs[game.id]?.sets.map(setId => (
+                                  <button
+                                    key={`${game.id}-${setId}`}
+                                    onClick={() => {
+                                      // Use god pack voucher
+                                      const newVouchers = { ...vouchers, godPack: Math.max(0, (vouchers.godPack || 0) - 1) };
+                                      setVouchers(newVouchers);
+                                      saveVouchers(newVouchers);
+                                      // Open god pack
+                                      buyGodPackForSet(game.id, setId, true); // true = free
+                                    }}
+                                    style={{
+                                      padding: '6px 10px',
+                                      fontSize: 10,
+                                      fontWeight: 700,
+                                      background: 'rgba(251,191,36,0.3)',
+                                      border: '1px solid rgba(251,191,36,0.5)',
+                                      borderRadius: 6,
+                                      color: '#fbbf24',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    {game.name.substring(0, 2).toUpperCase()} - {setConfigs[game.id]?.[setId]?.name?.substring(0, 6) || setId}
+                                  </button>
+                                ))
+                              )}
                             </div>
                           </div>
                         )}
@@ -8678,31 +8806,55 @@ if (!isLoaded) {
                         const totalCards = setConfig.cards.length;
                         let ownedCount = 0;
                         
+                        // Count graded cards for this set
+                        const gradedCardsInSet = gradedCards.filter(g => g.gameId === game.id && g.setId === setId);
+                        const gradedCardIds = new Set(gradedCardsInSet.map(g => g.cardId));
+                        
                         setConfig.cards.forEach(card => {
                           const entry = collection[card.id];
-                          if (entry && ((entry.normal || 0) > 0 || (entry.holo || 0) > 0)) {
+                          const hasRaw = entry && ((entry.normal || 0) > 0 || (entry.holo || 0) > 0);
+                          const hasGraded = gradedCardIds.has(card.id);
+                          if (hasRaw || hasGraded) {
                             ownedCount++;
                           }
                         });
                         
                         const completionPct = totalCards > 0 ? Math.round((ownedCount / totalCards) * 100) : 0;
+                        const isComplete = ownedCount === totalCards && totalCards > 0;
+                        const setKey = `${game.id}-${setId}`;
+                        const wasRewarded = completedSets[setKey];
+                        
+                        // Check if newly completed and not yet rewarded
+                        if (isComplete && !wasRewarded) {
+                          // Award god pack voucher
+                          setTimeout(() => {
+                            const newVouchers = { ...vouchers, godPack: (vouchers.godPack || 0) + 1 };
+                            setVouchers(newVouchers);
+                            saveVouchers(newVouchers);
+                            const newCompletedSets = { ...completedSets, [setKey]: true };
+                            setCompletedSets(newCompletedSets);
+                            saveCompletedSets(newCompletedSets);
+                            alert(`🎉 Congratulations! You completed ${setConfig.name}!\n\nYou earned a God Pack Voucher!`);
+                          }, 100);
+                        }
                         
                         return (
                           <div 
-                            key={`${game.id}-${setId}`}
+                            key={setKey}
                             style={{ 
                               padding: '10px 16px', 
-                              background: 'rgba(168,85,247,0.15)', 
+                              background: isComplete ? 'rgba(34,197,94,0.2)' : 'rgba(168,85,247,0.15)', 
                               borderRadius: 10, 
-                              border: '1px solid rgba(168,85,247,0.3)',
+                              border: isComplete ? '2px solid rgba(34,197,94,0.5)' : '1px solid rgba(168,85,247,0.3)',
                               minWidth: 180
                             }}
                           >
-                            <div style={{ color: '#d1d5db', fontSize: 12, marginBottom: 4 }}>
+                            <div style={{ color: '#d1d5db', fontSize: 12, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
                               {game.name} - {setConfig.name}
+                              {isComplete && <span style={{ color: '#22c55e' }}>✓</span>}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                              <span style={{ color: '#a855f7', fontSize: 20, fontWeight: 'bold' }}>{completionPct}%</span>
+                              <span style={{ color: isComplete ? '#22c55e' : '#a855f7', fontSize: 20, fontWeight: 'bold' }}>{completionPct}%</span>
                               <span style={{ color: '#9ca3af', fontSize: 12 }}>({ownedCount}/{totalCards})</span>
                             </div>
                           </div>
@@ -8807,6 +8959,23 @@ if (!isLoaded) {
                       <option value="hasHolo">Has holo</option>
                       <option value="noHolo">No holo</option>
                     </select>
+                    
+                    <select
+                      value={gradedFilter}
+                      onChange={(e) => setGradedFilter(e.target.value)}
+                      style={{ 
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(168,85,247,0.4)',
+                        background: 'rgba(17,24,39,0.85)',
+                        color: 'white',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="all">All (Raw + Graded)</option>
+                      <option value="raw">Raw only</option>
+                      <option value="graded">Graded only</option>
+                    </select>
 
                     <select
                       value={sortKey}
@@ -8890,6 +9059,114 @@ if (!isLoaded) {
                     const gameShort = card.gameId === 'tta' ? 'TTA' : card.gameId === 'spiritual-possessions' ? 'SP' : card.gameId?.substring(0, 3).toUpperCase();
                     const setShort = card.setId === 'base-set' ? 'Base' : card.setId === 'expansion-set' ? 'Exp' : card.setId?.substring(0, 4);
                     
+                    // Graded card rendering
+                    if (card.isGraded && card.gradedCard) {
+                      const graded = card.gradedCard;
+                      const gradeColors = GRADE_COLORS[graded.grade] || { bg: '#6b7280', text: '#000', border: '#6b7280' };
+                      const gradeLabel = GRADE_LABELS[graded.grade] || '';
+                      const gradeNum = graded.grade === 'IM10' ? '10' : graded.grade.toString();
+                      const serialNum = generateSlabSerial(graded.id);
+                      
+                      return (
+                        <div 
+                          key={card.uniqueKey}
+                          onClick={() => setInspectingGradedCard(graded)}
+                          style={{
+                            width: '100%',
+                            background: 'linear-gradient(135deg, #1a1a2e, #0f0f1a)',
+                            borderRadius: 10,
+                            border: `3px solid ${gradeColors.border}`,
+                            overflow: 'hidden',
+                            cursor: 'pointer',
+                            aspectRatio: '2.5/3.8'
+                          }}
+                        >
+                          {/* Slab Header */}
+                          <div style={{
+                            background: gradeColors.bg,
+                            padding: '6px 8px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            height: 42,
+                            boxSizing: 'border-box'
+                          }}>
+                            <div style={{ flex: 1, minWidth: 0, marginRight: 6 }}>
+                              <div style={{ 
+                                fontSize: 9, 
+                                fontWeight: 800, 
+                                color: gradeColors.text,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}>
+                                {card.name}
+                              </div>
+                              <div style={{ fontSize: 7, color: gradeColors.text, opacity: 0.8 }}>
+                                {gameShort} • {setShort}
+                              </div>
+                              <div style={{ fontSize: 6, color: gradeColors.text, opacity: 0.7 }}>
+                                {card.rarity}{graded.isHolo ? ' • HOLO' : ''}
+                              </div>
+                            </div>
+                            <div style={{
+                              background: 'rgba(255,255,255,0.2)',
+                              borderRadius: 6,
+                              padding: '2px 6px',
+                              textAlign: 'center',
+                              minWidth: 32
+                            }}>
+                              <div style={{ fontSize: 16, fontWeight: 900, color: gradeColors.text, lineHeight: 1 }}>
+                                {gradeNum}
+                              </div>
+                              {graded.grade === 'IM10' && (
+                                <div style={{ fontSize: 5, fontWeight: 700, color: gradeColors.text }}>IM</div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Card Image */}
+                          <div style={{ 
+                            padding: 6,
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            flex: 1
+                          }}>
+                            <div className={graded.isHolo ? 'holo-overlay' : ''} style={{ 
+                              width: '85%',
+                              aspectRatio: '2.5/3.5',
+                              borderRadius: 6,
+                              overflow: 'hidden'
+                            }}>
+                              <img
+                                src={card.image}
+                                alt={card.name}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                loading="lazy"
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Value Badge */}
+                          <div style={{
+                            padding: '4px 8px',
+                            background: 'rgba(0,0,0,0.5)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                              <img src="./rations.png" alt="R" style={{ width: 12, height: 12 }} />
+                              <span style={{ color: '#fbbf24', fontSize: 11, fontWeight: 'bold' }}>{marketValue.toFixed(2)}</span>
+                            </div>
+                            <span style={{ fontSize: 8, color: '#9ca3af' }}>{gradeLabel}</span>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    // Regular raw card rendering
 return (
                       <div 
                         key={card.id} 
@@ -8941,6 +9218,24 @@ return (
                             zIndex: 5
                           }}>
                             {gameShort} {setShort}
+                          </div>
+                        )}
+                        
+                        {/* Graded indicator badge */}
+                        {(card.gradedNormal > 0 || card.gradedHolo > 0) && (
+                          <div style={{
+                            position: 'absolute',
+                            bottom: 6,
+                            right: 6,
+                            background: 'rgba(147,51,234,0.85)',
+                            padding: '2px 6px',
+                            borderRadius: 6,
+                            fontSize: 9,
+                            fontWeight: 700,
+                            color: 'white',
+                            zIndex: 5
+                          }}>
+                            🏆 {(card.gradedNormal || 0) + (card.gradedHolo || 0)} graded
                           </div>
                         )}
                         
@@ -13049,6 +13344,11 @@ return (
                         {vouchers.makeHolo > 0 && (
                           <span style={{ background: 'rgba(0,0,0,0.3)', padding: '4px 8px', borderRadius: 6, fontSize: 11, color: '#d1d5db' }}>
                             ✨ {vouchers.makeHolo} Make Holo
+                          </span>
+                        )}
+                        {vouchers.godPack > 0 && (
+                          <span style={{ background: 'rgba(251,191,36,0.2)', padding: '4px 8px', borderRadius: 6, fontSize: 11, color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
+                            ✨ {vouchers.godPack} God Pack{vouchers.godPack > 1 ? 's' : ''}
                           </span>
                         )}
                       </div>
